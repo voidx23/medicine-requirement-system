@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, FileSpreadsheet } from 'lucide-react';
 import api from '../services/api';
 import MedicineList from '../components/Medicines/MedicineList';
 import MedicineForm from '../components/Medicines/MedicineForm';
 import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
 import Modal from '../components/UI/Modal';
+import ImportModal from '../components/UI/ImportModal';
 
 const Medicines = () => {
   const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState(null);
 
   const fetchMedicines = async (searchTerm = '') => {
@@ -67,9 +69,14 @@ const Medicines = () => {
            <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Medicines</h1>
            <p style={{ color: 'var(--text-muted)' }}>Manage your medicine inventory</p>
         </div>
-        <Button onClick={handleAdd} icon={Plus}>
-          Add Medicine
-        </Button>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <Button onClick={() => setIsImportModalOpen(true)} variant="outline" icon={FileSpreadsheet}>
+            Import from Excel
+          </Button>
+          <Button onClick={handleAdd} icon={Plus}>
+            Add Medicine
+          </Button>
+        </div>
       </div>
 
       <div style={{ marginBottom: '2rem', maxWidth: '400px' }}>
@@ -112,6 +119,14 @@ const Medicines = () => {
           onCancel={() => setIsModalOpen(false)}
         />
       </Modal>
+
+      <ImportModal 
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportSuccess={() => fetchMedicines(search)}
+        type="medicines"
+        templateInfo="Excel should have columns: 'Medicine Name' and 'Supplier Name' (must match existing supplier)."
+      />
     </div>
   );
 };

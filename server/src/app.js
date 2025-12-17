@@ -3,6 +3,7 @@ import cors from 'cors';
 import supplierRoutes from './routes/supplierRoutes.js';
 import medicineRoutes from './routes/medicineRoutes.js';
 import requirementRoutes from './routes/requirementRoutes.js';
+import importRoutes from './routes/importRoutes.js';
 
 const app = express();
 
@@ -15,6 +16,7 @@ console.log('Registering Routes...');
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/medicines', medicineRoutes);
 app.use('/api/requirements', requirementRoutes);
+app.use('/api/import', importRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {

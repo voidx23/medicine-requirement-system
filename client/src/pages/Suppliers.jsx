@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, FileSpreadsheet } from 'lucide-react';
 import api from '../services/api';
 import SupplierList from '../components/Suppliers/SupplierList';
 import SupplierForm from '../components/Suppliers/SupplierForm';
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
+import ImportModal from '../components/UI/ImportModal';
 
 const Suppliers = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
 
   const fetchSuppliers = async () => {
@@ -60,9 +62,14 @@ const Suppliers = () => {
            <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Suppliers</h1>
            <p style={{ color: 'var(--text-muted)' }}>Manage your medicine suppliers</p>
         </div>
-        <Button onClick={handleAdd} icon={Plus}>
-          Add Supplier
-        </Button>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <Button onClick={() => setIsImportModalOpen(true)} variant="outline" icon={FileSpreadsheet}>
+            Import from Excel
+          </Button>
+          <Button onClick={handleAdd} icon={Plus}>
+            Add Supplier
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -86,6 +93,14 @@ const Suppliers = () => {
           onCancel={() => setIsModalOpen(false)}
         />
       </Modal>
+
+      <ImportModal 
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportSuccess={fetchSuppliers}
+        type="suppliers"
+        templateInfo="Excel should have columns: 'Name' and 'CR No'."
+      />
     </div>
   );
 };
