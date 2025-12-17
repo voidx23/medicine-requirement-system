@@ -7,7 +7,7 @@ const AddItem = ({ onAdd }) => {
   const [medicines, setMedicines] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef(null);
 
   useEffect(() => {
@@ -28,6 +28,7 @@ const AddItem = ({ onAdd }) => {
     const handleClickOutside = (event) => {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
         setIsOpen(false);
+        setHighlightedIndex(-1);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -39,16 +40,38 @@ const AddItem = ({ onAdd }) => {
   );
 
   const handleSelect = async (medicine) => {
+      if (!medicine) return;
       setLoading(true);
       try {
           await onAdd(medicine._id);
           setSearchTerm('');
           setIsOpen(false);
+          setHighlightedIndex(-1);
       } catch (err) {
           console.error(err);
       } finally {
           setLoading(false);
       }
+  };
+
+  const handleKeyDown = (e) => {
+    if (!isOpen || filteredMedicines.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev + 1) % filteredMedicines.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex(prev => (prev - 1 + filteredMedicines.length) % filteredMedicines.length);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (highlightedIndex >= 0) {
+        handleSelect(filteredMedicines[highlightedIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    }
   };
 
   return (
@@ -71,8 +94,10 @@ const AddItem = ({ onAdd }) => {
             onChange={(e) => {
                 setSearchTerm(e.target.value);
                 setIsOpen(true);
+                setHighlightedIndex(-1);
             }}
             onFocus={() => setIsOpen(true)}
+            onKeyDown={handleKeyDown}
             style={{
                 border: 'none',
                 outline: 'none',
@@ -107,7 +132,7 @@ const AddItem = ({ onAdd }) => {
             }}
         >
             {filteredMedicines.length > 0 ? (
-                filteredMedicines.map(medicine => (
+                filteredMedicines.map((medicine, index) => (
                     <button
                         key={medicine._id}
                         onClick={() => handleSelect(medicine)}
@@ -117,7 +142,7 @@ const AddItem = ({ onAdd }) => {
                             textAlign: 'left',
                             padding: '0.75rem',
                             border: 'none',
-                            background: 'transparent',
+                            background: highlightedIndex === index ? 'var(--primary-light)' : 'transparent',
                             cursor: 'pointer',
                             display: 'flex',
                             justifyContent: 'space-between',
@@ -126,8 +151,8 @@ const AddItem = ({ onAdd }) => {
                             transition: 'background 0.2s',
                             color: 'var(--text-main)'
                         }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--primary-light)'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        onMouseOver={() => setHighlightedIndex(index)}
+                        onMouseOut={() => setHighlightedIndex(-1)}
                     >
                         <span style={{ fontWeight: 500 }}>{medicine.name}</span>
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
