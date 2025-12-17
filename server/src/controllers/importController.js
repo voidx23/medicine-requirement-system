@@ -23,19 +23,25 @@ export const importSuppliers = async (req, res) => {
             const name = row['Name']?.toString().trim();
             const crNo = row['CR No']?.toString().trim();
 
-            if (!name || !crNo) {
-                errors.push(`Row ${importedCount + skippedCount + 2}: Missing Name or CR No`);
+            if (!name) {
+                errors.push(`Row ${importedCount + skippedCount + 2}: Missing Name`);
                 skippedCount++;
                 continue;
             }
 
-            const exists = await Supplier.findOne({ $or: [{ name }, { crNo }] });
+            // Create query for duplicate check
+            const query = { $or: [{ name: { $regex: new RegExp(`^${name}$`, 'i') } }] };
+            if (crNo) {
+                query.$or.push({ crNo });
+            }
+
+            const exists = await Supplier.findOne(query);
             if (exists) {
                 skippedCount++;
                 continue;
             }
 
-            await Supplier.create({ name, crNo });
+            await Supplier.create({ name, crNo: crNo || '' });
             importedCount++;
         }
 

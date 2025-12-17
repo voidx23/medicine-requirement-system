@@ -8,7 +8,6 @@ const supplierSchema = new mongoose.Schema({
     },
     crNo: {
         type: String,
-        required: true,
         trim: true
     },
     isActive: {

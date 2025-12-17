@@ -99,7 +99,7 @@ const Suppliers = () => {
         onClose={() => setIsImportModalOpen(false)}
         onImportSuccess={fetchSuppliers}
         type="suppliers"
-        templateInfo="Excel should have columns: 'Name' and 'CR No'."
+        templateInfo="Excel should have columns: 'Name' (Required) and 'CR No' (Optional)."
       />
     </div>
   );

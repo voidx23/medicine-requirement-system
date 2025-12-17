@@ -61,10 +61,9 @@ const SupplierForm = ({ initialData, onSuccess, onCancel }) => {
       
       <Input
         id="crNo"
-        label="CR Number"
+        label="CR Number (Optional)"
         value={formData.crNo}
         onChange={handleChange}
-        required
       />
       
       <Input
