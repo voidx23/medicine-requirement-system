@@ -7,6 +7,7 @@ const AddItem = ({ onAdd }) => {
   const [medicines, setMedicines] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef(null);
 
