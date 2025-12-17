@@ -1,0 +1,117 @@
+import { useState, useEffect } from 'react';
+import { Download, FileText } from 'lucide-react';
+import api from '../services/api';
+import AddItem from '../components/Dashboard/AddItem';
+import RequirementList from '../components/Dashboard/RequirementList';
+import Button from '../components/UI/Button';
+import Modal from '../components/UI/Modal';
+
+const Dashboard = () => {
+  const [list, setList] = useState({ items: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const fetchTodayList = async () => {
+    try {
+      const response = await api.get('/requirements/today');
+      setList(response.data);
+    } catch (err) {
+      console.error('Failed to fetch list', err);
+      setError('Could not load today\'s list');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTodayList();
+  }, []);
+
+  const handleAddItem = async (medicineId) => {
+    try {
+      const response = await api.post('/requirements/add-item', { medicineId });
+      setList(response.data);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to add item');
+    }
+  };
+
+  const handleRemoveItem = async (medicineId) => {
+    try {
+      // Optimistic updatish - just refresh
+      await api.delete(`/requirements/item/${medicineId}`);
+      fetchTodayList();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to remove item');
+    }
+  };
+
+  const handleGeneratePDF = async () => {
+    if (list.items.length === 0) return;
+    
+    setPdfLoading(true);
+    try {
+      const response = await api.post('/requirements/generate-pdf', { supplierIds: [] }, {
+        responseType: 'blob'
+      });
+      
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Requirement_List_${new Date().toISOString().split('T')[0]}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error('PDF Generation failed', err);
+      alert('Failed to generate PDF');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+        <div>
+           <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Daily Requirement List</h1>
+           <p style={{ color: 'var(--text-muted)' }}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div className="glass-panel" style={{ padding: '0.5rem 1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--primary)' }}>
+                <FileText size={18} />
+                <span style={{ fontWeight: 600 }}>{list.items.length} Items</span>
+            </div>
+            <Button 
+                onClick={handleGeneratePDF} 
+                disabled={pdfLoading || list.items.length === 0}
+                icon={Download}
+                isLoading={pdfLoading}
+            >
+                Download PDF
+            </Button>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '2rem' }}>
+        <AddItem onAdd={handleAddItem} />
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Loading...</div>
+      ) : (
+        <RequirementList 
+            items={list.items} 
+            onRemove={handleRemoveItem} 
+        />
+      )}
+    </div>
+  );
+};
+
+export default Dashboard;
