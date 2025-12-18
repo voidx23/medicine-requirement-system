@@ -136,15 +136,37 @@ input, select {
     padding-bottom: 6rem; /* Space for BottomNav */
   }
 
-  /* Adjust Layouts for Mobile */
-  h1 {
+  /* Improved Typography */
+  h1, .header-title {
     font-size: 1.5rem !important;
+    line-height: 1.2;
+    margin-bottom: 0.25rem !important;
+  }
+  
+  p {
+    font-size: 0.875rem;
   }
 
-  /* Stack header actions */
+  /* Improved Header Layout */
   .page-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: flex-start !important;
     gap: 1rem;
+    margin-bottom: 1.5rem !important;
+  }
+  
+  /* Make buttons full width on mobile for easier tapping */
+  .page-header button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .glass-panel {
+    width: 100%;
+  }
+
+  /* Better spacing for lists */
+  .glass-panel + .glass-panel {
+    margin-top: 1rem;
   }
 }

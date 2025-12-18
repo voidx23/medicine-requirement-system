@@ -96,25 +96,28 @@ const Dashboard = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
         <div>
-           <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Daily Requirement List</h1>
+           <h1 className="header-title" style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Daily Requirement List</h1>
            <p style={{ color: 'var(--text-muted)' }}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
         
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <div className="glass-panel" style={{ padding: '0.5rem 1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--primary)' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
+            <div className="glass-panel" style={{ padding: '0.5rem 1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--primary)', flex: '1 0 auto' }}>
                 <FileText size={18} />
                 <span style={{ fontWeight: 600 }}>{list.items.length} Items</span>
             </div>
-            <Button 
-                onClick={handleGeneratePDF} 
-                disabled={pdfLoading || list.items.length === 0}
-                icon={Download}
-                isLoading={pdfLoading}
-            >
-                Download PDF
-            </Button>
+            <div style={{ flex: '1 0 auto' }}>
+                <Button 
+                    onClick={handleGeneratePDF} 
+                    disabled={pdfLoading || list.items.length === 0}
+                    icon={Download}
+                    isLoading={pdfLoading}
+                    style={{ width: '100%', justifyContent: 'center' }}
+                >
+                    Download PDF
+                </Button>
+            </div>
         </div>
       </div>
 
