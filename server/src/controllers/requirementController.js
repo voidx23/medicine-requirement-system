@@ -3,9 +3,13 @@ import RequirementList from '../models/RequirementList.js';
 
 // Helper to get today's date with time set to 00:00:00
 const getTodayDate = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
+    // Create date with UTC+4 (Gulf Standard Time) offset
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const dubaiTime = new Date(utc + (3600000 * 4));
+    
+    dubaiTime.setHours(0, 0, 0, 0);
+    return dubaiTime;
 };
 
 // @desc    Get all requirement lists (History)
