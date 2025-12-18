@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Users, Pill, History } from 'lucide-react';
+import Frame from '../../assets/Frame.svg?react';
 
 const Sidebar = () => {
   const links = [
@@ -34,12 +35,13 @@ const Sidebar = () => {
           alignItems: 'center',
           gap: '0.5rem'
         }}>
-          <div style={{
-            width: '24px', height: '24px', 
-            background: 'var(--primary)', 
-            borderRadius: '6px'
-          }}></div>
-          MedReq
+           <Frame
+      style={{
+        width: '150px',
+        height: '150px',
+        fill: 'var(--primary)' // works if SVG uses fill="currentColor"
+      }}
+    />
         </h2>
       </div>
 
@@ -69,7 +71,7 @@ const Sidebar = () => {
       </nav>
       
       <div style={{ marginTop: 'auto', padding: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-        © 2025 PMS System
+        © 2025 Nihal Mohamed Bashir
       </div>
     </aside>
   );

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, FileSpreadsheet } from 'lucide-react';
+import { Plus, FileSpreadsheet, Search } from 'lucide-react';
 import api from '../services/api';
 import SupplierList from '../components/Suppliers/SupplierList';
 import SupplierForm from '../components/Suppliers/SupplierForm';
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 import ImportModal from '../components/UI/ImportModal';
+import Input from '../components/UI/Input';
 
 const Suppliers = () => {
   const [suppliers, setSuppliers] = useState([]);
@@ -13,6 +14,7 @@ const Suppliers = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchSuppliers = async () => {
     try {
@@ -55,6 +57,13 @@ const Suppliers = () => {
     fetchSuppliers();
   };
 
+  const filteredSuppliers = suppliers.filter(supplier => 
+    supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (supplier.crNo && supplier.crNo.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (supplier.phone && supplier.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (supplier.email && supplier.email.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -72,11 +81,20 @@ const Suppliers = () => {
         </div>
       </div>
 
+      <div style={{ marginBottom: '1.5rem' }}>
+        <Input
+          placeholder="Search suppliers..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          icon={Search}
+        />
+      </div>
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Loading...</div>
       ) : (
         <SupplierList 
-          suppliers={suppliers} 
+          suppliers={filteredSuppliers} 
           onEdit={handleEdit} 
           onDelete={handleDelete} 
         />
