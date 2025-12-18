@@ -17,7 +17,7 @@ const Sidebar = () => {
       position: 'fixed',
       left: 0,
       top: 0,
-      padding: '2rem 1rem',
+      padding: '1rem 1rem',
       display: 'flex',
       flexDirection: 'column',
       gap: '2rem',
