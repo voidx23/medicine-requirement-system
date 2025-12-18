@@ -101,6 +101,20 @@ input, select {
 }
 
 
+/* Base Styles (Desktop First) */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.header-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
 /* Mobile Responsiveness */
 .desktop-only {
   display: block;
