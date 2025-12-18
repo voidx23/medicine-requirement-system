@@ -69,17 +69,13 @@ const Medicines = () => {
            <h1 className="header-title" style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Medicines</h1>
            <p style={{ color: 'var(--text-muted)' }}>Manage your medicine inventory</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem', width: '100%', flexWrap: 'wrap' }}>
-          <div style={{ flex: '1 0 auto' }}>
-            <Button onClick={() => setIsImportModalOpen(true)} variant="outline" icon={FileSpreadsheet} style={{ width: '100%', justifyContent: 'center' }}>
-                Import from Excel
-            </Button>
-          </div>
-          <div style={{ flex: '1 0 auto' }}>
-            <Button onClick={handleAdd} icon={Plus} style={{ width: '100%', justifyContent: 'center' }}>
-                Add Medicine
-            </Button>
-          </div>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <Button onClick={() => setIsImportModalOpen(true)} variant="outline" icon={FileSpreadsheet}>
+            Import from Excel
+          </Button>
+          <Button onClick={handleAdd} icon={Plus}>
+            Add Medicine
+          </Button>
         </div>
       </div>
 

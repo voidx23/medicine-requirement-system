@@ -102,22 +102,19 @@ const Dashboard = () => {
            <p style={{ color: 'var(--text-muted)' }}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
         
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
-            <div className="glass-panel" style={{ padding: '0.5rem 1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--primary)', flex: '1 0 auto' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div className="glass-panel" style={{ padding: '0.5rem 1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--primary)' }}>
                 <FileText size={18} />
                 <span style={{ fontWeight: 600 }}>{list.items.length} Items</span>
             </div>
-            <div style={{ flex: '1 0 auto' }}>
-                <Button 
-                    onClick={handleGeneratePDF} 
-                    disabled={pdfLoading || list.items.length === 0}
-                    icon={Download}
-                    isLoading={pdfLoading}
-                    style={{ width: '100%', justifyContent: 'center' }}
-                >
-                    Download PDF
-                </Button>
-            </div>
+            <Button 
+                onClick={handleGeneratePDF} 
+                disabled={pdfLoading || list.items.length === 0}
+                icon={Download}
+                isLoading={pdfLoading}
+            >
+                Download PDF
+            </Button>
         </div>
       </div>
 
