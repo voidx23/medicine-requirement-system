@@ -27,9 +27,7 @@ const Sidebar = () => {
       zIndex: 10
     }}>
       <div style={{ paddingLeft: '0.5rem' }}>
-        <h2 style={{ 
-          fontSize: '1.25rem', 
-          fontWeight: 700, 
+        <div style={{ 
           color: 'var(--primary)',
           display: 'flex',
           alignItems: 'center',
@@ -42,7 +40,7 @@ const Sidebar = () => {
         fill: 'var(--primary)' // works if SVG uses fill="currentColor"
       }}
     />
-        </h2>
+        </div>
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
