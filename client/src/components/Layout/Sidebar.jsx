@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Users, Pill, History } from 'lucide-react';
-import Frame from '../../assets/Frame.svg?react';
+import Frame from '../../assets/frame.svg?react';
 
 const Sidebar = () => {
   const links = [
