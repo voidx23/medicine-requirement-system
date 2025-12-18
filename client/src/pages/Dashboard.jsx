@@ -28,13 +28,33 @@ const Dashboard = () => {
     fetchTodayList();
   }, []);
 
-  const handleAddItem = async (medicineId) => {
+  const handleAddItem = async (medicine) => {
+    // 1. Optimistic Update
+    const tempId = 'temp-' + Date.now();
+    const optimisticItem = {
+        _id: tempId,
+        medicineId: medicine, // Full object from AddItem
+        addedAt: new Date().toISOString()
+    };
+    
+    setList(prev => ({
+        ...prev,
+        items: [...prev.items, optimisticItem] // Add to end
+    }));
+
+    // 2. Background API Call
     try {
-      const response = await api.post('/requirements/add-item', { medicineId });
+      const response = await api.post('/requirements/add-item', { medicineId: medicine._id });
+      // 3. Success: Sync with server state
       setList(response.data);
     } catch (err) {
+      // 4. Failure: Revert
       console.error(err);
       alert(err.response?.data?.message || 'Failed to add item');
+      setList(prev => ({
+        ...prev,
+        items: prev.items.filter(item => item._id !== tempId)
+      }));
     }
   };
 

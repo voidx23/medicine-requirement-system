@@ -40,19 +40,16 @@ const AddItem = ({ onAdd }) => {
     m.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSelect = async (medicine) => {
+  const handleSelect = (medicine) => {
       if (!medicine) return;
-      setLoading(true);
-      try {
-          await onAdd(medicine._id);
-          setSearchTerm('');
-          setIsOpen(false);
-          setHighlightedIndex(-1);
-      } catch (err) {
-          console.error(err);
-      } finally {
-          setLoading(false);
-      }
+      
+      // OPTIMISTIC: Don't wait. Fire and forget.
+      onAdd(medicine);
+      
+      // Reset UI immediately
+      setSearchTerm('');
+      setIsOpen(false);
+      setHighlightedIndex(-1);
   };
 
   const handleKeyDown = (e) => {
