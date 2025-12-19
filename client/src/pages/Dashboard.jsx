@@ -93,7 +93,18 @@ const Dashboard = () => {
       showToast('PDF generated successfully', 'success');
     } catch (err) {
       console.error('PDF Generation failed', err);
-      showToast('Failed to generate PDF. check console.', 'error');
+      // Try to get the blob text if it's a blob response error
+      if (err.response?.data instanceof Blob) {
+          const text = await err.response.data.text();
+          try {
+              const json = JSON.parse(text);
+              showToast(json.message || 'Failed to generate PDF', 'error');
+          } catch (e) {
+              showToast('Failed to generate PDF', 'error');
+          }
+      } else {
+          showToast(err.response?.data?.message || 'Failed to generate PDF', 'error');
+      }
     }
   };
 
@@ -137,6 +148,7 @@ const Dashboard = () => {
         isOpen={pdfModalOpen}
         onClose={() => setPdfModalOpen(false)}
         onGenerate={executePDFGeneration}
+        currentItems={list.items}
       />
     </div>
   );

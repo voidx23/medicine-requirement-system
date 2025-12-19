@@ -4,39 +4,29 @@ import api from '../../services/api';
 import Modal from '../UI/Modal';
 import Button from '../UI/Button';
 
-const PDFOptionsModal = ({ isOpen, onClose, onGenerate }) => {
+const PDFOptionsModal = ({ isOpen, onClose, onGenerate, currentItems = [] }) => {
   const [suppliers, setSuppliers] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState('');
 
-  // Fetch unique suppliers from today's list OR all active suppliers? 
-  // Requirement: "select which ever supplier i need one or multiple and and all"
-  // Better to fetch ALL suppliers so they can choose even if not in list (though that would yield empty results).
-  // Actually, filtering based on what's in the list makes more sense UX-wise, but fetching all is safer standard behavior.
-  // Let's fetch all active suppliers.
+  // Extract relevant suppliers from the actual items list
   useEffect(() => {
-    if (isOpen) {
-      const fetchSuppliers = async () => {
-        setLoading(true);
-        try {
-            const response = await api.get('/suppliers');
-            // Only active suppliers
-            const active = response.data.filter(s => s.isActive !== false);
-            setSuppliers(active);
-            // Default: Select ALL
-            setSelectedIds(active.map(s => s._id));
-        } catch (err) {
-            console.error(err);
-            setError('Failed to load suppliers');
-        } finally {
-            setLoading(false);
-        }
-      };
-      fetchSuppliers();
+    if (isOpen && currentItems.length > 0) {
+        const uniqueSuppliers = {};
+        
+        currentItems.forEach(item => {
+            const supplier = item.medicineId?.supplierId;
+            if (supplier && supplier._id) {
+                uniqueSuppliers[supplier._id] = supplier;
+            }
+        });
+
+        const active = Object.values(uniqueSuppliers).sort((a, b) => a.name.localeCompare(b.name));
+        setSuppliers(active);
+        // Default: Select ALL
+        setSelectedIds(active.map(s => s._id));
     }
-  }, [isOpen]);
+  }, [isOpen, currentItems]);
 
   const toggleSupplier = (id) => {
     setSelectedIds(prev => 
@@ -66,10 +56,8 @@ const PDFOptionsModal = ({ isOpen, onClose, onGenerate }) => {
           Select the suppliers you want to include in this report.
         </p>
 
-        {loading ? (
-             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading suppliers...</div>
-        ) : error ? (
-            <div style={{ color: 'var(--danger)' }}>{error}</div>
+        {suppliers.length === 0 ? (
+             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No suppliers found in list.</div>
         ) : (
             <div style={{ 
                 maxHeight: '300px', 
@@ -140,7 +128,7 @@ const PDFOptionsModal = ({ isOpen, onClose, onGenerate }) => {
           <Button 
             onClick={handleGenerate} 
             isLoading={generating}
-            disabled={selectedIds.length === 0 || loading}
+            disabled={selectedIds.length === 0}
             icon={Printer}
           >
             Generate PDF
