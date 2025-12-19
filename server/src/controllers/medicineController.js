@@ -1,24 +1,43 @@
 import Medicine from '../models/Medicine.js';
 
-// @desc    Get medicines (with search)
-// @route   GET /api/medicines?search=keyword
+// @desc    Get medicines (with search and pagination)
+// @route   GET /api/medicines?search=keyword&page=1&limit=20
 export const getMedicines = async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
         const keyword = req.query.search
             ? {
                 name: {
-                    $regex: req.query.search,
-                    $options: 'i', // case insensitive
+                    // Match start of string OR start of a word (preceded by space)
+                    // Solves: "adol" vs "Panadol" (only Panadol matches if search is "Pan")
+                    // Solves: "Bandage" matches "Melia Bandage"
+                    $regex: new RegExp('(^|\\s)' + req.query.search, 'i'),
                 },
             }
             : {};
 
-        // Find medicines match keyword, populate supplier info
-        const medicines = await Medicine.find({ ...keyword, isActive: true })
-            .populate('supplierId', 'name') // "Join" with Supplier to get name
-            .limit(20); // Limit results for performance
+        const query = { ...keyword, isActive: true };
 
-        res.json(medicines);
+        // 1. Get total count for pagination metadata
+        const totalCount = await Medicine.countDocuments(query);
+
+        // 2. Fetch paginated data
+        const medicines = await Medicine.find(query)
+            .populate('supplierId', 'name')
+            .collation({ locale: 'en', strength: 2 }) // Case-insensitive sort
+            .sort({ name: 1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.json({
+            medicines,
+            currentPage: page,
+            totalPages: Math.ceil(totalCount / limit),
+            totalCount
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
