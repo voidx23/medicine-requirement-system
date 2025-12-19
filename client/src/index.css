@@ -90,6 +90,22 @@ body {
   color: var(--primary);
 }
 
+.btn-icon-danger {
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-icon-danger:hover {
+  background-color: #fee2e2;
+  color: var(--danger);
+  transform: translateY(-1px);
+}
+
 input, select {
   padding: 0.6rem;
   border: 1px solid #cbd5e1;

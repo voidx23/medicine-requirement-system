@@ -111,8 +111,8 @@ const History = () => {
 
                     <button 
                       onClick={() => handleDelete(record._id)}
-                      className="btn-danger"
-                      style={{ alignSelf: 'center', marginLeft: 'auto', border: 'none' }}
+                      className="btn-icon-danger"
+                      style={{ alignSelf: 'center', marginLeft: 'auto' }}
                       title="Delete Record"
                     >
                       <Trash2 size={20} />
