@@ -7,14 +7,14 @@ import RequirementList from '../components/Dashboard/RequirementList';
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 
+import PDFOptionsModal from '../components/Dashboard/PDFOptionsModal';
+
 const Dashboard = () => {
-
-
   const { showConfirm, showToast } = useNotification();
   const [list, setList] = useState({ items: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
 
   const fetchTodayList = async () => {
     try {
@@ -75,12 +75,10 @@ const Dashboard = () => {
     }
   };
 
-  const handleGeneratePDF = async () => {
-    if (list.items.length === 0) return;
-    
-    setPdfLoading(true);
+  // Called from within the Modal
+  const executePDFGeneration = async (selectedSupplierIds) => {
     try {
-      const response = await api.post('/requirements/generate-pdf', { supplierIds: [] }, {
+      const response = await api.post('/requirements/generate-pdf', { supplierIds: selectedSupplierIds }, {
         responseType: 'blob'
       });
       
@@ -95,9 +93,7 @@ const Dashboard = () => {
       showToast('PDF generated successfully', 'success');
     } catch (err) {
       console.error('PDF Generation failed', err);
-      showToast('Failed to generate PDF', 'error');
-    } finally {
-      setPdfLoading(false);
+      showToast('Failed to generate PDF. check console.', 'error');
     }
   };
 
@@ -115,12 +111,11 @@ const Dashboard = () => {
                 <span style={{ fontWeight: 600 }}>{list.items.length} Items</span>
             </div>
             <Button 
-                onClick={handleGeneratePDF} 
-                disabled={pdfLoading || list.items.length === 0}
+                onClick={() => setPdfModalOpen(true)} 
+                disabled={list.items.length === 0}
                 icon={Download}
-                isLoading={pdfLoading}
             >
-                Download PDF
+                Generate PDF
             </Button>
         </div>
       </div>
@@ -137,8 +132,13 @@ const Dashboard = () => {
             onRemove={handleRemoveItem} 
         />
       )}
+
+      <PDFOptionsModal 
+        isOpen={pdfModalOpen}
+        onClose={() => setPdfModalOpen(false)}
+        onGenerate={executePDFGeneration}
+      />
     </div>
   );
 };
-
 export default Dashboard;
