@@ -112,7 +112,7 @@ const History = () => {
                     <button 
                       onClick={() => handleDelete(record._id)}
                       className="btn-icon"
-                      style={{ color: 'var(--danger)', alignSelf: 'center', marginLeft: 'auto' }}
+                      style={{ color: 'var(--danger)', alignSelf: 'center', marginLeft: 'auto', border: 'none' }}
                       title="Delete Record"
                     >
                       <Trash2 size={20} />
