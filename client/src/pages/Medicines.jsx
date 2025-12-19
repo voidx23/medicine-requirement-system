@@ -27,7 +27,11 @@ const Medicines = () => {
     setLoading(true);
     try {
       const response = await api.get(`/medicines?search=${searchTerm}&page=${currPage}&limit=20`);
-      const { medicines: newItems, totalPages } = response.data;
+      
+      // Handle potential response structure mismatch (e.g. if server is old version)
+      const data = response.data;
+      const newItems = data.medicines || (Array.isArray(data) ? data : []);
+      const totalPages = data.totalPages || 1;
       
       setMedicines(prev => isNewSearch ? newItems : [...prev, ...newItems]);
       setHasMore(currPage < totalPages);
