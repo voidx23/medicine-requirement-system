@@ -148,7 +148,10 @@ export const generatePDF = async (req, res) => {
         
         requirementList.items.forEach(item => {
             const medicine = item.medicineId;
+            if (!medicine) return; // Skip if medicine deleted
+
             const supplier = medicine.supplierId;
+            if (!supplier) return; // Skip if supplier deleted
             
             // Only include if supplier is selected (or include all if supplierIds is empty/undefined)
             const isSelected = !supplierIds || supplierIds.length === 0 || supplierIds.includes(supplier._id.toString());
