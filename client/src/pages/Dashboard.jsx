@@ -8,26 +8,7 @@ import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 
 const Dashboard = () => {
-  const [list, setList] = useState({ items: [] });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [pdfLoading, setPdfLoading] = useState(false);
 
-  const fetchTodayList = async () => {
-    try {
-      const response = await api.get('/requirements/today');
-      setList(response.data);
-    } catch (err) {
-      console.error('Failed to fetch list', err);
-      setError('Could not load today\'s list');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTodayList();
-  }, []);
 
   const { showConfirm, showToast } = useNotification();
   const [list, setList] = useState({ items: [] });
