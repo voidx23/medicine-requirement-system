@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Calendar, ChevronRight, Package, Tag, Trash2 } from 'lucide-react';
 import api from '../services/api';
+import { useNotification } from '../context/NotificationContext';
 
 const History = () => {
   const [history, setHistory] = useState([]);
@@ -21,15 +22,22 @@ const History = () => {
     fetchHistory();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete this record?')) {
+  const { showConfirm, showToast } = useNotification();
 
+  const handleDelete = async (id) => {
+    const isConfirmed = await showConfirm(
+      'Are you sure you want to delete this history record? This cannot be undone.'
+    );
+
+    if (isConfirmed) {
       try {
         await api.delete(`/requirements/history/${id}`);
-        setHistory(history.filter(item => item._id !==id))
-
-      }catch(error){
-        console.error ('Error:' ,error);
+        // Refresh the list locally to show change immediately
+        setHistory(history.filter(record => record._id !== id));
+        showToast('History record deleted', 'success');
+      } catch (error) {
+        console.error('Failed to delete:', error);
+        showToast(error.response?.data?.message || 'Failed to delete record', 'error');
       }
     }
   };

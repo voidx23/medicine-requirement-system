@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, FileSpreadsheet, Search } from 'lucide-react';
 import api from '../services/api';
+import { useNotification } from '../context/NotificationContext';
 import SupplierList from '../components/Suppliers/SupplierList';
 import SupplierForm from '../components/Suppliers/SupplierForm';
 import Button from '../components/UI/Button';
@@ -9,6 +10,7 @@ import ImportModal from '../components/UI/ImportModal';
 import Input from '../components/UI/Input';
 
 const Suppliers = () => {
+  const { showConfirm, showToast } = useNotification();
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,6 +24,7 @@ const Suppliers = () => {
       setSuppliers(response.data);
     } catch (error) {
       console.error('Failed to fetch suppliers:', error);
+      showToast('Failed to fetch suppliers', 'error');
     } finally {
       setLoading(false);
     }
@@ -42,12 +45,15 @@ const Suppliers = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this supplier?')) {
+    const isConfirmed = await showConfirm('Are you sure you want to delete this supplier?');
+    if (isConfirmed) {
       try {
         await api.delete(`/suppliers/${id}`);
         fetchSuppliers();
+        showToast('Supplier deleted', 'success');
       } catch (error) {
         console.error('Failed to delete supplier:', error);
+        showToast('Failed to delete supplier', 'error');
       }
     }
   };
@@ -55,6 +61,7 @@ const Suppliers = () => {
   const handleSuccess = () => {
     setIsModalOpen(false);
     fetchSuppliers();
+    showToast(selectedSupplier ? 'Supplier updated' : 'Supplier added', 'success');
   };
 
   const filteredSuppliers = suppliers.filter(supplier => 

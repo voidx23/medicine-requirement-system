@@ -1,12 +1,35 @@
 import { useState, useEffect } from 'react';
 import { Download, FileText } from 'lucide-react';
 import api from '../services/api';
+import { useNotification } from '../context/NotificationContext';
 import AddItem from '../components/Dashboard/AddItem';
 import RequirementList from '../components/Dashboard/RequirementList';
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 
 const Dashboard = () => {
+  const [list, setList] = useState({ items: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const fetchTodayList = async () => {
+    try {
+      const response = await api.get('/requirements/today');
+      setList(response.data);
+    } catch (err) {
+      console.error('Failed to fetch list', err);
+      setError('Could not load today\'s list');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTodayList();
+  }, []);
+
+  const { showConfirm, showToast } = useNotification();
   const [list, setList] = useState({ items: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -47,10 +70,11 @@ const Dashboard = () => {
       const response = await api.post('/requirements/add-item', { medicineId: medicine._id });
       // 3. Success: Sync with server state
       setList(response.data);
+      showToast('Item added to list', 'success');
     } catch (err) {
       // 4. Failure: Revert
       console.error(err);
-      alert(err.response?.data?.message || 'Failed to add item');
+      showToast(err.response?.data?.message || 'Failed to add item', 'error');
       setList(prev => ({
         ...prev,
         items: prev.items.filter(item => item._id !== tempId)
@@ -62,10 +86,11 @@ const Dashboard = () => {
     try {
       // Optimistic updatish - just refresh
       await api.delete(`/requirements/item/${medicineId}`);
+      showToast('Item removed', 'info');
       fetchTodayList();
     } catch (err) {
       console.error(err);
-      alert('Failed to remove item');
+      showToast('Failed to remove item', 'error');
     }
   };
 
@@ -86,9 +111,10 @@ const Dashboard = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      showToast('PDF generated successfully', 'success');
     } catch (err) {
       console.error('PDF Generation failed', err);
-      alert('Failed to generate PDF');
+      showToast('Failed to generate PDF', 'error');
     } finally {
       setPdfLoading(false);
     }

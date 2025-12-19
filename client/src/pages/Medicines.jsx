@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, FileSpreadsheet } from 'lucide-react';
 import api from '../services/api';
+import { useNotification } from '../context/NotificationContext';
 import MedicineList from '../components/Medicines/MedicineList';
 import MedicineForm from '../components/Medicines/MedicineForm';
 import Button from '../components/UI/Button';
@@ -9,6 +10,7 @@ import Modal from '../components/UI/Modal';
 import ImportModal from '../components/UI/ImportModal';
 
 const Medicines = () => {
+  const { showConfirm, showToast } = useNotification();
   const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -22,6 +24,7 @@ const Medicines = () => {
       setMedicines(response.data);
     } catch (error) {
       console.error('Failed to fetch medicines:', error);
+      showToast('Failed to fetch medicines', 'error');
     } finally {
       setLoading(false);
     }
@@ -47,12 +50,15 @@ const Medicines = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this medicine?')) {
+    const isConfirmed = await showConfirm('Are you sure you want to delete this medicine?');
+    if (isConfirmed) {
       try {
         await api.delete(`/medicines/${id}`);
         fetchMedicines(search);
+        showToast('Medicine deleted successfully', 'success');
       } catch (error) {
         console.error('Failed to delete medicine:', error);
+        showToast('Failed to delete medicine', 'error');
       }
     }
   };
@@ -60,6 +66,7 @@ const Medicines = () => {
   const handleSuccess = () => {
     setIsModalOpen(false);
     fetchMedicines(search);
+    showToast(selectedMedicine ? 'Medicine updated' : 'Medicine added', 'success');
   };
 
   return (
