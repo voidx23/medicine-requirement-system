@@ -17,7 +17,11 @@ export const addSupplier = async (req, res) => {
     try {
         const { name, crNo, phone, email } = req.body;
 
-        const supplierExists = await Supplier.findOne({ name });
+        // Case-insensitive check
+        const supplierExists = await Supplier.findOne({
+             name: { $regex: new RegExp(`^${name}$`, 'i') }
+        });
+        
         if (supplierExists) {
             return res.status(400).json({ message: 'Supplier already exists' });
         }
@@ -43,6 +47,16 @@ export const updateSupplier = async (req, res) => {
         const supplier = await Supplier.findById(req.params.id);
 
         if (supplier) {
+            // If name is changing, check duplicate
+            if (name && name.toLowerCase() !== supplier.name.toLowerCase()) {
+                 const duplicate = await Supplier.findOne({
+                    name: { $regex: new RegExp(`^${name}$`, 'i') }
+                 });
+                 if (duplicate) {
+                    return res.status(400).json({ message: 'Supplier name already exists' });
+                 }
+            }
+
             supplier.name = name || supplier.name;
             supplier.crNo = crNo || supplier.crNo;
             supplier.phone = phone || supplier.phone;
