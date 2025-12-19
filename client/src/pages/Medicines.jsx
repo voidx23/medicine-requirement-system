@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, FileSpreadsheet } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
@@ -12,32 +12,68 @@ import ImportModal from '../components/UI/ImportModal';
 const Medicines = () => {
   const { showConfirm, showToast } = useNotification();
   const [medicines, setMedicines] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState(null);
 
-  const fetchMedicines = async (searchTerm = '') => {
+  const fetchMedicines = useCallback(async (currPage, searchTerm, isNewSearch = false) => {
+    if (!hasMore && !isNewSearch && currPage > 1) return;
+    
+    setLoading(true);
     try {
-      const response = await api.get(`/medicines?search=${searchTerm}`);
-      setMedicines(response.data);
+      const response = await api.get(`/medicines?search=${searchTerm}&page=${currPage}&limit=20`);
+      const { medicines: newItems, totalPages } = response.data;
+      
+      setMedicines(prev => isNewSearch ? newItems : [...prev, ...newItems]);
+      setHasMore(currPage < totalPages);
     } catch (error) {
       console.error('Failed to fetch medicines:', error);
       showToast('Failed to fetch medicines', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Dependencies managed by effects
 
+  // 1. Search Effect: Reset everything
   useEffect(() => {
-    // Debounce search
     const timer = setTimeout(() => {
-      fetchMedicines(search);
+      setPage(1);
+      setHasMore(true);
+      fetchMedicines(1, search, true);
     }, 500);
 
     return () => clearTimeout(timer);
   }, [search]);
+
+  // 2. Page Effect: Load more
+  useEffect(() => {
+    if (page > 1) {
+      fetchMedicines(page, search, false);
+    }
+  }, [page]);
+
+  // 3. Infinite Scroll Listener
+  useEffect(() => {
+    const handleScroll = () => {
+      if (
+        window.innerHeight + document.documentElement.scrollTop + 50 >= 
+        document.documentElement.offsetHeight
+      ) {
+        if (!loading && hasMore) {
+          setPage(prev => prev + 1);
+        }
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loading, hasMore]);
+
 
   const handleAdd = () => {
     setSelectedMedicine(null);
@@ -54,7 +90,9 @@ const Medicines = () => {
     if (isConfirmed) {
       try {
         await api.delete(`/medicines/${id}`);
-        fetchMedicines(search);
+        // Refresh list completely
+        setPage(1);
+        fetchMedicines(1, search, true);
         showToast('Medicine deleted successfully', 'success');
       } catch (error) {
         console.error('Failed to delete medicine:', error);
@@ -65,7 +103,8 @@ const Medicines = () => {
 
   const handleSuccess = () => {
     setIsModalOpen(false);
-    fetchMedicines(search);
+    setPage(1);
+    fetchMedicines(1, search, true);
     showToast(selectedMedicine ? 'Medicine updated' : 'Medicine added', 'success');
   };
 
@@ -105,14 +144,22 @@ const Medicines = () => {
          </div>
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Loading...</div>
-      ) : (
-        <MedicineList 
-          medicines={medicines} 
-          onEdit={handleEdit} 
-          onDelete={handleDelete} 
-        />
+      <MedicineList 
+        medicines={medicines} 
+        onEdit={handleEdit} 
+        onDelete={handleDelete} 
+      />
+      
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+          {page === 1 ? 'Loading...' : 'Loading more...'}
+        </div>
+      )}
+
+      {!loading && medicines.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+           No medicines found.
+        </div>
       )}
 
       <Modal
@@ -130,7 +177,10 @@ const Medicines = () => {
       <ImportModal 
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
-        onImportSuccess={() => fetchMedicines(search)}
+        onImportSuccess={() => {
+            setPage(1);
+            fetchMedicines(1, search, true);
+        }}
         type="medicines"
         templateInfo="Excel should have columns: 'Medicine Name' and 'Supplier Name' (must match existing supplier)."
       />

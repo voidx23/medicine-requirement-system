@@ -12,17 +12,29 @@ const AddItem = ({ onAdd }) => {
   const wrapperRef = useRef(null);
 
   useEffect(() => {
-    // Fetch all active medicines for the dropdown
-    const fetchMedicines = async () => {
-        try {
-            const res = await api.get('/medicines');
-            setMedicines(res.data.filter(m => m.isActive));
-        } catch (err) {
-            console.error('Failed to load medicines for selector', err);
-        }
-    };
-    fetchMedicines();
-  }, []);
+    // Debounce search
+    const delayDebounceFn = setTimeout(async () => {
+      if (!searchTerm.trim()) {
+        setMedicines([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const res = await api.get(`/medicines?search=${searchTerm}&limit=10`);
+        // Handle both paginated structure and direct array (legacy support)
+        const items = res.data.medicines || res.data;
+        setMedicines(items);
+        setIsOpen(true);
+      } catch (err) {
+        console.error('Failed to search medicines', err);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
 
   useEffect(() => {
     // Close dropdown when clicking outside
@@ -35,10 +47,6 @@ const AddItem = ({ onAdd }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const filteredMedicines = medicines.filter(m => 
-    m.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const handleSelect = (medicine) => {
       if (!medicine) return;
@@ -53,18 +61,18 @@ const AddItem = ({ onAdd }) => {
   };
 
   const handleKeyDown = (e) => {
-    if (!isOpen || filteredMedicines.length === 0) return;
+    if (!isOpen || medicines.length === 0) return;
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setHighlightedIndex(prev => (prev + 1) % filteredMedicines.length);
+      setHighlightedIndex(prev => (prev + 1) % medicines.length);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setHighlightedIndex(prev => (prev - 1 + filteredMedicines.length) % filteredMedicines.length);
+      setHighlightedIndex(prev => (prev - 1 + medicines.length) % medicines.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (highlightedIndex >= 0) {
-        handleSelect(filteredMedicines[highlightedIndex]);
+        handleSelect(medicines[highlightedIndex]);
       }
     } else if (e.key === 'Escape') {
       setIsOpen(false);
@@ -91,10 +99,11 @@ const AddItem = ({ onAdd }) => {
             value={searchTerm}
             onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setIsOpen(true);
                 setHighlightedIndex(-1);
             }}
-            onFocus={() => setIsOpen(true)}
+            onFocus={() => {
+                if (medicines.length > 0) setIsOpen(true);
+            }}
             onKeyDown={handleKeyDown}
             style={{
                 border: 'none',
@@ -129,12 +138,15 @@ const AddItem = ({ onAdd }) => {
                 padding: '0.5rem'
             }}
         >
-            {filteredMedicines.length > 0 ? (
-                filteredMedicines.map((medicine, index) => (
+            {loading ? (
+                <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    Searching...
+                </div>
+            ) : medicines.length > 0 ? (
+                medicines.map((medicine, index) => (
                     <button
                         key={medicine._id}
                         onClick={() => handleSelect(medicine)}
-                        disabled={loading}
                         style={{
                             width: '100%',
                             textAlign: 'left',
