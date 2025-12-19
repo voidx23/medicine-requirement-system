@@ -60,7 +60,11 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
+      {error && (
+        <div style={{ color: 'var(--danger)', fontSize: '0.9rem', marginBottom: '1rem', background: '#fee2e2', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--danger)' }}>
+          {error}
+        </div>
+      )}
       
       <Input
         id="name"

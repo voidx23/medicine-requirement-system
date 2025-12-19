@@ -50,7 +50,9 @@ export const addMedicine = async (req, res) => {
         let { name, supplierId } = req.body;
         name = name.trim();
 
-        const medicineExists = await Medicine.findOne({ name });
+        const medicineExists = await Medicine.findOne({ 
+            name: { $regex: new RegExp(`^${name}$`, 'i') } 
+        });
         if (medicineExists) {
             return res.status(400).json({ message: 'Medicine already exists' });
         }
@@ -77,7 +79,20 @@ export const updateMedicine = async (req, res) => {
         const medicine = await Medicine.findById(req.params.id);
 
         if (medicine) {
-            medicine.name = name ? name.trim() : medicine.name;
+            const trimmedName = name ? name.trim() : medicine.name;
+            
+            // Check if another medicine has this name (case-insensitive)
+            if (name && trimmedName.toLowerCase() !== medicine.name.toLowerCase()) {
+                const duplicate = await Medicine.findOne({
+                    name: { $regex: new RegExp(`^${trimmedName}$`, 'i') },
+                    _id: { $ne: req.params.id }
+                });
+                if (duplicate) {
+                    return res.status(400).json({ message: 'Medicine already exists' });
+                }
+            }
+
+            medicine.name = trimmedName;
             
             const updatedMedicine = await medicine.save();
             const fullMedicine = await Medicine.findById(updatedMedicine._id).populate('supplierId', 'name');
