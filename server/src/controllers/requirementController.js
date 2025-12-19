@@ -27,6 +27,20 @@ export const getHistory = async (req, res) => {
     }
 };
 
+// @desc Delete requirement list
+// @route DELETE /api/requirements/history/:id
+export const deleteHistory = async (req, res) => {
+    try {
+        const {id } = req.params;
+        await RequirementList.findByIdAndDelete(id);
+        res.json({message: 'Requirement list deleted successfully'});
+    }catch (error) {
+            res.status(500).json({message: error.message});
+        }
+
+    };
+
+
 // @desc    Get today's requirement list (create if not exists)
 // @route   GET /api/requirements/today
 export const getTodayRequirement = async (req, res) => {

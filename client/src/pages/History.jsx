@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, ChevronRight, Package, Tag } from 'lucide-react';
+import { Calendar, ChevronRight, Package, Tag, Trash2 } from 'lucide-react';
 import api from '../services/api';
 
 const History = () => {
@@ -20,6 +20,21 @@ const History = () => {
 
     fetchHistory();
   }, []);
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Delete this record?')) {
+
+      try {
+        await api.delete(`/requirements/history/${id}`);
+        setHistory(history.filter(item => item._id !==id))
+
+      }catch(error){
+        console.error ('Error:' ,error);
+      }
+    }
+  };
+
+
 
   return (
     <div>
@@ -90,12 +105,22 @@ const History = () => {
                                     </span>
                                 )}
                              </div>
+                            
                         </div>
                     </div>
 
                     
                 </div>
+                <button 
+                  onClick={() => handleDelete(record._id)}
+                  className="btn-icon"
+                  style={{ color: 'var(--danger)', alignSelf: 'center', marginLeft: 'auto' }}
+                  title="Delete Record"
+                >
+                  <Trash2 size={20} />
+                </button>
             </div>
+            
           ))}
         </div>
       )}
