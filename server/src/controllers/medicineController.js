@@ -1,4 +1,5 @@
 import Medicine from '../models/Medicine.js';
+import Supplier from '../models/Supplier.js';
 
 // @desc    Get medicines (with search and pagination)
 // @route   GET /api/medicines?search=keyword&page=1&limit=20
@@ -47,9 +48,24 @@ export const getMedicines = async (req, res) => {
 // @route   POST /api/medicines
 export const addMedicine = async (req, res) => {
     try {
-        let { name, supplierId, barcode } = req.body;
+        let { name, supplierId, barcode, supplierName } = req.body;
         name = name.trim();
         const barcodeVal = barcode ? barcode.trim() : '';
+        
+        // If no ID but name provided (e.g. from Excel import), look it up
+        if (!supplierId && supplierName) {
+            const supplier = await Supplier.findOne({ 
+                name: { $regex: new RegExp(`^${supplierName.trim()}`, 'i') } 
+            });
+            if (!supplier) {
+                return res.status(400).json({ message: `Supplier '${supplierName}' not found` });
+            }
+            supplierId = supplier._id;
+        }
+
+        if (!supplierId) {
+             return res.status(400).json({ message: 'Supplier is required' });
+        }
 
         const medicineExists = await Medicine.findOne({ 
             name: { $regex: new RegExp(`^${name}$`, 'i') } 
