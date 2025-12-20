@@ -8,6 +8,7 @@ import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 
 import PDFOptionsModal from '../components/Dashboard/PDFOptionsModal';
+import ServerLoader from '../components/UI/ServerLoader';
 
 const Dashboard = () => {
   const { showConfirm, showToast } = useNotification();
@@ -136,7 +137,7 @@ const Dashboard = () => {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>Loading...</div>
+        <ServerLoader />
       ) : (
         <RequirementList 
             items={list.items} 
