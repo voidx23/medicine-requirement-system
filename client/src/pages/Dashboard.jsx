@@ -16,25 +16,6 @@ const Dashboard = () => {
   const [error, setError] = useState('');
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
 
-  // ... (fetch logic remains same)
-
-  // ...
-
-  // Render logic update
-  return (
-    <div>
-      {/* ... header ... */}
-      
-      {/* ... AddItem ... */}
-
-      {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-            <Loader2 className="animate-spin" size={40} color="var(--primary)" />
-        </div>
-      ) : (
-        <RequirementList 
-            // ...
-
   const fetchTodayList = async () => {
     try {
       const response = await api.get('/requirements/today');
