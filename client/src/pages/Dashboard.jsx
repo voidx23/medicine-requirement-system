@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, Loader2 } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import AddItem from '../components/Dashboard/AddItem';
@@ -8,7 +8,6 @@ import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 
 import PDFOptionsModal from '../components/Dashboard/PDFOptionsModal';
-import ServerLoader from '../components/UI/ServerLoader';
 
 const Dashboard = () => {
   const { showConfirm, showToast } = useNotification();
@@ -16,6 +15,25 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
+
+  // ... (fetch logic remains same)
+
+  // ...
+
+  // Render logic update
+  return (
+    <div>
+      {/* ... header ... */}
+      
+      {/* ... AddItem ... */}
+
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+            <Loader2 className="animate-spin" size={40} color="var(--primary)" />
+        </div>
+      ) : (
+        <RequirementList 
+            // ...
 
   const fetchTodayList = async () => {
     try {
@@ -137,7 +155,10 @@ const Dashboard = () => {
       </div>
 
       {loading ? (
-        <ServerLoader />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+            <Loader2 className="animate-spin" size={40} color="var(--primary)" style={{ animation: 'spin 1s linear infinite' }} />
+            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        </div>
       ) : (
         <RequirementList 
             items={list.items} 
