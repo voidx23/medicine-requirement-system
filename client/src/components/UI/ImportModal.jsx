@@ -105,8 +105,8 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
                 }
             }
             
-            // Artificial small delay to make the UI update visible and "appealing" (and avoid rate limits)
-            await new Promise(r => setTimeout(r, 100));
+            // Artificial small delay removed for speed
+            // await new Promise(r => setTimeout(r, 100));
         }
 
         return summary;
