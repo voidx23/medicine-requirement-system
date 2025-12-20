@@ -75,6 +75,9 @@ const Dashboard = () => {
   };
 
   const handleRemoveItem = async (medicineId) => {
+    const isConfirmed = await showConfirm('Are you sure you want to remove this item?');
+    if (!isConfirmed) return;
+
     try {
       // Optimistic updatish - just refresh
       await api.delete(`/requirements/item/${medicineId}`);
