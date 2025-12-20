@@ -11,6 +11,11 @@ const medicineSchema = new mongoose.Schema({
         ref: 'Supplier',
         required: true
     },
+    barcode: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     isActive: {
         type: Boolean,
         default: true

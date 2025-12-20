@@ -47,8 +47,9 @@ export const getMedicines = async (req, res) => {
 // @route   POST /api/medicines
 export const addMedicine = async (req, res) => {
     try {
-        let { name, supplierId } = req.body;
+        let { name, supplierId, barcode } = req.body;
         name = name.trim();
+        const barcodeVal = barcode ? barcode.trim() : '';
 
         const medicineExists = await Medicine.findOne({ 
             name: { $regex: new RegExp(`^${name}$`, 'i') } 
@@ -57,9 +58,18 @@ export const addMedicine = async (req, res) => {
             return res.status(400).json({ message: 'Medicine already exists' });
         }
 
+        // Check barcode duplicate if provided
+        if (barcodeVal) {
+            const barcodeExists = await Medicine.findOne({ barcode: barcodeVal });
+            if (barcodeExists) {
+                return res.status(400).json({ message: 'Barcode already assigned to another medicine' });
+            }
+        }
+
         const medicine = await Medicine.create({
             name,
-            supplierId
+            supplierId,
+            barcode: barcodeVal
         });
 
         // Fetch again to populate supplier name immediately for frontend
@@ -75,24 +85,37 @@ export const addMedicine = async (req, res) => {
 // @route   PUT /api/medicines/:id
 export const updateMedicine = async (req, res) => {
     try {
-        const { name } = req.body;
-        const medicine = await Medicine.findById(req.params.id);
-
-        if (medicine) {
-            const trimmedName = name ? name.trim() : medicine.name;
-            
-            // Check if another medicine has this name (case-insensitive)
-            if (name && trimmedName.toLowerCase() !== medicine.name.toLowerCase()) {
-                const duplicate = await Medicine.findOne({
-                    name: { $regex: new RegExp(`^${trimmedName}$`, 'i') },
-                    _id: { $ne: req.params.id }
-                });
-                if (duplicate) {
-                    return res.status(400).json({ message: 'Medicine already exists' });
+            const { name, barcode } = req.body;
+            const medicine = await Medicine.findById(req.params.id);
+    
+            if (medicine) {
+                const trimmedName = name ? name.trim() : medicine.name;
+                const trimmedBarcode = barcode !== undefined ? barcode.trim() : medicine.barcode;
+                
+                // Check name duplicate
+                if (name && trimmedName.toLowerCase() !== medicine.name.toLowerCase()) {
+                    const duplicate = await Medicine.findOne({
+                        name: { $regex: new RegExp(`^${trimmedName}$`, 'i') },
+                        _id: { $ne: req.params.id }
+                    });
+                    if (duplicate) {
+                        return res.status(400).json({ message: 'Medicine already exists' });
+                    }
                 }
-            }
 
-            medicine.name = trimmedName;
+                // Check barcode duplicate
+                if (trimmedBarcode && trimmedBarcode !== medicine.barcode) {
+                     const barcodeDuplicate = await Medicine.findOne({
+                        barcode: trimmedBarcode,
+                        _id: { $ne: req.params.id }
+                    });
+                    if (barcodeDuplicate) {
+                        return res.status(400).json({ message: 'Barcode already assigned to another medicine' });
+                    }
+                }
+    
+                medicine.name = trimmedName;
+                medicine.barcode = trimmedBarcode;
             
             const updatedMedicine = await medicine.save();
             const fullMedicine = await Medicine.findById(updatedMedicine._id).populate('supplierId', 'name');

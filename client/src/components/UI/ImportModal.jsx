@@ -67,7 +67,7 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
                     });
                 } else {
                     // Medicines
-                    if (!row['Medicine Name']) throw new Error('Missing Medicine Name');
+                    if (!row['Medicine Name'] && !row['Product']) throw new Error('Missing Product/Medicine Name');
                     // Note: For medicines we might need to look up supplier ID first or api handles name lookup?
                     // Assuming the current backend addMedicine might expect supplierId. 
                     // If the backend expects logic to find supplier by name, we rely on that.
@@ -76,8 +76,9 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
                     // Let's assume the user puts 'Supplier Name' and we might need to handle it.
                     // For now, let's try mapping row data to what addMedicine expects.
                     await api.post('/medicines', {
-                        name: row['Medicine Name'],
-                        supplierName: row['Supplier Name'] || '', // Backend needs to handle name lookup
+                        name: row['Medicine Name'] || row['Product'], // Handle user's "Product" column name preference
+                        barcode: row['Barcode'] || '',
+                        supplierName: row['Supplier Name'] || row['Supplier'] || '', 
                         stock: row['Stock'] || 0
                     });
                 }

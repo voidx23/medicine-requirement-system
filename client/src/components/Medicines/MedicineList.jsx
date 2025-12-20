@@ -1,4 +1,4 @@
-import { Edit2, Trash2 } from 'lucide-react';
+import { Edit2, Trash2, ScanBarcode } from 'lucide-react';
 
 const MedicineList = ({ medicines, onEdit, onDelete }) => {
   if (!medicines || medicines.length === 0) {

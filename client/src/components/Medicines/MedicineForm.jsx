@@ -6,6 +6,7 @@ import api from '../../services/api';
 const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
   const [formData, setFormData] = useState({
     name: '',
+    barcode: '',
     supplierId: ''
   });
   const [suppliers, setSuppliers] = useState([]);
@@ -30,6 +31,7 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
     if (initialData) {
       setFormData({
         name: initialData.name || '',
+        barcode: initialData.barcode || '',
         supplierId: initialData.supplierId?._id || initialData.supplierId || ''
       });
     }
@@ -72,6 +74,14 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
         value={formData.name}
         onChange={handleChange}
         required
+      />
+
+      <Input
+        id="barcode"
+        label="Barcode (Optional)"
+        value={formData.barcode}
+        onChange={handleChange}
+        placeholder="Scan or type barcode"
       />
       
       <div className="flex flex-col gap-1 mb-4">
