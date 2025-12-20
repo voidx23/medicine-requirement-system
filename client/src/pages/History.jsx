@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, ChevronRight, Package, Tag, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
+import Loading from '../components/UI/Loading';
 
 const History = () => {
   const [history, setHistory] = useState([]);
@@ -50,7 +51,7 @@ const History = () => {
       <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Archive of previous daily requirements</p>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Loading...</div>
+        <Loading />
       ) : history.length === 0 ? (
         <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
           No history found.

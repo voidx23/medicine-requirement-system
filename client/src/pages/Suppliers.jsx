@@ -8,6 +8,7 @@ import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 import ImportModal from '../components/UI/ImportModal';
 import Input from '../components/UI/Input';
+import Loading from '../components/UI/Loading';
 
 const Suppliers = () => {
   const { showConfirm, showToast } = useNotification();
@@ -98,7 +99,7 @@ const Suppliers = () => {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>Loading...</div>
+        <Loading />
       ) : (
         <SupplierList 
           suppliers={filteredSuppliers} 

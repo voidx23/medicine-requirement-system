@@ -8,6 +8,7 @@ import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 
 import PDFOptionsModal from '../components/Dashboard/PDFOptionsModal';
+import Loading from '../components/UI/Loading';
 
 const Dashboard = () => {
   const { showConfirm, showToast } = useNotification();
@@ -136,10 +137,7 @@ const Dashboard = () => {
       </div>
 
       {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-            <Loader2 className="animate-spin" size={40} color="var(--primary)" style={{ animation: 'spin 1s linear infinite' }} />
-            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-        </div>
+        <Loading />
       ) : (
         <RequirementList 
             items={list.items} 

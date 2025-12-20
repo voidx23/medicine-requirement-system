@@ -8,6 +8,7 @@ import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
 import Modal from '../components/UI/Modal';
 import ImportModal from '../components/UI/ImportModal';
+import Loading from '../components/UI/Loading';
 
 const Medicines = () => {
   const { showConfirm, showToast } = useNotification();
@@ -155,9 +156,11 @@ const Medicines = () => {
       />
       
       {loading && (
-        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-          {page === 1 ? 'Loading...' : 'Loading more...'}
-        </div>
+        page === 1 ? <Loading /> : (
+            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+              Loading more...
+            </div>
+        )
       )}
 
       {!loading && medicines.length === 0 && (
