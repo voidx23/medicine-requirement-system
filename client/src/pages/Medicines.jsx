@@ -189,7 +189,7 @@ const Medicines = () => {
             fetchMedicines(1, search, true);
         }}
         type="medicines"
-        templateInfo="Excel should have columns: 'Medicine Name' and 'Supplier Name' (must match existing supplier)."
+        templateInfo="Excel Columns: 'Product', 'Barcode', 'Supplier'. (Old format 'Medicine Name' also supported)."
       />
     </div>
   );
