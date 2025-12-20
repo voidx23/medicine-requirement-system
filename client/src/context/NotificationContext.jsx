@@ -41,7 +41,9 @@ export const NotificationProvider = ({ children }) => {
         message,
         onConfirm: async () => {
           setConfirmDialog((prev) => ({ ...prev, isOpen: false }));
-          await onConfirm();
+          if (onConfirm && typeof onConfirm === 'function') {
+              await onConfirm();
+          }
           resolve(true);
         },
         onCancel: () => {
