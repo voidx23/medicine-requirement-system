@@ -30,7 +30,17 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    fetchTodayList();
+    fetchTodayList(); // Initial fetch
+
+    // Poll every 5 seconds for real-time updates
+    const intervalId = setInterval(() => {
+        // We call fetchTodayList silently. 
+        // Since fetches don't set loading=true (only initial state does), 
+        // this updates data without UI flicker.
+        fetchTodayList();
+    }, 5000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleAddItem = async (medicine) => {
