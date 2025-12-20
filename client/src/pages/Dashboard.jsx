@@ -19,7 +19,7 @@ const Dashboard = () => {
 
   const fetchTodayList = async () => {
     try {
-      const response = await api.get('/requirements/today');
+      const response = await api.get(`/requirements/today?_t=${Date.now()}`); // Bypass caching
       setList(response.data);
     } catch (err) {
       console.error('Failed to fetch list', err);
