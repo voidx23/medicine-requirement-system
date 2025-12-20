@@ -118,10 +118,36 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(sheet);
+                
+                // 1. Read as array of arrays to find the header row
+                const aoa = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                
+                if (aoa.length === 0) {
+                    throw new Error('Excel file is empty');
+                }
+
+                // 2. Find row index that contains "Product" or "Medicine Name" or "Name" (for suppliers)
+                let headerRowIndex = 0;
+                const targetColumns = type === 'suppliers' 
+                    ? ['name', 'supplier name'] 
+                    : ['product', 'medicine name', 'barcode', 'supplier'];
+                
+                // Look at first 10 rows safely
+                for (let i = 0; i < Math.min(aoa.length, 10); i++) {
+                    const rowStr = aoa[i].map(c => String(c).toLowerCase()).join(' ');
+                    // Check if this row has at least one of our target headers
+                    if (targetColumns.some(col => rowStr.includes(col))) {
+                        headerRowIndex = i;
+                        break;
+                    }
+                }
+
+                // 3. Parse again using the found header row
+                // range: headerRowIndex tells sheet_to_json where to start
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { range: headerRowIndex });
 
                 if (jsonData.length === 0) {
-                    throw new Error('Excel file is empty');
+                    throw new Error('No data found after header row');
                 }
 
                 const importSummary = await processData(jsonData);
