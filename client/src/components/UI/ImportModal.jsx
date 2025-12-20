@@ -45,7 +45,7 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
 
         for (let i = 0; i < jsonData.length; i++) {
             const row = jsonData[i];
-            const itemName = row['Name'] || row['Medicine Name'] || `Row ${i + 1}`;
+            const itemName = row['Name'] || row['Medicine Name'] || row['Product'] || `Row ${i + 1}`;
             
             // Update Progress
             setProgress({
