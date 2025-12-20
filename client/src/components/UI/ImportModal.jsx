@@ -43,9 +43,21 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
             errors: []
         };
 
+        // Helper to get value case-insensitively
+        const getCellValue = (row, keys) => {
+            const rowKeys = Object.keys(row);
+            for (const key of keys) {
+                const foundKey = rowKeys.find(k => k.trim().toLowerCase() === key.toLowerCase());
+                if (foundKey) return row[foundKey];
+            }
+            return undefined;
+        };
+
         for (let i = 0; i < jsonData.length; i++) {
             const row = jsonData[i];
-            const itemName = row['Name'] || row['Medicine Name'] || row['Product'] || `Row ${i + 1}`;
+            
+            // Try to find name using multiple possible headers
+            const itemName = getCellValue(row, ['Name', 'Medicine Name', 'Product']) || `Row ${i + 1}`;
             
             // Update Progress
             setProgress({
@@ -58,28 +70,25 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
             try {
                 // Determine endpoint and payload based on type
                 if (type === 'suppliers') {
-                    if (!row['Name']) throw new Error('Missing Name');
+                    const name = getCellValue(row, ['Name', 'Supplier Name']);
+                    if (!name) throw new Error('Missing Name');
+                    
                     await api.post('/suppliers', {
-                        name: row['Name'],
-                        crNo: row['CR No'] || '',
-                        phone: row['Phone'] || '',
-                        email: row['Email'] || ''
+                        name: name,
+                        crNo: getCellValue(row, ['CR No', 'CR']) || '',
+                        phone: getCellValue(row, ['Phone', 'Mobile']) || '',
+                        email: getCellValue(row, ['Email']) || ''
                     });
                 } else {
                     // Medicines
-                    if (!row['Medicine Name'] && !row['Product']) throw new Error('Missing Product/Medicine Name');
-                    // Note: For medicines we might need to look up supplier ID first or api handles name lookup?
-                    // Assuming the current backend addMedicine might expect supplierId. 
-                    // If the backend expects logic to find supplier by name, we rely on that.
-                    // If not, this simple client-side logic might fail if complex backend logic was in the import endpoint.
-                    // HOWEVER, user asked for visual feedback. The robust way is to use existing single-item endpoints.
-                    // Let's assume the user puts 'Supplier Name' and we might need to handle it.
-                    // For now, let's try mapping row data to what addMedicine expects.
+                    const name = getCellValue(row, ['Medicine Name', 'Product', 'Name']);
+                    if (!name) throw new Error('Missing Product/Medicine Name');
+                    
                     await api.post('/medicines', {
-                        name: row['Medicine Name'] || row['Product'], // Handle user's "Product" column name preference
-                        barcode: row['Barcode'] || '',
-                        supplierName: row['Supplier Name'] || row['Supplier'] || '', 
-                        stock: row['Stock'] || 0
+                        name: name,
+                        barcode: getCellValue(row, ['Barcode', 'Bar Code']) || '',
+                        supplierName: getCellValue(row, ['Supplier Name', 'Supplier']) || '', 
+                        stock: getCellValue(row, ['Stock', 'Quantity', 'Qty']) || 0
                     });
                 }
                 summary.imported++;
