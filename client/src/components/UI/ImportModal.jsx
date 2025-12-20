@@ -53,20 +53,10 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
             return undefined;
         };
 
-        for (let i = 0; i < jsonData.length; i++) {
-            const row = jsonData[i];
-            
+        const processItem = async (row, index) => {
             // Try to find name using multiple possible headers
-            const itemName = getCellValue(row, ['Name', 'Medicine Name', 'Product']) || `Row ${i + 1}`;
+            const itemName = getCellValue(row, ['Name', 'Medicine Name', 'Product']) || `Row ${index + 1}`;
             
-            // Update Progress
-            setProgress({
-                current: i + 1,
-                total: jsonData.length,
-                currentItem: itemName,
-                percent: Math.round(((i + 1) / jsonData.length) * 100)
-            });
-
             try {
                 // Determine endpoint and payload based on type
                 if (type === 'suppliers') {
@@ -96,17 +86,40 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
                 console.error(`Failed to import ${itemName}`, err);
                 const msg = err.response?.data?.message || err.message || 'Unknown error';
                 
-                // If specific error like "already exists", count as skipped/duplicate if we want.
-                // Or just track errors.
                 if (msg.toLowerCase().includes('duplicate') || msg.toLowerCase().includes('exists')) {
                     summary.skipped++;
                 } else {
                     summary.errors.push(`${itemName}: ${msg}`);
                 }
             }
+        };
+
+        const BATCH_SIZE = 5;
+        let completed = 0;
+
+        for (let i = 0; i < jsonData.length; i += BATCH_SIZE) {
+            const batch = jsonData.slice(i, i + BATCH_SIZE);
             
-            // Artificial small delay removed for speed
-            // await new Promise(r => setTimeout(r, 100));
+            // Update UI before batch starts to show activity
+            const currentItemName = getCellValue(batch[0], ['Name', 'Medicine Name', 'Product']) || `Row ${i + 1}`;
+            setProgress({
+                current: completed,
+                total: jsonData.length,
+                currentItem: `Batch ${Math.floor(i/BATCH_SIZE) + 1} (${currentItemName}...)`,
+                percent: Math.round((completed / jsonData.length) * 100)
+            });
+
+            await Promise.all(batch.map((row, batchIndex) => processItem(row, i + batchIndex)));
+            
+            completed += batch.length;
+            
+            // Update UI after batch
+            setProgress({
+                current: Math.min(completed, jsonData.length),
+                total: jsonData.length,
+                currentItem: 'Processing...',
+                percent: Math.round((Math.min(completed, jsonData.length) / jsonData.length) * 100)
+            });
         }
 
         return summary;
