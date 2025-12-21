@@ -22,9 +22,21 @@ const PDFOptionsModal = ({ isOpen, onClose, onGenerate, currentItems = [] }) => 
         });
 
         const active = Object.values(uniqueSuppliers).sort((a, b) => a.name.localeCompare(b.name));
-        setSuppliers(active);
-        // Default: Select ALL
-        setSelectedIds(active.map(s => s._id));
+        
+        // Fix: Prevent auto-reset when background polling updates currentItems
+        // Only update if the list of suppliers has actually changed
+        setSuppliers(prevSuppliers => {
+             const prevIds = prevSuppliers.map(s => s._id).join(',');
+             const newIds = active.map(s => s._id).join(',');
+             
+             if (prevIds !== newIds) {
+                 // Logic to set selected IDs only if suppliers changed significantly
+                 // For now, if suppliers change, we reset selection to ALL to be safe
+                 setSelectedIds(active.map(s => s._id));
+                 return active;
+             }
+             return prevSuppliers; // Return same ref to avoid re-renders
+        });
     }
   }, [isOpen, currentItems]);
 
