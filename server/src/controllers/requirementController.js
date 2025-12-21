@@ -185,7 +185,7 @@ export const generatePDF = async (req, res) => {
         const BOTTOM_MARGIN = 750; // A4 height is ~841. leaving ~90px bottom margin
         const COL_SNO = 50;
         const COL_NAME = 100;
-        const COL_QTY = 400;
+        // const COL_QTY = 400; // Removed
 
         // Helper: Draw Main Title (Only used once)
         const drawMainTitle = () => {
@@ -199,7 +199,7 @@ export const generatePDF = async (req, res) => {
             doc.font('Helvetica-Bold').fontSize(10);
             doc.text('S.No', COL_SNO, y);
             doc.text('Medicine Name', COL_NAME, y);
-            doc.text('Quantity', COL_QTY, y); 
+            // doc.text('Quantity', COL_QTY, y); // Removed
             
             // Underline
             doc.moveTo(COL_SNO, y + 15).lineTo(550, y + 15).stroke();
@@ -259,9 +259,7 @@ export const generatePDF = async (req, res) => {
                 // Print Name (with width limit to wrap correctly)
                 doc.text(med.name, COL_NAME, currentY, { width: nameWidth });
                 
-                // Draw manual quantity line
-                doc.lineWidth(0.5).moveTo(COL_QTY, currentY + 12).lineTo(COL_QTY + 100, currentY + 12).stroke();
-                doc.lineWidth(1); // Reset
+                // Removed quantity line
                 
                 // Move cursor down by the actual height of the row
                 doc.y = currentY + rowHeight + 5; // 5px padding
