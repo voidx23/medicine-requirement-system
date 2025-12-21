@@ -1,15 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Calendar, ChevronRight, Package, Tag, Trash2 } from 'lucide-react';
+import { Calendar, ChevronRight, Package, Tag, Trash2, Printer } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import Loading from '../components/UI/Loading';
+import PDFOptionsModal from '../components/Dashboard/PDFOptionsModal';
 
 const History = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // PDF State
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [selectedList, setSelectedList] = useState(null);
+
+  const { showConfirm, showToast } = useNotification();
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
       try {
         const response = await api.get('/requirements/history');
         setHistory(response.data);
@@ -19,11 +29,6 @@ const History = () => {
         setLoading(false);
       }
     };
-
-    fetchHistory();
-  }, []);
-
-  const { showConfirm, showToast } = useNotification();
 
   const handleDelete = async (id) => {
     const isConfirmed = await showConfirm(
@@ -43,11 +48,41 @@ const History = () => {
     }
   };
 
+  const handlePrintClick = (record) => {
+      setSelectedList(record);
+      setPdfModalOpen(true);
+  };
 
+  const handleGeneratePDF = async (selectedSupplierIds) => {
+      if (!selectedList) return;
+
+      try {
+          const response = await api.post('/requirements/generate-pdf', { 
+              supplierIds: selectedSupplierIds,
+              listId: selectedList._id // Send specific list ID
+          }, {
+              responseType: 'blob'
+          });
+          
+          // Create blob link to download
+          const dateStr = new Date(selectedList.date).toISOString().split('T')[0];
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `Requirement_List_${dateStr}.pdf`);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          showToast('PDF generated successfully', 'success');
+      } catch (err) {
+          console.error('PDF Generation failed', err);
+          showToast('Failed to generate PDF', 'error');
+      }
+  };
 
   return (
     <div>
-      <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>History</h1>
+      <h1 className="header-title">History</h1>
       <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Archive of previous daily requirements</p>
 
       {loading ? (
@@ -118,20 +153,45 @@ const History = () => {
                         </div>
                     </div>
 
-                    <button 
-                      onClick={() => handleDelete(record._id)}
-                      className="btn-icon-danger"
-                      style={{ alignSelf: 'center', marginLeft: 'auto' }}
-                      title="Delete Record"
-                    >
-                      <Trash2 size={20} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <button 
+                            onClick={() => handlePrintClick(record)}
+                            className="btn-icon"
+                            style={{ 
+                                color: 'var(--primary)', 
+                                padding: '0.5rem', 
+                                borderRadius: '8px', 
+                                border: '1px solid var(--primary-light)',
+                                background: 'white',
+                                cursor: 'pointer'
+                            }}
+                            title="Print PDF"
+                        >
+                        <Printer size={20} />
+                        </button>
+                        
+                        <button 
+                        onClick={() => handleDelete(record._id)}
+                        className="btn-icon-danger"
+                        title="Delete Record"
+                        >
+                        <Trash2 size={20} />
+                        </button>
+                    </div>
                 </div>
             </div>
             
           ))}
         </div>
       )}
+
+      {/* PDF Options Modal */}
+      <PDFOptionsModal 
+        isOpen={pdfModalOpen}
+        onClose={() => setPdfModalOpen(false)}
+        onGenerate={handleGeneratePDF}
+        currentItems={selectedList?.items || []} 
+      />
     </div>
   );
 };

@@ -130,14 +130,26 @@ export const removeItem = async (req, res) => {
 // @route   POST /api/requirements/generate-pdf
 export const generatePDF = async (req, res) => {
     try {
-        const { supplierIds } = req.body; // Array of selected supplier IDs
+        const { supplierIds, listId } = req.body; // accept optional listId
         const today = getTodayDate();
 
-        const requirementList = await RequirementList.findOne({ date: today })
-            .populate({
-                path: 'items.medicineId',
-                populate: { path: 'supplierId', select: 'name phone email' }
-            });
+        let requirementList;
+        
+        if (listId) {
+             // Fetch specific historical list
+             requirementList = await RequirementList.findById(listId)
+                .populate({
+                    path: 'items.medicineId',
+                    populate: { path: 'supplierId', select: 'name phone email' }
+                });
+        } else {
+             // Default to today's list
+             requirementList = await RequirementList.findOne({ date: today })
+                .populate({
+                    path: 'items.medicineId',
+                    populate: { path: 'supplierId', select: 'name phone email' }
+                });
+        }
 
         if (!requirementList || requirementList.items.length === 0) {
             return res.status(400).json({ message: 'No items in today\'s list' });
@@ -175,9 +187,13 @@ export const generatePDF = async (req, res) => {
         // IMPORTANT: autoPageBreak: false is crucial to prevent "S.No on one page, Name on next"
         const doc = new PDFDocument({ margin: 50, autoPageBreak: false });
         
+        // Use the list's actual date for filename
+        const listDate = new Date(requirementList.date);
+        const dateStr = listDate.toISOString().split('T')[0];
+
         // Stream response
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=requirement_${today.toISOString().split('T')[0]}.pdf`);
+        res.setHeader('Content-Disposition', `attachment; filename=requirement_${dateStr}.pdf`);
         
         doc.pipe(res);
 
@@ -190,7 +206,7 @@ export const generatePDF = async (req, res) => {
         // Helper: Draw Main Title (Only used once)
         const drawMainTitle = () => {
              doc.fontSize(20).text('Medicine Requirement List', { align: 'center' });
-             doc.fontSize(12).text(`Date: ${today.toLocaleDateString()}`, { align: 'center' });
+             doc.fontSize(12).text(`Date: ${listDate.toLocaleDateString()}`, { align: 'center' });
              doc.moveDown();
         };
 
