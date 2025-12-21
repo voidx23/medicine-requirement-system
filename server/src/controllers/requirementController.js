@@ -213,7 +213,7 @@ export const generatePDF = async (req, res) => {
         // Helper: Draw Main Title (Only used once)
         const drawMainTitle = () => {
              doc.fontSize(20).text('Medicine Requirement List', { align: 'center' });
-             doc.fontSize(12).text(`Date: ${listDate.toLocaleDateString()}`, { align: 'center' });
+             doc.fontSize(12).text(`Date: ${listDate.toLocaleDateString('en-GB')}`, { align: 'center' });
              doc.moveDown();
         };
 
