@@ -69,7 +69,7 @@ const Sidebar = () => {
       </nav>
       
       <div style={{ marginTop: 'auto', padding: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-        © 2025 Nihal Mohamed Bashir
+        © 2025 voidx23
       </div>
     </aside>
   );
