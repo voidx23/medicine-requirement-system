@@ -172,7 +172,8 @@ export const generatePDF = async (req, res) => {
         }
 
         // Generate PDF
-        const doc = new PDFDocument();
+        // IMPORTANT: autoPageBreak: false is crucial to prevent "S.No on one page, Name on next"
+        const doc = new PDFDocument({ margin: 50, autoPageBreak: false });
         
         // Stream response
         res.setHeader('Content-Type', 'application/pdf');
@@ -180,45 +181,107 @@ export const generatePDF = async (req, res) => {
         
         doc.pipe(res);
 
-        // Header
-        doc.fontSize(20).text('Medicine Requirement List', { align: 'center' });
-        doc.fontSize(12).text(`Date: ${today.toLocaleDateString()}`, { align: 'center' });
-        doc.moveDown();
+        // Constants
+        const BOTTOM_MARGIN = 750; // A4 height is ~841. leaving ~90px bottom margin
+        const COL_SNO = 50;
+        const COL_NAME = 100;
+        const COL_QTY = 400;
+
+        // Helper: Draw Main Title (Only used once)
+        const drawMainTitle = () => {
+             doc.fontSize(20).text('Medicine Requirement List', { align: 'center' });
+             doc.fontSize(12).text(`Date: ${today.toLocaleDateString()}`, { align: 'center' });
+             doc.moveDown();
+        };
+
+        // Helper: Draw Main Table Header
+        const drawTableHeader = (y) => {
+            doc.font('Helvetica-Bold').fontSize(10);
+            doc.text('S.No', COL_SNO, y);
+            doc.text('Medicine Name', COL_NAME, y);
+            doc.text('Quantity', COL_QTY, y); 
+            
+            // Underline
+            doc.moveTo(COL_SNO, y + 15).lineTo(550, y + 15).stroke();
+            doc.y = y + 25; // Move down after header
+        };
+
+        // Initial Title
+        drawMainTitle();
+
+        // Helper to check page break
+        const checkPageBreak = (neededHeight, currentSupplierInfo) => {
+            if (doc.y + neededHeight > BOTTOM_MARGIN) {
+                doc.addPage();
+                
+                // On new page, we DO NOT repeat the Main Title "Medicine Requirement List"
+                // But we DO repeat the Supplier header and Table header if we are in the middle of a list
+
+                if (currentSupplierInfo) {
+                    doc.fontSize(12).font('Helvetica-Bold').text(`Supplier: ${currentSupplierInfo.name} (Cont.)`, { align: 'left' });
+                    doc.moveDown(0.5);
+                    drawTableHeader(doc.y);
+                }
+            }
+        };
 
         // Iterate through grouped suppliers
-        Object.values(groupedItems).forEach((group) => {
+        Object.values(groupedItems).forEach((group, groupIndex) => {
             const { info, medicines } = group;
+
+            // Estimate header height (Supplier Name + Contact + Table Header) ~ 60px
+            checkPageBreak(80, null); // Check if we even have space to start the supplier block
 
             // Supplier Header
             doc.fontSize(14).font('Helvetica-Bold').text(`Supplier: ${info.name}`);
             if (info.phone) doc.fontSize(10).font('Helvetica').text(`Contact: ${info.phone}`);
             doc.moveDown(0.5);
 
-            // Table Header
-            let y = doc.y;
-            doc.font('Helvetica-Bold').fontSize(10);
-            doc.text('S.No', 50, y);
-            doc.text('Medicine Name', 100, y);
-            doc.text('', 400, y); // Placeholder for Quantity if added later
-            
-            doc.underline(50, y + 15, 500, 1).moveDown();
+            // Draw Table Header
+            drawTableHeader(doc.y);
 
             // Medicines
             doc.font('Helvetica').fontSize(12);
             medicines.forEach((med, index) => {
+                const nameWidth = 280; // Width allocated for name
+                // Calculate height this text will take
+                const nameHeight = doc.heightOfString(med.name, { width: nameWidth });
+                const rowHeight = Math.max(nameHeight, 20); // At least 20px
+
+                // Check page break with actual row height
+                checkPageBreak(rowHeight + 10, info);
+
                 const currentY = doc.y;
-                doc.text(`${index + 1}`, 50, currentY);
-                doc.text(med.name, 100, currentY);
-                doc.moveDown(0.5);
+                
+                // Print S.No
+                doc.text(`${index + 1}`, COL_SNO, currentY);
+                
+                // Print Name (with width limit to wrap correctly)
+                doc.text(med.name, COL_NAME, currentY, { width: nameWidth });
+                
+                // Draw manual quantity line
+                doc.lineWidth(0.5).moveTo(COL_QTY, currentY + 12).lineTo(COL_QTY + 100, currentY + 12).stroke();
+                doc.lineWidth(1); // Reset
+                
+                // Move cursor down by the actual height of the row
+                doc.y = currentY + rowHeight + 5; // 5px padding
             });
 
-            doc.moveDown(2); // Space between suppliers
+            doc.moveDown(1.5); // Space between suppliers
+            
+            // Separator line
+            if (groupIndex < Object.values(groupedItems).length - 1) {
+                 if (doc.y < BOTTOM_MARGIN - 20) {
+                     doc.moveTo(50, doc.y).lineTo(550, doc.y).dash(5, {space: 10}).stroke();
+                     doc.undash();
+                     doc.moveDown(1.5);
+                 }
+            }
         });
 
         doc.end();
 
     } catch (error) {
-        // If headers not sent, return error
         if (!res.headersSent) {
             res.status(500).json({ message: error.message });
         }
