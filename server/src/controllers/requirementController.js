@@ -19,7 +19,14 @@ export const getHistory = async (req, res) => {
         const history = await RequirementList.find()
             .sort({ date: -1 }) // Newest first
             .select('date items') // Select fields to show
-            .populate('items.medicineId', 'name'); // Populate medicine name for preview
+            .populate({
+                path: 'items.medicineId',
+                select: 'name supplierId',
+                populate: {
+                    path: 'supplierId',
+                    select: 'name'
+                }
+            });
 
         res.json(history);
     } catch (error) {
