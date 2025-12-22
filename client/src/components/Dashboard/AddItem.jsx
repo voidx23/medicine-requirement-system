@@ -10,31 +10,72 @@ const AddItem = ({ onAdd }) => {
   const [loading, setLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef(null);
+  
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  useEffect(() => {
-    // Debounce search
-    const delayDebounceFn = setTimeout(async () => {
-      if (!searchTerm.trim()) {
+  const fetchMedicines = async (currPage, term, isNewSearch) => {
+    if (!term.trim()) {
         setMedicines([]);
         return;
-      }
-
-      setLoading(true);
-      try {
-        const res = await api.get(`/medicines?search=${searchTerm}&limit=10`);
-        // Handle both paginated structure and direct array (legacy support)
-        const items = res.data.medicines || res.data;
-        setMedicines(items);
-        setIsOpen(true);
-      } catch (err) {
+    }
+    
+    setLoading(true);
+    try {
+        const res = await api.get(`/medicines?search=${term}&page=${currPage}&limit=10`);
+        const newItems = res.data.medicines || res.data || [];
+        const totalPages = res.data.totalPages || 1;
+        
+        setMedicines(prev => {
+            // Filter duplicates just in case
+            const combined = isNewSearch ? newItems : [...prev, ...newItems];
+            const unique = combined.filter((item, index, self) => 
+                index === self.findIndex((t) => (
+                    t._id === item._id
+                ))
+            );
+            return unique;
+        });
+        
+        setHasMore(currPage < totalPages);
+        if (isNewSearch && newItems.length > 0) setIsOpen(true);
+    } catch (err) {
         console.error('Failed to search medicines', err);
-      } finally {
+    } finally {
         setLoading(false);
-      }
+    }
+  };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+        if(searchTerm.trim()) {
+            setPage(1);
+            setHasMore(true);
+            fetchMedicines(1, searchTerm, true);
+        } else {
+            setMedicines([]);
+        }
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
+
+  useEffect(() => {
+      // Load more when page increments
+      if (page > 1) {
+          fetchMedicines(page, searchTerm, false);
+      }
+  }, [page]);
+
+  const handleScroll = (e) => {
+      const { scrollTop, clientHeight, scrollHeight } = e.target;
+      if (scrollHeight - scrollTop <= clientHeight + 50) { // Load when close to bottom
+          if (!loading && hasMore) {
+              setPage(prev => prev + 1);
+          }
+      }
+  };
 
   useEffect(() => {
     // Close dropdown when clicking outside
@@ -126,6 +167,7 @@ const AddItem = ({ onAdd }) => {
       {isOpen && searchTerm && (
         <div 
             className="glass-panel"
+            onScroll={handleScroll}
             style={{
                 position: 'absolute',
                 top: '110%',
@@ -138,7 +180,7 @@ const AddItem = ({ onAdd }) => {
                 padding: '0.5rem'
             }}
         >
-            {loading ? (
+            {loading && page === 1 ? (
                 <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                     Searching...
                 </div>
@@ -174,6 +216,11 @@ const AddItem = ({ onAdd }) => {
                 <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                     No medicines found.
                 </div>
+            )}
+            {loading && page > 1 && (
+                 <div style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                     Loading more...
+                 </div>
             )}
         </div>
       )}
