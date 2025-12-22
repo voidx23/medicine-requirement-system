@@ -51,6 +51,7 @@ const MedicineList = ({ medicines, onEdit, onDelete }) => {
             </button>
           </div>
         </div>
+      );
       })}
     </div>
   );
