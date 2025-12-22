@@ -64,9 +64,54 @@ const Medicines = () => {
     }
   }, []); // Dependencies managed by effects
 
-  // ... (effects remain same)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPage(1);
+      fetchMedicines(1, search, true);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search, fetchMedicines]);
 
-  // ... (handlers remain same)
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + document.documentElement.scrollTop + 1 >= document.documentElement.scrollHeight) {
+        if (!loading && hasMore) {
+          setPage(prev => {
+            const nextPage = prev + 1;
+            fetchMedicines(nextPage, search, false);
+            return nextPage;
+          });
+        }
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loading, hasMore, search, fetchMedicines]);
+
+  const handleAdd = () => {
+    setSelectedMedicine(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (medicine) => {
+    setSelectedMedicine(medicine);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    const isConfirmed = await showConfirm('Are you sure you want to delete this medicine?', 'warning');
+    if (!isConfirmed) return;
+
+    try {
+      await api.delete(`/medicines/${id}`);
+      setMedicines(prev => prev.filter(m => m._id !== id));
+      showToast('Medicine deleted successfully', 'success');
+      setTotalCount(prev => typeof prev === 'number' && prev > 0 ? prev - 1 : prev); 
+    } catch (error) {
+      console.error('Failed to delete medicine:', error);
+      showToast('Failed to delete medicine', 'error');
+    }
+  };
 
   const handleSuccess = () => {
     setIsModalOpen(false);
