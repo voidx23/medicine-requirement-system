@@ -27,8 +27,7 @@ const SupplierProductsModal = ({ isOpen, onClose, supplier }) => {
         setError('');
         try {
             // Fetch medicines filtered by supplierId
-            // We use a large limit to get proper client-side search or could use server search
-            // For now, let's fetch all (limit=100) and filter locally for speed in modal
+           
             const response = await api.get(`/medicines?supplierId=${supplier._id}&limit=100`);
             const data = response.data.medicines || [];
             setMedicines(data);
