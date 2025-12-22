@@ -9,18 +9,21 @@ export const getMedicines = async (req, res) => {
         const limit = parseInt(req.query.limit) || 20;
         const skip = (page - 1) * limit;
 
-        const keyword = req.query.search
+        const { search, supplierId} = req.query;
+
+        const keyword = search
             ? {
                 name: {
-                    // Match start of string OR start of a word (preceded by space)
-                    // Solves: "adol" vs "Panadol" (only Panadol matches if search is "Pan")
-                    // Solves: "Bandage" matches "Melia Bandage"
-                    $regex: new RegExp('(^|\\s)' + req.query.search, 'i'),
+                    $regex: new RegExp('(^|\\s)' + search, 'i'),
                 },
             }
             : {};
 
         const query = { ...keyword, isActive: true };
+
+        if(supplierId) {
+            query.supplierId = supplierId;
+        }
 
         // 1. Get total count for pagination metadata
         const totalCount = await Medicine.countDocuments(query);

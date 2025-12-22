@@ -4,6 +4,7 @@ import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import SupplierList from '../components/Suppliers/SupplierList';
 import SupplierForm from '../components/Suppliers/SupplierForm';
+import SupplierProductsModal from '../components/Suppliers/SupplierProductsModal';
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 import ImportModal from '../components/UI/ImportModal';
@@ -17,6 +18,7 @@ const Suppliers = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [viewingSupplier, setViewingSupplier] = useState(null); // For Products Modal
   const [searchTerm, setSearchTerm] = useState('');
 
   const fetchSuppliers = async () => {
@@ -116,7 +118,8 @@ const Suppliers = () => {
         <SupplierList 
           suppliers={filteredSuppliers} 
           onEdit={handleEdit} 
-          onDelete={handleDelete} 
+          onDelete={handleDelete}
+          onProductView={setViewingSupplier} 
         />
       )}
 
@@ -138,6 +141,12 @@ const Suppliers = () => {
         onImportSuccess={fetchSuppliers}
         type="suppliers"
         templateInfo="Excel should have columns: 'Name' (Required) and 'CR No' (Optional)."
+      />
+
+      <SupplierProductsModal
+        isOpen={!!viewingSupplier}
+        onClose={() => setViewingSupplier(null)}
+        supplier={viewingSupplier}
       />
     </div>
   );
