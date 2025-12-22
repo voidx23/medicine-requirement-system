@@ -76,7 +76,19 @@ const Suppliers = () => {
     <div>
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-           <h1 className="header-title" style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '1rem' }}>Suppliers</h1>
+           <h1 className="header-title" style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+             Suppliers
+             <span style={{ 
+                 fontSize: '0.85rem', 
+                 background: 'var(--primary-light)', 
+                 color: 'var(--primary)', 
+                 padding: '0.2rem 0.6rem', 
+                 borderRadius: '20px',
+                 fontWeight: 600
+             }}>
+                 {suppliers.length}
+             </span>
+           </h1>
            <p style={{ color: 'var(--text-muted)' }}>Manage your medicine suppliers</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
