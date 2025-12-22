@@ -4,6 +4,7 @@ import supplierRoutes from './routes/supplierRoutes.js';
 import medicineRoutes from './routes/medicineRoutes.js';
 import requirementRoutes from './routes/requirementRoutes.js';
 import importRoutes from './routes/importRoutes.js';
+import systemRoutes from './routes/systemRoutes.js';
 
 const app = express();
 
@@ -17,7 +18,7 @@ app.use('/api/suppliers', supplierRoutes);
 app.use('/api/medicines', medicineRoutes);
 app.use('/api/requirements', requirementRoutes);
 app.use('/api/import', importRoutes);
-
+app.use('/api/system', systemRoutes);
 // Basic Route
 app.get('/', (req, res) => {
     res.send('API is running...');
