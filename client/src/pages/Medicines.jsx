@@ -30,16 +30,31 @@ const Medicines = () => {
     try {
       const response = await api.get(`/medicines?search=${searchTerm}&page=${currPage}&limit=20`);
       
-      // Handle potential response structure mismatch (e.g. if server is old version)
-      const data = response.data;
-      const newItems = data.medicines || (Array.isArray(data) ? data : []);
-      const totalPages = data.totalPages || 1;
+      // Robust data handling
+      const data = response.data || {};
+      let newItems = [];
       
-      if (data.totalCount !== undefined) {
-          setTotalCount(data.totalCount);
+      if (Array.isArray(data)) {
+          newItems = data;
+      } else if (data.medicines && Array.isArray(data.medicines)) {
+          newItems = data.medicines;
       }
       
-      setMedicines(prev => isNewSearch ? newItems : [...prev, ...newItems]);
+      const totalPages = data.totalPages || 1;
+      
+      // Update count safely
+      if (typeof data.totalCount === 'number') {
+          setTotalCount(data.totalCount);
+      } else if (Array.isArray(data)) {
+           // Fallback for array response
+           setTotalCount(data.length);
+      }
+      
+      setMedicines(prev => {
+          const combined = isNewSearch ? newItems : [...prev, ...newItems];
+          // Filter out potential nulls/undefineds just in case
+          return combined.filter(item => item && typeof item === 'object');
+      });
       setHasMore(currPage < totalPages);
     } catch (error) {
       console.error('Failed to fetch medicines:', error);
@@ -74,7 +89,7 @@ const Medicines = () => {
                  borderRadius: '20px',
                  fontWeight: 600
              }}>
-                 {totalCount}
+                 {typeof totalCount === 'number' ? totalCount : 0}
              </span>
            </h1>
            <p style={{ color: 'var(--text-muted)' }}>Manage your medicine inventory</p>
