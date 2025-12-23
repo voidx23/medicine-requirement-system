@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { GitCommit, GitBranch, Zap, Barcode, Server, Smartphone, Search, CheckCircle, Tag, Clock } from 'lucide-react';
+import api from '../services/api';
 
 const DevUpdates = () => {
     // Helper to calculate "Time Ago"
@@ -43,10 +44,8 @@ const DevUpdates = () => {
         const fetchCommits = async () => {
             try {
                 // Try to fetch from backend
-                // Note: User needs to implement this endpoint
-                const response = await fetch('http://localhost:5000/api/system/commits');
-                if (!response.ok) throw new Error('Failed to fetch');
-                const data = await response.json();
+                const response = await api.get('/system/commits');
+                const data = response.data;
                 
                 // Group by date (simple grouping for display)
                 const grouped = groupCommits(data);
