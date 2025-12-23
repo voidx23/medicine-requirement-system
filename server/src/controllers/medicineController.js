@@ -104,7 +104,7 @@ export const addMedicine = async (req, res) => {
 // @route   PUT /api/medicines/:id
 export const updateMedicine = async (req, res) => {
     try {
-            const { name, barcode } = req.body;
+            const { name, barcode, supplierId } = req.body;
             const medicine = await Medicine.findById(req.params.id);
     
             if (medicine) {
@@ -135,6 +135,9 @@ export const updateMedicine = async (req, res) => {
     
                 medicine.name = trimmedName;
                 medicine.barcode = trimmedBarcode;
+                if (supplierId) {
+                    medicine.supplierId = supplierId;
+                }
             
             const updatedMedicine = await medicine.save();
             const fullMedicine = await Medicine.findById(updatedMedicine._id).populate('supplierId', 'name');
