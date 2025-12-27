@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Users, Pill, History, GitBranch } from 'lucide-react';
 
 const BottomNav = () => {
-  console.log("nihal");
+
   const links = [
     { to: '/', icon: LayoutDashboard, label: 'Dash' },
     { to: '/medicines', icon: Pill, label: 'Meds' },
