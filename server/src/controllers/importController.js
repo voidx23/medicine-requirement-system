@@ -59,6 +59,11 @@ export const importSuppliers = async (req, res) => {
     }
 };
 
+// Helper to escape regex special characters
+function escapeRegex(text) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+}
+
 // @desc    Import medicines from Excel
 // @route   POST /api/import/medicines
 export const importMedicines = async (req, res) => {
@@ -94,7 +99,7 @@ export const importMedicines = async (req, res) => {
             }
 
             const medicineExists = await Medicine.findOne({ 
-                name: { $regex: new RegExp(`^${medicineName}$`, 'i') },
+                name: { $regex: new RegExp(`^${escapeRegex(medicineName)}$`, 'i') },
                 supplierId: supplier._id 
             });
 

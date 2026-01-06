@@ -1,6 +1,10 @@
 import Medicine from '../models/Medicine.js';
 import Supplier from '../models/Supplier.js';
 
+function escapeRegex(text) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+}
+
 // @desc    Get medicines (with search and pagination)
 // @route   GET /api/medicines?search=keyword&page=1&limit=20
 export const getMedicines = async (req, res) => {
@@ -70,11 +74,14 @@ export const addMedicine = async (req, res) => {
              return res.status(400).json({ message: 'Supplier is required' });
         }
 
+        // Check for duplicate Name + Supplier combination
         const medicineExists = await Medicine.findOne({ 
-            name: { $regex: new RegExp(`^${name}$`, 'i') } 
+            name: { $regex: new RegExp(`^${escapeRegex(name)}$`, 'i') },
+            supplierId: supplierId
         });
+        
         if (medicineExists) {
-            return res.status(400).json({ message: 'Medicine already exists' });
+            return res.status(400).json({ message: 'Medicine already exists for this supplier' });
         }
 
         // Check barcode duplicate if provided
@@ -111,14 +118,14 @@ export const updateMedicine = async (req, res) => {
                 const trimmedName = name ? name.trim() : medicine.name;
                 const trimmedBarcode = barcode !== undefined ? barcode.trim() : medicine.barcode;
                 
-                // Check name duplicate
                 if (name && trimmedName.toLowerCase() !== medicine.name.toLowerCase()) {
                     const duplicate = await Medicine.findOne({
-                        name: { $regex: new RegExp(`^${trimmedName}$`, 'i') },
+                        name: { $regex: new RegExp(`^${escapeRegex(trimmedName)}$`, 'i') },
+                        supplierId: medicine.supplierId, // Must be same supplier
                         _id: { $ne: req.params.id }
                     });
                     if (duplicate) {
-                        return res.status(400).json({ message: 'Medicine already exists' });
+                        return res.status(400).json({ message: 'Medicine already exists for this supplier' });
                     }
                 }
 

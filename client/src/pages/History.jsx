@@ -4,6 +4,8 @@ import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import Loading from '../components/UI/Loading';
 import PDFOptionsModal from '../components/Dashboard/PDFOptionsModal';
+import PasswordModal from '../components/UI/PasswordModal';
+import HistoryDetailsModal from '../components/History/HistoryDetailsModal';
 
 const History = () => {
   const [history, setHistory] = useState([]);
@@ -12,6 +14,14 @@ const History = () => {
   // PDF State
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [selectedList, setSelectedList] = useState(null);
+
+  // Details Modal
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
+
+  // Password Modal Check State
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   const { showConfirm, showToast } = useNotification();
 
@@ -30,28 +40,47 @@ const History = () => {
       }
     };
 
-  const handleDelete = async (id) => {
-    const isConfirmed = await showConfirm(
-      'Are you sure you want to delete this history record? This cannot be undone.'
-    );
+  const handleVerifyDelete = (id) => {
+      setPendingDeleteId(id);
+      setPasswordModalOpen(true);
+  };
 
-    if (isConfirmed) {
-      try {
-        await api.delete(`/requirements/history/${id}`);
-        // Refresh the list locally to show change immediately
-        setHistory(history.filter(record => record._id !== id));
-        showToast('History record deleted', 'success');
-      } catch (error) {
-        console.error('Failed to delete:', error);
-        showToast(error.response?.data?.message || 'Failed to delete record', 'error');
+  const handlePasswordSubmit = (password) => {
+      if (password === "343434") {
+          // Close modal internally via logic, then proceed
+          // But we need to actually do the async op.
+          // The modal expects a boolean return for success/fail validation.
+          performDelete(pendingDeleteId);
+          return true; // Success
       }
+      return false; // Failure (wrong password)
+  };
+
+  const performDelete = async (id) => {
+    // 2. Confirmation (Double check?) 
+    // User already passed password, maybe skip confirm or keep it? 
+    // Let's keep it safe or just delete since password IS the confirm.
+    // The prompt replaced the password check, but 'showConfirm' is a nice UI dialog.
+    // Let's go straight to delete as password is a strong intent.
+      
+    try {
+      await api.delete(`/requirements/history/${id}`);
+      setHistory(history.filter(record => record._id !== id));
+      showToast('History record deleted', 'success');
+    } catch (error) {
+      console.error('Failed to delete:', error);
+      showToast(error.response?.data?.message || 'Failed to delete record', 'error');
     }
   };
+
+  // ... (rest of code)
 
   const handlePrintClick = (record) => {
       setSelectedList(record);
       setPdfModalOpen(true);
   };
+   
+  // ... (handleGeneratePDF) ...
 
   const handleGeneratePDF = async (selectedSupplierIds) => {
       if (!selectedList) return;
@@ -94,7 +123,15 @@ const History = () => {
       ) : (
         <div style={{ display: 'grid', gap: '1rem' }}>
           {history.map((record) => (
-            <div key={record._id} className="glass-panel" style={{ padding: '1.5rem', transition: 'transform 0.2s' }}>
+            <div 
+                key={record._id} 
+                className="glass-panel" 
+                style={{ padding: '1.5rem', transition: 'transform 0.2s', cursor: 'pointer' }}
+                onClick={() => {
+                    setSelectedHistoryItem(record);
+                    setDetailsModalOpen(true);
+                }}
+            >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     
                     <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
@@ -155,7 +192,7 @@ const History = () => {
 
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         <button 
-                            onClick={() => handlePrintClick(record)}
+                            onClick={(e) => { e.stopPropagation(); handlePrintClick(record); }}
                             className="btn-icon"
                             style={{ 
                                 color: 'var(--primary)', 
@@ -171,7 +208,7 @@ const History = () => {
                         </button>
                         
                         <button 
-                        onClick={() => handleDelete(record._id)}
+                        onClick={(e) => { e.stopPropagation(); handleVerifyDelete(record._id); }}
                         className="btn-icon-danger"
                         title="Delete Record"
                         >
@@ -191,6 +228,20 @@ const History = () => {
         onClose={() => setPdfModalOpen(false)}
         onGenerate={handleGeneratePDF}
         currentItems={selectedList?.items || []} 
+      />
+
+      {/* Password Modal */}
+      <PasswordModal
+        isOpen={passwordModalOpen}
+        onClose={() => setPasswordModalOpen(false)}
+        onSubmit={handlePasswordSubmit}
+      />
+      
+      {/* History Details Modal */}
+      <HistoryDetailsModal
+          isOpen={detailsModalOpen}
+          onClose={() => setDetailsModalOpen(false)}
+          data={selectedHistoryItem}
       />
     </div>
   );

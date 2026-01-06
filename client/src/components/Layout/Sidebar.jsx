@@ -1,13 +1,19 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Pill, History, GitBranch } from 'lucide-react';
+import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut, ClipboardList, Truck, FileText } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
+import { useContext } from 'react';
+import AuthContext from '../../context/AuthContext';
 
 const Sidebar = () => {
+  const { logout } = useContext(AuthContext);
   const links = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/suppliers', icon: Users, label: 'Suppliers' },
+    { to: '/requests', icon: ClipboardList, label: 'Requests' },
+    { to: '/suppliers', icon: Truck, label: 'Suppliers' },
     { to: '/medicines', icon: Pill, label: 'Medicines' },
+    { to: '/staff', icon: Users, label: 'Manage Staff' },
     { to: '/history', icon: History, label: 'History' },
+    { to: '/reports', icon: FileText, label: 'Reports' },
     { to: '/updates', icon: GitBranch, label: 'Updates' },
   ];
 
@@ -25,7 +31,9 @@ const Sidebar = () => {
       backgroundColor: 'rgba(255, 255, 255, 0.6)',
       backdropFilter: 'blur(10px)',
       borderRight: '1px solid var(--glass-border)',
-      zIndex: 10
+      zIndex: 10,
+      overflowY: 'auto', // Allow scrolling
+      scrollbarWidth: 'thin', // For Firefox
     }}>
       <div style={{ paddingLeft: '0.5rem' }}>
         <div style={{ 
@@ -44,7 +52,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
         {links.map((link) => (
           <NavLink
             key={link.to}
@@ -67,10 +75,42 @@ const Sidebar = () => {
             {link.label}
           </NavLink>
         ))}
+      <button
+            onClick={logout}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              padding: '0.75rem 1rem',
+              borderRadius: '8px',
+              textDecoration: 'none',
+              color: '#ef4444', 
+              backgroundColor: 'transparent',
+              fontWeight: 500,
+              transition: 'all 0.2s ease',
+              border: '1px solid transparent',
+              width: '100%',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              fontFamily: 'inherit'
+            }}
+            onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = '#fee2e2';
+            }}
+            onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <LogOut size={20} />
+            Logout
+          </button>
       </nav>
       
-      <div style={{ marginTop: 'auto', padding: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-        © 2025 voidx23
+      <div style={{ marginTop: 'auto', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
+
+        <div style={{ padding: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+            © 2025 voidx23
+        </div>
       </div>
     </aside>
   );

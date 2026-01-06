@@ -40,27 +40,6 @@ const DevUpdates = () => {
     const [loading, setLoading] = useState(true);
     const [useStatic, setUseStatic] = useState(false);
 
-    useEffect(() => {
-        const fetchCommits = async () => {
-            try {
-                // Try to fetch from backend
-                const response = await api.get('/system/commits');
-                const data = response.data;
-                
-                // Group by date (simple grouping for display)
-                const grouped = groupCommits(data);
-                setCommits(grouped);
-                setLoading(false);
-            } catch (err) {
-                console.log("Using static data (Backend not ready)", err);
-                setUseStatic(true);
-                setLoading(false);
-            }
-        };
-
-        fetchCommits();
-    }, []);
-
     const groupCommits = (flatCommits) => {
         // Group commits by Date (YYYY-MM-DD)
         const groups = {};
@@ -81,6 +60,27 @@ const DevUpdates = () => {
 
         return Object.values(groups);
     };
+
+    useEffect(() => {
+        const fetchCommits = async () => {
+            try {
+                // Try to fetch from backend
+                const response = await api.get('/system/commits');
+                const data = response.data;
+                
+                // Group by date (simple grouping for display)
+                const grouped = groupCommits(data);
+                setCommits(grouped);
+                setLoading(false);
+            } catch (err) {
+                console.log("Using static data (Backend not ready)", err);
+                setUseStatic(true);
+                setLoading(false);
+            }
+        };
+
+        fetchCommits();
+    }, []);
 
     // Static Data (Fallback)
     const staticUpdates = [

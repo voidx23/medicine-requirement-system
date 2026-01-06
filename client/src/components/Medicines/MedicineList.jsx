@@ -11,10 +11,10 @@ const MedicineList = ({ medicines, onEdit, onDelete }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      {medicines.map((medicine) => {
+      {medicines.map((medicine, index) => {
         if (!medicine) return null;
         return (
-        <div key={medicine._id || Math.random()} className="glass-panel" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+        <div key={medicine._id || index} className="glass-panel" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
           <div>
              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.25rem' }}>{medicine.name}</h3>
              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>

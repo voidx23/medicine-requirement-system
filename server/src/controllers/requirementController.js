@@ -2,15 +2,132 @@ import PDFDocument from 'pdfkit';
 import RequirementList from '../models/RequirementList.js';
 
 // Helper to get today's date with time set to 00:00:00
+// Helper to get today's date (Dubai Midnight)
 const getTodayDate = () => {
-    // Create date with UTC+4 (Gulf Standard Time) offset
+    // Current time
     const now = new Date();
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const dubaiTime = new Date(utc + (3600000 * 4));
+    // UTC Timestamp
+    const utcTimestamp = now.getTime();
     
-    dubaiTime.setHours(0, 0, 0, 0);
-    return dubaiTime;
+    // Dubai is UTC+4. 
+    // We want the timestamp that REPRESENTS Dubai Midnight.
+    // Dubai Midnight = 00:00 Dubai = 20:00 UTC (Previous Day).
+    
+    // Algorithm to find this specific timestamp regardless of server TZ:
+    // 1. Add 4 hours to current UTC timestamp. This gives us a timestamp where 
+    //    the UTC value matches the Dubai wall-clock time.
+    const dubaiOffset = 4 * 60 * 60 * 1000;
+    const dubaiFakeUTC = new Date(utcTimestamp + dubaiOffset);
+    
+    // 2. Floor to Day Start using UTC methods.
+    dubaiFakeUTC.setUTCHours(0, 0, 0, 0);
+    
+    // 3. Subtract the offset to get back to the Real UTC timestamp.
+    const dubaiMidnightRealUTC = new Date(dubaiFakeUTC.getTime() - dubaiOffset);
+    
+    return dubaiMidnightRealUTC;
 };
+
+// --- Shared Helper for Report Logic ---
+const fetchReportDataHelper = async ({ startDate, endDate, supplierIds, listId }) => {
+    let itemsToProcess = [];
+    let reportTitleDate = '';
+
+    if (listId) {
+        // Single List Mode (Existing behavior)
+        const list = await RequirementList.findById(listId)
+            .populate({
+                path: 'items.medicineId',
+                select: 'name supplierId',
+                populate: { path: 'supplierId', select: 'name phone email' }
+            });
+        
+        if (list) {
+            itemsToProcess = list.items;
+            reportTitleDate = new Date(list.date);
+        }
+    } else {
+        // Date Range Mode (New Report Feature)
+        // Default to today if no dates provided
+        let query = {};
+        
+        if (startDate && endDate) {
+            // Adjust dates to cover full days (Start of startDate to End of endDate)
+            const sDate = new Date(startDate); 
+            sDate.setHours(0,0,0,0);
+            
+            const eDate = new Date(endDate);
+            eDate.setHours(23,59,59,999);
+
+            query.date = { $gte: sDate, $lte: eDate };
+            // Ensure proper string formatting for the report title
+            reportTitleDate = `${sDate.toLocaleDateString('en-GB')} - ${eDate.toLocaleDateString('en-GB')}`;
+        } else {
+            // Fallback to Today
+            const today = getTodayDate();
+            query.date = today;
+            reportTitleDate = today;
+        }
+
+        const lists = await RequirementList.find(query)
+            .populate({
+                path: 'items.medicineId',
+                select: 'name supplierId',
+                populate: { path: 'supplierId', select: 'name phone email' }
+            });
+
+        // Flatten all items from all found lists
+        lists.forEach(list => {
+            itemsToProcess = itemsToProcess.concat(list.items);
+        });
+    }
+
+    if (!itemsToProcess.length) {
+        return { groupedItems: {}, dateStr: reportTitleDate, totalItems: 0 };
+    }
+
+    // Process & Deduplicate
+    const groupedItems = {};
+    const processedMedicineIds = new Set(); 
+
+    itemsToProcess.forEach(item => {
+        const medicine = item.medicineId;
+        if (!medicine) return; // Skip deleted medicines
+
+        const supplier = medicine.supplierId;
+        if (!supplier) return; // Skip deleted suppliers
+
+        // Filter by specific suppliers if requested
+        if (supplierIds && supplierIds.length > 0 && !supplierIds.includes(supplier._id.toString())) {
+            return;
+        }
+
+        const supplierId = supplier._id.toString();
+
+        if (!groupedItems[supplierId]) {
+            groupedItems[supplierId] = {
+                info: supplier,
+                medicines: [] 
+            };
+        }
+
+        // Deduplication Check
+        // We create a unique key: SupplierID + MedicineID
+        const uniqueKey = `${supplierId}-${medicine._id.toString()}`;
+        
+        if (!processedMedicineIds.has(uniqueKey)) {
+            groupedItems[supplierId].medicines.push(medicine);
+            processedMedicineIds.add(uniqueKey);
+        }
+    });
+
+    return { 
+        groupedItems, 
+        dateStr: reportTitleDate,
+        totalItems: processedMedicineIds.size
+    };
+};
+
 
 // @desc    Get all requirement lists (History)
 // @route   GET /api/requirements/history
@@ -133,74 +250,58 @@ export const removeItem = async (req, res) => {
     }
 };
 
-// @desc    Generate PDF grouped by supplier
+// @desc    Get Report Data (JSON) for Preview
+// @route   POST /api/requirements/report-data
+export const getReportData = async (req, res) => {
+    try {
+        const { startDate, endDate, supplierIds } = req.body;
+        
+        const { groupedItems, totalItems } = await fetchReportDataHelper({ 
+            startDate, endDate, supplierIds 
+        });
+
+        // Convert grouped object to array for easier frontend map
+        const result = Object.values(groupedItems).map(group => ({
+            supplier: group.info,
+            medicines: group.medicines
+        }));
+
+        res.json({ data: result, totalItems });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+
+// @desc    Generate PDF (Grouped by supplier, Deduplicated)
 // @route   POST /api/requirements/generate-pdf
 export const generatePDF = async (req, res) => {
     try {
-        const { supplierIds, listId } = req.body; // accept optional listId
-        const today = getTodayDate();
+        const { supplierIds, listId, startDate, endDate } = req.body;
 
-        let requirementList;
-        
-        if (listId) {
-             // Fetch specific historical list
-             requirementList = await RequirementList.findById(listId)
-                .populate({
-                    path: 'items.medicineId',
-                    populate: { path: 'supplierId', select: 'name phone email' }
-                });
-        } else {
-             // Default to today's list
-             requirementList = await RequirementList.findOne({ date: today })
-                .populate({
-                    path: 'items.medicineId',
-                    populate: { path: 'supplierId', select: 'name phone email' }
-                });
-        }
-
-        if (!requirementList || requirementList.items.length === 0) {
-            return res.status(400).json({ message: 'No items in today\'s list' });
-        }
-
-        // Group items by Supplier
-        const groupedItems = {};
-        
-        requirementList.items.forEach(item => {
-            const medicine = item.medicineId;
-            if (!medicine) return; // Skip if medicine deleted
-
-            const supplier = medicine.supplierId;
-            if (!supplier) return; // Skip if supplier deleted
-            
-            // Only include if supplier is selected (or include all if supplierIds is empty/undefined)
-            const isSelected = !supplierIds || supplierIds.length === 0 || supplierIds.includes(supplier._id.toString());
-            
-            if (isSelected) {
-                if (!groupedItems[supplier._id]) {
-                    groupedItems[supplier._id] = {
-                        info: supplier,
-                        medicines: []
-                    };
-                }
-                groupedItems[supplier._id].medicines.push(medicine);
-            }
+        const { groupedItems, dateStr, totalItems } = await fetchReportDataHelper({ 
+            startDate, endDate, supplierIds, listId 
         });
 
-        if (Object.keys(groupedItems).length === 0) {
-            return res.status(400).json({ message: 'No items found for selected suppliers' });
+        if (totalItems === 0) {
+            return res.status(400).json({ message: 'No items found for the selected criteria' });
         }
 
         // Generate PDF
         // IMPORTANT: autoPageBreak: false is crucial to prevent "S.No on one page, Name on next"
         const doc = new PDFDocument({ margin: 50, autoPageBreak: false });
         
-        // Use the list's actual date for filename
-        const listDate = new Date(requirementList.date);
-        const dateStr = listDate.toISOString().split('T')[0];
+        let filenameDate = 'report';
+        if (dateStr instanceof Date) {
+            filenameDate = dateStr.toISOString().split('T')[0];
+        } else {
+             // If dateStr is a range string, sanitize it
+             filenameDate = 'range_report';
+        }
 
         // Stream response
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=requirement_${dateStr}.pdf`);
+        res.setHeader('Content-Disposition', `attachment; filename=requirement_${filenameDate}.pdf`);
         
         doc.pipe(res);
 
@@ -213,7 +314,15 @@ export const generatePDF = async (req, res) => {
         // Helper: Draw Main Title (Only used once)
         const drawMainTitle = () => {
              doc.fontSize(20).text('Medicine Requirement List', { align: 'center' });
-             doc.fontSize(12).text(`Date: ${listDate.toLocaleDateString('en-GB')}`, { align: 'center' });
+             
+             let dateDisplay = '';
+             if (dateStr instanceof Date) {
+                 dateDisplay = dateStr.toLocaleDateString('en-GB');
+             } else {
+                 dateDisplay = String(dateStr);
+             }
+
+             doc.fontSize(12).text(`Date Range: ${dateDisplay}`, { align: 'center' });
              doc.moveDown();
         };
 
@@ -222,7 +331,6 @@ export const generatePDF = async (req, res) => {
             doc.font('Helvetica-Bold').fontSize(10);
             doc.text('S.No', COL_SNO, y);
             doc.text('Medicine Name', COL_NAME, y);
-            // doc.text('Quantity', COL_QTY, y); // Removed
             
             // Underline
             doc.moveTo(COL_SNO, y + 15).lineTo(550, y + 15).stroke();
@@ -281,8 +389,6 @@ export const generatePDF = async (req, res) => {
                 
                 // Print Name (with width limit to wrap correctly)
                 doc.text(med.name, COL_NAME, currentY, { width: nameWidth });
-                
-                // Removed quantity line
                 
                 // Move cursor down by the actual height of the row
                 doc.y = currentY + rowHeight + 5; // 5px padding

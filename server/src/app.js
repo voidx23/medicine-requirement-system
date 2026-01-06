@@ -5,6 +5,9 @@ import medicineRoutes from './routes/medicineRoutes.js';
 import requirementRoutes from './routes/requirementRoutes.js';
 import importRoutes from './routes/importRoutes.js';
 import systemRoutes from './routes/systemRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import requestRoutes from './routes/requestRoutes.js';
+import staffRoutes from './routes/staffRoutes.js';
 
 const app = express();
 
@@ -14,11 +17,14 @@ app.use(json());
 
 // Routes
 console.log('Registering Routes...');
+app.use('/api/auth', authRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/medicines', medicineRoutes);
 app.use('/api/requirements', requirementRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/system', systemRoutes);
+app.use('/api/requests', requestRoutes);
+app.use('/api/staff', staffRoutes);
 // Basic Route
 app.get('/', (req, res) => {
     res.send('API is running...');

@@ -1,7 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Pill, History, GitBranch } from 'lucide-react';
+import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut } from 'lucide-react';
+import { useContext } from 'react';
+import AuthContext from '../../context/AuthContext';
 
 const BottomNav = () => {
+  const { logout } = useContext(AuthContext);
 
   const links = [
     { to: '/', icon: LayoutDashboard, label: 'Dash' },
@@ -54,6 +57,30 @@ const BottomNav = () => {
           )}
         </NavLink>
       ))}
+      
+      <button
+        onClick={logout}
+        style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: 'none',
+            background: 'none',
+            color: '#ef4444',
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            padding: '0.5rem',
+            borderRadius: '12px',
+            flex: 1,
+            height: '100%',
+            gap: '2px',
+            cursor: 'pointer'
+        }}
+      >
+        <LogOut size={22} strokeWidth={2} />
+        <span>Logout</span>
+      </button>
     </nav>
   );
 };

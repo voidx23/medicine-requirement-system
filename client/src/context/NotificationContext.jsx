@@ -19,6 +19,10 @@ export const NotificationProvider = ({ children }) => {
   });
 
   // --- Toasts ---
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
   const showToast = useCallback((message, type = 'info') => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, type }]);
@@ -27,13 +31,10 @@ export const NotificationProvider = ({ children }) => {
     setTimeout(() => {
       removeToast(id);
     }, 3000);
-  }, []);
-
-  const removeToast = useCallback((id) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, []);
+  }, [removeToast]);
 
   // --- Confirm Dialog ---
+
   const showConfirm = useCallback((message, onConfirm) => {
     return new Promise((resolve) => {
       setConfirmDialog({
