@@ -74,3 +74,25 @@ export const updateRequestStatus = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+// @desc    Get Stats (Count of today's requests)
+// @route   GET /api/requests/stats
+// @access  Private
+export const getStats = async (req, res) => {
+    try {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        
+        let query = {
+            createdAt: { $gte: today }
+        };
+
+        if (req.user.role !== 'admin') {
+            query.pharmacistId = req.user._id;
+        }
+
+        const count = await PharmacistRequest.countDocuments(query);
+        res.json({ todayParams: count });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

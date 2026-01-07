@@ -7,9 +7,22 @@ import StaffVerificationModal from '../components/UI/StaffVerificationModal';
 import { useNotification } from '../context/NotificationContext';
 
 const PharmacistNewRequest = () => {
-    const { showConfirm } = useNotification();
-    const [requestItems, setRequestItems] = useState([]);
+    const { showConfirm, showToast } = useNotification();
+    const [requestItems, setRequestItems] = useState(() => {
+        try {
+            const saved = localStorage.getItem('pharmacistRequestDraft');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
+
+    // Save to localStorage whenever items change
+    useEffect(() => {
+        localStorage.setItem('pharmacistRequestDraft', JSON.stringify(requestItems));
+    }, [requestItems]);
     const [verifyModalOpen, setVerifyModalOpen] = useState(false);
+    const [submittedToday, setSubmittedToday] = useState(0);
     
     // Search State
     const [query, setQuery] = useState('');
@@ -23,6 +36,19 @@ const PharmacistNewRequest = () => {
     // Quantity Modal State
     const [qtyModalOpen, setQtyModalOpen] = useState(false);
     const [pendingItem, setPendingItem] = useState(null);
+
+    useEffect(() => {
+        fetchStats();
+    }, []);
+
+    const fetchStats = async () => {
+        try {
+            const { data } = await api.get('/requests/stats');
+            setSubmittedToday(data.todayParams || 0);
+        } catch (error) {
+            console.error('Failed to load stats', error);
+        }
+    };
 
     // Click Outside to close search
     useEffect(() => {
@@ -66,16 +92,16 @@ const PharmacistNewRequest = () => {
     const confirmAdd = (quantity) => {
         if (!pendingItem) return;
 
+        // Check if exists
+        const exists = requestItems.find(item => item._id === pendingItem._id);
+        if (exists) {
+            showToast('Medicine is already in the list. Please update the quantity in the table if needed.', 'error');
+            setQtyModalOpen(false);
+            setPendingItem(null);
+            return;
+        }
+
         setRequestItems(prev => {
-            // Check if exists
-            const exists = prev.find(item => item._id === pendingItem._id);
-            if (exists) {
-                // Update quantity of existing
-                return prev.map(item => item._id === pendingItem._id 
-                    ? { ...item, quantity: item.quantity + quantity }
-                    : item
-                );
-            }
             // Add new
             return [...prev, { ...pendingItem, quantity }];
         });
@@ -111,6 +137,8 @@ const PharmacistNewRequest = () => {
         try {
             await api.post('/requests/submit', { items: requestItems, submittedBy: staffName });
             setRequestItems([]);
+            localStorage.removeItem('pharmacistRequestDraft');
+            fetchStats(); // Refresh count
             
             alert(`Request Submitted Successfully! Signed by: ${staffName}`);
         } catch (error) {
@@ -146,7 +174,16 @@ const PharmacistNewRequest = () => {
             <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
                 <div>
                    <h1 className="header-title" style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Create New Request</h1>
-                   <p style={{ color: 'var(--text-muted)' }}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                   <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', color: 'var(--text-muted)' }}>
+                        <p>{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <div style={{ width: '1px', height: '16px', background: 'rgba(0,0,0,0.1)' }}></div>
+                        <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)', fontWeight: 500 }}>
+                            <span style={{ fontSize: '0.9rem', background: 'rgba(var(--primary-rgb), 0.1)', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>
+                                {submittedToday}
+                            </span>
+                            Requests Submitted Today
+                        </p>
+                   </div>
                 </div>
                 
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>

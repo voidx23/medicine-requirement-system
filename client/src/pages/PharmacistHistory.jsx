@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { RotateCw } from 'lucide-react';
 import api from '../services/api';
 
 import Modal from '../components/UI/Modal';
@@ -9,8 +10,13 @@ const PharmacistHistory = () => {
     const [loading, setLoading] = useState(true);
 
     const fetchHistory = async () => {
+        setLoading(true);
         try {
-            const { data } = await api.get('/requests');
+            // Wait for both the API call AND a minimum delay of 800ms
+            const [{ data }] = await Promise.all([
+                api.get('/requests'),
+                new Promise(resolve => setTimeout(resolve, 800))
+            ]);
             setMyRequests(data);
         } catch (error) {
             console.error("Failed to fetch history", error);
@@ -30,7 +36,39 @@ const PharmacistHistory = () => {
                     <h1 className="header-title">Requirement History</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Track status of your submitted requirements.</p>
                 </div>
-                <button className="btn-secondary" onClick={fetchHistory}>Refresh</button>
+                <button 
+                    onClick={fetchHistory}
+                    disabled={loading}
+                    style={{ 
+                        background: 'rgba(255, 255, 255, 0.8)',
+                        backdropFilter: 'blur(8px)',
+                        border: '1px solid rgba(255, 255, 255, 0.5)',
+                        padding: '0.6rem 1.2rem',
+                        borderRadius: '30px',
+                        display: 'flex', alignItems: 'center', gap: '0.6rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        color: 'var(--primary)',
+                        fontWeight: 600,
+                        fontSize: '0.9rem'
+                    }}
+                    onMouseOver={(e) => { 
+                        if(!loading) {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                        }
+                    }}
+                    onMouseOut={(e) => {
+                        if(!loading) {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)';
+                        }
+                    }}
+                >
+                    <RotateCw size={18} className={loading ? "spin-animation" : ""} />
+                    <span>Refresh</span>
+                </button>
             </div>
 
             {loading ? <div>Loading...</div> : (

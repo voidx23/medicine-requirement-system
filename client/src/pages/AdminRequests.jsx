@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, RotateCw } from 'lucide-react';
 import api from '../services/api';
 
 const AdminRequests = () => {
@@ -8,8 +8,13 @@ const AdminRequests = () => {
     const [expandedId, setExpandedId] = useState(null);
 
     const fetchRequests = async () => {
+        setLoading(true); // Ensure loading state starts
         try {
-            const { data } = await api.get('/requests');
+            // Wait for both the API call AND a minimum delay of 800ms
+            const [{ data }] = await Promise.all([
+                api.get('/requests'),
+                new Promise(resolve => setTimeout(resolve, 800))
+            ]);
             setRequests(data);
         } catch (error) {
             console.error("Failed to fetch requests", error);
@@ -48,7 +53,41 @@ const AdminRequests = () => {
         <div>
             <div className="flex justify-between items-center mb-6" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                 <h1 className="header-title">Pharmacist Requests</h1>
-                <button className="btn-secondary" onClick={fetchRequests}>Refresh</button>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <button 
+                        onClick={fetchRequests}
+                        disabled={loading}
+                        style={{ 
+                            background: 'rgba(255, 255, 255, 0.8)',
+                            backdropFilter: 'blur(8px)',
+                            border: '1px solid rgba(255, 255, 255, 0.5)',
+                            padding: '0.6rem 1.2rem',
+                            borderRadius: '30px',
+                            display: 'flex', alignItems: 'center', gap: '0.6rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s ease',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                            color: 'var(--primary)',
+                            fontWeight: 600,
+                            fontSize: '0.9rem'
+                        }}
+                        onMouseOver={(e) => { 
+                            if(!loading) {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
+                            }
+                        }}
+                        onMouseOut={(e) => {
+                            if(!loading) {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)';
+                            }
+                        }}
+                    >
+                        <RotateCw size={18} className={loading ? "spin-animation" : ""} />
+                        <span>Refresh List</span>
+                    </button>
+                </div>
             </div>
 
             {loading ? <div>Loading...</div> : (
