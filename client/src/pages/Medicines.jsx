@@ -12,81 +12,45 @@ import Loading from '../components/UI/Loading';
 
 const Medicines = () => {
   const { showConfirm, showToast } = useNotification();
-  const [medicines, setMedicines] = useState([]);
+  const [medicines, setMedicines] = useState([]); // Displayed list
+  const [allMedicines, setAllMedicines] = useState([]); // Master list
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [totalCount, setTotalCount] = useState(0); // New state for count
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState(null);
 
-  const fetchMedicines = useCallback(async (currPage, searchTerm, isNewSearch = false) => {
-    if (!hasMore && !isNewSearch && currPage > 1) return;
-    
+  const fetchMedicines = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api.get(`/medicines?search=${searchTerm}&page=${currPage}&limit=20`);
-      
-      // Robust data handling
-      const data = response.data || {};
-      let newItems = [];
-      
-      if (Array.isArray(data)) {
-          newItems = data;
-      } else if (data.medicines && Array.isArray(data.medicines)) {
-          newItems = data.medicines;
-      }
-      
-      const totalPages = data.totalPages || 1;
-      
-      // Update count safely
-      if (typeof data.totalCount === 'number') {
-          setTotalCount(data.totalCount);
-      } else if (Array.isArray(data)) {
-           // Fallback for array response
-           setTotalCount(data.length);
-      }
-      
-      setMedicines(prev => {
-          const combined = isNewSearch ? newItems : [...prev, ...newItems];
-          // Filter out potential nulls/undefineds just in case
-          return combined.filter(item => item && typeof item === 'object');
-      });
-      setHasMore(currPage < totalPages);
+      const response = await api.get('/medicines?limit=all');
+      const data = response.data.medicines || []; // Ensure array
+      setAllMedicines(data);
+      setMedicines(data); // Initially show all
     } catch (error) {
       console.error('Failed to fetch medicines:', error);
       showToast('Failed to fetch medicines', 'error');
     } finally {
       setLoading(false);
     }
-  }, []); // Dependencies managed by effects
+  }, []);
 
+  // Initial Load
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setPage(1);
-      fetchMedicines(1, search, true);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [search, fetchMedicines]);
+    fetchMedicines();
+  }, [fetchMedicines]);
 
+  // Client-Side Search Effect
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.innerHeight + document.documentElement.scrollTop + 1 >= document.documentElement.scrollHeight) {
-        if (!loading && hasMore) {
-          setPage(prev => {
-            const nextPage = prev + 1;
-            fetchMedicines(nextPage, search, false);
-            return nextPage;
-          });
-        }
-      }
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [loading, hasMore, search, fetchMedicines]);
+    const lowerSearch = search.toLowerCase();
+    const filtered = allMedicines.filter(med => 
+        med.name.toLowerCase().includes(lowerSearch) || 
+        med.supplierId?.name?.toLowerCase().includes(lowerSearch) ||
+        med.barcode?.includes(lowerSearch)
+    );
+    setMedicines(filtered);
+  }, [search, allMedicines]);
 
   const handleAdd = () => {
     setSelectedMedicine(null);
@@ -104,9 +68,8 @@ const Medicines = () => {
 
     try {
       await api.delete(`/medicines/${id}`);
-      setMedicines(prev => prev.filter(m => m._id !== id));
+      setAllMedicines(prev => prev.filter(m => m._id !== id)); // Update master list
       showToast('Medicine deleted successfully', 'success');
-      setTotalCount(prev => typeof prev === 'number' && prev > 0 ? prev - 1 : prev); 
     } catch (error) {
       console.error('Failed to delete medicine:', error);
       showToast('Failed to delete medicine', 'error');
@@ -115,8 +78,7 @@ const Medicines = () => {
 
   const handleSuccess = () => {
     setIsModalOpen(false);
-    setPage(1);
-    fetchMedicines(1, search, true);
+    fetchMedicines(); // Reload all
     showToast(selectedMedicine ? 'Medicine updated' : 'Medicine added', 'success');
   };
 
@@ -134,7 +96,7 @@ const Medicines = () => {
                  borderRadius: '20px',
                  fontWeight: 600
              }}>
-                 {typeof totalCount === 'number' ? totalCount : 0}
+                 {allMedicines.length}
              </span>
            </h1>
            <p style={{ color: 'var(--text-muted)' }}>Manage your medicine inventory</p>
@@ -174,13 +136,7 @@ const Medicines = () => {
         onDelete={handleDelete} 
       />
       
-      {loading && (
-        page === 1 ? <Loading /> : (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-              Loading more...
-            </div>
-        )
-      )}
+      {loading && allMedicines.length === 0 && <Loading />}
 
       {!loading && medicines.length === 0 && (
         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
@@ -204,8 +160,7 @@ const Medicines = () => {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         onImportSuccess={() => {
-            setPage(1);
-            fetchMedicines(1, search, true);
+            fetchMedicines();
         }}
         type="medicines"
         templateInfo="Excel Columns: 'Product', 'Barcode', 'Supplier'. (Old format 'Medicine Name' also supported)."

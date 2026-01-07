@@ -13,17 +13,24 @@ const requestSchema = mongoose.Schema({
     items: [{
         medicineId: {
             type: mongoose.Schema.Types.ObjectId,
-            required: true,
-            ref: 'Medicine'
+            ref: 'Medicine',
+            required: false // Allow custom items without ID
         },
-        name: String, // Snapshot of name in case medicine is deleted
+        name: { 
+            type: String, 
+            required: true 
+        },
         quantity: {
             type: Number,
             required: true,
             default: 1
         },
+        isCustom: {
+            type: Boolean,
+            default: false
+        },
         status: {
-            type: String, // 'pending', 'fulfilled', 'rejected' (per item status? or logic uses global?)
+            type: String, 
             default: 'pending' 
         }
     }],

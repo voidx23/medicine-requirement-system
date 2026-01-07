@@ -15,9 +15,10 @@ export const submitRequest = async (req, res) => {
             pharmacistId: req.user._id,
             submittedBy,
             items: items.map(item => ({
-                medicineId: item._id,
+                medicineId: (item.isCustom || item._id?.toString().startsWith('custom-')) ? null : item._id,
                 name: item.name,
-                quantity: item.quantity
+                quantity: item.quantity,
+                isCustom: !!(item.isCustom || item._id?.toString().startsWith('custom-'))
             })),
             status: 'pending'
         });
@@ -42,7 +43,14 @@ export const getRequests = async (req, res) => {
 
         const requests = await PharmacistRequest.find(query)
             .populate('pharmacistId', 'username')
-            .populate('items.medicineId', 'name supplierId')
+            .populate({
+                path: 'items.medicineId',
+                select: 'name supplierId',
+                populate: {
+                    path: 'supplierId',
+                    select: 'name'
+                }
+            })
             .sort({ createdAt: -1 });
 
         res.json(requests);

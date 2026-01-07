@@ -4,6 +4,7 @@ import api from '../services/api';
 import Button from '../components/UI/Button';
 import QuantityModal from '../components/UI/QuantityModal';
 import StaffVerificationModal from '../components/UI/StaffVerificationModal';
+import CustomItemModal from '../components/UI/CustomItemModal';
 import { useNotification } from '../context/NotificationContext';
 
 const PharmacistNewRequest = () => {
@@ -26,6 +27,8 @@ const PharmacistNewRequest = () => {
     
     // Search State
     const [query, setQuery] = useState('');
+
+    const [allMedicines, setAllMedicines] = useState([]); // Master list
     const [results, setResults] = useState([]);
     const [searching, setSearching] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
@@ -35,11 +38,23 @@ const PharmacistNewRequest = () => {
 
     // Quantity Modal State
     const [qtyModalOpen, setQtyModalOpen] = useState(false);
+    const [customModalOpen, setCustomModalOpen] = useState(false);
     const [pendingItem, setPendingItem] = useState(null);
 
     useEffect(() => {
         fetchStats();
+        fetchAllMedicines();
     }, []);
+
+    const fetchAllMedicines = async () => {
+        try {
+            // Fetch ALL medicines for client-side search
+            const { data } = await api.get('/medicines?limit=all');
+            setAllMedicines(data.medicines || []);
+        } catch (error) {
+            console.error('Failed to load medicines', error);
+        }
+    };
 
     const fetchStats = async () => {
         try {
@@ -61,20 +76,17 @@ const PharmacistNewRequest = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Search Function
-    const handleSearch = async (value) => {
+    // Search Function (Client-Side)
+    const handleSearch = (value) => {
         setQuery(value);
         if (value.length > 0) { 
-            setSearching(true);
-            try {
-                const { data } = await api.get(`/medicines?search=${value}&limit=10`);
-                setResults(data.medicines || []);
-                setIsOpen(true);
-            } catch (error) {
-                console.error("Search failed", error);
-            } finally {
-                setSearching(false);
-            }
+            const lowerQuery = value.toLowerCase();
+            const filtered = allMedicines.filter(med => 
+                med.name.toLowerCase().includes(lowerQuery)
+            ).slice(0, 10); // Limit results to 10
+            
+            setResults(filtered);
+            setIsOpen(true);
         } else {
             setResults([]);
             setIsOpen(false);
@@ -114,6 +126,28 @@ const PharmacistNewRequest = () => {
         setHighlightedIndex(-1);
         
         // Refocus search for next item (smoothness!)
+        setTimeout(() => searchInputRef.current?.focus(), 100);
+    };
+
+    const handleAddCustom = (name, quantity) => {
+        // Check duplicate by name (case-insensitive)
+        const exists = requestItems.find(item => item.name.toLowerCase() === name.trim().toLowerCase());
+        if (exists) {
+            showToast('Item with this name already exists in the list.', 'error');
+            return;
+        }
+
+        const newItem = {
+            _id: `custom-${Date.now()}`, // Temporary ID
+            name: name.trim(),
+            supplierId: null, // No supplier
+            quantity,
+            isCustom: true
+        };
+
+        setRequestItems(prev => [...prev, newItem]);
+        setCustomModalOpen(false);
+        showToast('Custom item added to list', 'success');
         setTimeout(() => searchInputRef.current?.focus(), 100);
     };
 
@@ -262,6 +296,21 @@ const PharmacistNewRequest = () => {
                         </div>
                     )}
                 </div>
+
+                
+                {/* Not Found Link */}
+                <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                    <button 
+                        onClick={() => setCustomModalOpen(true)}
+                        style={{ 
+                            background: 'transparent', border: 'none', 
+                            color: 'var(--primary)', fontSize: '0.9rem', 
+                            cursor: 'pointer', textDecoration: 'underline' 
+                        }}
+                    >
+                        Medicine not found? Add it manually
+                    </button>
+                </div>
             </div>
 
             {/* List Section (Matches RequirementList.jsx - Table) */}
@@ -288,12 +337,22 @@ const PharmacistNewRequest = () => {
                                     <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{index + 1}</td>
                                     <td style={{ padding: '1rem', fontWeight: 500 }}>{item.name}</td>
                                     <td style={{ padding: '1rem' }}>
-                                        <span style={{ 
-                                            padding: '0.25rem 0.6rem', background: 'var(--primary-light)', 
-                                            color: 'var(--primary)', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 500
-                                        }}>
-                                            {item.supplierId?.name || 'Unknown'}
-                                        </span>
+                                        {item.isCustom ? (
+                                            <span style={{ 
+                                                padding: '0.25rem 0.6rem', background: '#fef3c7', 
+                                                color: '#d97706', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 500,
+                                                border: '1px solid #fcd34d'
+                                            }}>
+                                                Manual Entry
+                                            </span>
+                                        ) : (
+                                            <span style={{ 
+                                                padding: '0.25rem 0.6rem', background: 'var(--primary-light)', 
+                                                color: 'var(--primary)', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 500
+                                            }}>
+                                                {item.supplierId?.name || 'Unknown'}
+                                            </span>
+                                        )}
                                     </td>
                                     <td style={{ padding: '1rem', textAlign: 'center' }}>
                                         <input 
@@ -337,6 +396,12 @@ const PharmacistNewRequest = () => {
                 isOpen={verifyModalOpen}
                 onClose={() => setVerifyModalOpen(false)}
                 onVerified={handleStaffVerified}
+            />
+
+            <CustomItemModal
+                isOpen={customModalOpen}
+                onClose={() => setCustomModalOpen(false)}
+                onConfirm={handleAddCustom}
             />
         </div>
     );

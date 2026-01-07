@@ -10,7 +10,13 @@ function escapeRegex(text) {
 export const getMedicines = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
+        
+        // If limit is '0' or 'all', return everything (max 10000 for safety)
+        let limit = parseInt(req.query.limit) || 20;
+        if (req.query.limit === '0' || req.query.limit === 'all') {
+            limit = 10000;
+        }
+
         const skip = (page - 1) * limit;
 
         const { search, supplierId} = req.query;

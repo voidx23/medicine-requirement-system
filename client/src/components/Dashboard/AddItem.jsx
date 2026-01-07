@@ -4,78 +4,45 @@ import api from '../../services/api';
 import Button from '../UI/Button';
 
 const AddItem = ({ onAdd }) => {
-  const [medicines, setMedicines] = useState([]);
+  const [medicines, setMedicines] = useState([]); // Filtered results
+  const [allMedicines, setAllMedicines] = useState([]); // Master list
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef(null);
-  
-  // Pagination State
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
 
-  const fetchMedicines = async (currPage, term, isNewSearch) => {
-    if (!term.trim()) {
+  // 1. Fetch ALL medicines on mount
+  useEffect(() => {
+    const fetchAll = async () => {
+        try {
+            const res = await api.get('/medicines?limit=all');
+            setAllMedicines(res.data.medicines || []);
+        } catch (err) {
+            console.error('Failed to load medicines', err);
+        }
+    };
+    fetchAll();
+  }, []);
+
+  // 2. Client-side Filter
+  useEffect(() => {
+    if (!searchTerm.trim()) {
         setMedicines([]);
+        setIsOpen(false);
         return;
     }
-    
-    setLoading(true);
-    try {
-        const res = await api.get(`/medicines?search=${term}&page=${currPage}&limit=10`);
-        const newItems = res.data.medicines || res.data || [];
-        const totalPages = res.data.totalPages || 1;
-        
-        setMedicines(prev => {
-            // Filter duplicates just in case
-            const combined = isNewSearch ? newItems : [...prev, ...newItems];
-            const unique = combined.filter((item, index, self) => 
-                index === self.findIndex((t) => (
-                    t._id === item._id
-                ))
-            );
-            return unique;
-        });
-        
-        setHasMore(currPage < totalPages);
-        if (isNewSearch && newItems.length > 0) setIsOpen(true);
-    } catch (err) {
-        console.error('Failed to search medicines', err);
-    } finally {
-        setLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-        if(searchTerm.trim()) {
-            setPage(1);
-            setHasMore(true);
-            fetchMedicines(1, searchTerm, true);
-        } else {
-            setMedicines([]);
-        }
-    }, 300);
+    const lower = searchTerm.toLowerCase();
+    const filtered = allMedicines.filter(m => 
+        m.name.toLowerCase().includes(lower) || 
+        m.barcode?.includes(lower)
+    ).slice(0, 10); // Limit to 10 for display
 
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm]);
+    setMedicines(filtered);
+    setIsOpen(true);
+  }, [searchTerm, allMedicines]);
 
-  useEffect(() => {
-      // Load more when page increments
-      if (page > 1) {
-          fetchMedicines(page, searchTerm, false);
-      }
-  }, [page]);
 
-  const handleScroll = (e) => {
-      const { scrollTop, clientHeight, scrollHeight } = e.target;
-      if (scrollHeight - scrollTop <= clientHeight + 50) { // Load when close to bottom
-          if (!loading && hasMore) {
-              setPage(prev => prev + 1);
-          }
-      }
-  };
 
   useEffect(() => {
     // Close dropdown when clicking outside
@@ -167,7 +134,6 @@ const AddItem = ({ onAdd }) => {
       {isOpen && searchTerm && (
         <div 
             className="glass-panel"
-            onScroll={handleScroll}
             style={{
                 position: 'absolute',
                 top: '110%',
@@ -180,11 +146,7 @@ const AddItem = ({ onAdd }) => {
                 padding: '0.5rem'
             }}
         >
-            {loading && page === 1 ? (
-                <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    Searching...
-                </div>
-            ) : medicines.length > 0 ? (
+            {medicines.length > 0 ? (
                 medicines.map((medicine, index) => (
                     <button
                         key={medicine._id}
@@ -217,11 +179,7 @@ const AddItem = ({ onAdd }) => {
                     No medicines found.
                 </div>
             )}
-            {loading && page > 1 && (
-                 <div style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                     Loading more...
-                 </div>
-            )}
+
         </div>
       )}
     </div>
