@@ -21,13 +21,15 @@ const Medicines = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState(null);
 
-  const fetchMedicines = useCallback(async () => {
+  // Server-Side Search/Pagination
+  const fetchMedicines = useCallback(async (searchTerm = '') => {
     setLoading(true);
     try {
-      const response = await api.get('/medicines?limit=all');
-      const data = response.data.medicines || []; // Ensure array
-      setAllMedicines(data);
-      setMedicines(data); // Initially show all
+        // Fetch only 50 most relevant items for better performance (User can search for specifics)
+        const response = await api.get(`/medicines?limit=50&search=${encodeURIComponent(searchTerm)}`);
+        const data = response.data.medicines || [];
+        setMedicines(data);
+        setAllMedicines(data); // "All" is now just "Current Page" context
     } catch (error) {
       console.error('Failed to fetch medicines:', error);
       showToast('Failed to fetch medicines', 'error');
@@ -36,21 +38,14 @@ const Medicines = () => {
     }
   }, []);
 
-  // Initial Load
+  // Debounce Search Effect
   useEffect(() => {
-    fetchMedicines();
-  }, [fetchMedicines]);
+    const timer = setTimeout(() => {
+        fetchMedicines(search);
+    }, 500); // 500ms debounce
 
-  // Client-Side Search Effect
-  useEffect(() => {
-    const lowerSearch = search.toLowerCase();
-    const filtered = allMedicines.filter(med => 
-        med.name.toLowerCase().includes(lowerSearch) || 
-        med.supplierId?.name?.toLowerCase().includes(lowerSearch) ||
-        med.barcode?.includes(lowerSearch)
-    );
-    setMedicines(filtered);
-  }, [search, allMedicines]);
+    return () => clearTimeout(timer);
+  }, [search, fetchMedicines]);
 
   const handleAdd = () => {
     setSelectedMedicine(null);

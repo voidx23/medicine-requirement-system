@@ -4,12 +4,12 @@ import BottomNav from './BottomNav';
 
 const Layout = () => {
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', paddingBottom: '80px' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <div className="desktop-only">
         <Sidebar />
       </div>
       
-      <main className="main-content">
+      <main className="main-content" style={{ overflowY: 'auto' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
             <Outlet />
         </div>

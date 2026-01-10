@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, RotateCw } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, RotateCw, Trash2 } from 'lucide-react';
 import api from '../services/api';
+import { useNotification } from '../context/NotificationContext';
+import Button from '../components/UI/Button';
+import PasswordConfirmModal from '../components/UI/PasswordConfirmModal';
 
 const AdminRequests = () => {
+    const { showConfirm, showToast } = useNotification();
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState(null);
+    const [deleteModal, setDeleteModal] = useState({ isOpen: false, requestId: null });
 
     const fetchRequests = async () => {
         setLoading(true); // Ensure loading state starts
@@ -28,12 +33,36 @@ const AdminRequests = () => {
     }, []);
 
     const updateStatus = async (id, status) => {
-        if (!window.confirm(`Are you sure you want to mark this as ${status}?`)) return;
+        const isConfirmed = await showConfirm(`Are you sure you want to mark this as ${status}?`, status === 'rejected' ? 'danger' : 'success');
+        if (!isConfirmed) return;
+
         try {
             await api.put(`/requests/${id}/status`, { status });
-            fetchRequests(); // Refresh list
+            fetchRequests();
+            showToast(`Request marked as ${status}`, status === 'approved' ? 'success' : 'info');
         } catch (error) {
-            alert('Failed to update status');
+            console.error(error);
+            showToast('Failed to update status', 'error');
+        }
+    };
+
+    const handleDeleteClick = (id) => {
+        setDeleteModal({ isOpen: true, requestId: id });
+    };
+
+    const handleConfirmDelete = async (password) => {
+        try {
+            await api.delete(`/requests/${deleteModal.requestId}`, {
+                data: { password } // Send password in body
+            });
+            setDeleteModal({ isOpen: false, requestId: null });
+            fetchRequests();
+            showToast('Request deleted successfully', 'success');
+        } catch (error) {
+             console.error(error);
+             const msg = error.response?.data?.message || 'Failed to delete request';
+             showToast(msg, 'error');
+             throw error; // Re-throw so modal knows it failed
         }
     };
 
@@ -94,7 +123,7 @@ const AdminRequests = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {requests.length === 0 && <p className="text-muted">No requests found.</p>}
                     
-                    {requests.map(req => (
+                    {requests.map((req, index) => (
                         <div key={req._id} className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
                             {/* Header Row */}
                             <div 
@@ -109,6 +138,15 @@ const AdminRequests = () => {
                                 onClick={() => toggleExpand(req._id)}
                             >
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                    {/* Number Badge */}
+                                    <div style={{
+                                        width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary-light)',
+                                        color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontWeight: 'bold', fontSize: '0.85rem'
+                                    }}>
+                                        {requests.length - index}
+                                    </div>
+
                                     <div style={{ 
                                         width: '40px', height: '40px', borderRadius: '50%', 
                                         background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -148,6 +186,7 @@ const AdminRequests = () => {
                                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                             <thead>
                                                 <tr style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                                    <th style={{ paddingBottom: '0.5rem', width: '50px' }}>Sl.No</th>
                                                     <th style={{ paddingBottom: '0.5rem' }}>Medicine</th>
                                                     <th style={{ paddingBottom: '0.5rem' }}>Supplier</th>
                                                     <th style={{ paddingBottom: '0.5rem' }}>Qty</th>
@@ -156,6 +195,7 @@ const AdminRequests = () => {
                                             <tbody>
                                                 {req.items.map((item, idx) => (
                                                     <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
+                                                        <td style={{ padding: '0.75rem 0', color: 'var(--text-muted)' }}>{idx + 1}</td>
                                                         <td style={{ padding: '0.75rem 0' }}>{item.name}</td>
                                                         <td style={{ padding: '0.75rem 0', color: 'var(--text-muted)' }}>{item.medicineId?.supplierId?.name || 'Unknown'}</td>
                                                         <td style={{ padding: '0.75rem 0', fontWeight: 'bold' }}>{item.quantity}</td>
@@ -166,30 +206,57 @@ const AdminRequests = () => {
                                     </div>
 
                                     {/* Action Buttons */}
-                                    {req.status === 'pending' && (
-                                        <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                                            <button 
-                                                className="btn-ghost" 
-                                                style={{ color: '#ef4444', border: '1px solid #ef4444' }}
-                                                onClick={(e) => { e.stopPropagation(); updateStatus(req._id, 'rejected'); }}
-                                            >
-                                                <XCircle size={18} /> Reject
-                                            </button>
-                                            <button 
-                                                className="btn-primary" 
-                                                style={{ background: '#22c55e' }}
-                                                onClick={(e) => { e.stopPropagation(); updateStatus(req._id, 'approved'); }}
-                                            >
-                                                <CheckCircle size={18} /> Mark as Done
-                                            </button>
-                                        </div>
-                                    )}
+                                    {/* Action Buttons */}
+                                    <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                                        <Button 
+                                            variant="danger"
+                                            icon={Trash2}
+                                            style={{ marginRight: 'auto' }}
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteClick(req._id); }}
+                                        >
+                                            Delete
+                                        </Button>
+
+                                        {req.status === 'pending' && (
+                                            <>
+                                                <Button 
+                                                    variant="secondary"
+                                                    icon={XCircle}
+                                                    style={{ 
+                                                        color: '#ef4444', 
+                                                        borderColor: '#fee2e2', 
+                                                        background: '#fff' 
+                                                    }}
+                                                    onClick={(e) => { e.stopPropagation(); updateStatus(req._id, 'rejected'); }}
+                                                >
+                                                    Reject
+                                                </Button>
+                                                <Button 
+                                                    // variant="primary" - Overriding with explicit green
+                                                    className="btn-primary" 
+                                                    style={{ backgroundColor: '#22c55e', borderColor: '#22c55e' }}
+                                                    icon={CheckCircle}
+                                                    onClick={(e) => { e.stopPropagation(); updateStatus(req._id, 'approved'); }}
+                                                >
+                                                    Mark as Done
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>
                     ))}
                 </div>
             )}
+
+            <PasswordConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, requestId: null })}
+                onConfirm={handleConfirmDelete}
+                title="Confirm Deletion"
+                message="This action is permanent and cannot be undone. Please enter your admin password to confirm."
+            />
         </div>
     );
 };

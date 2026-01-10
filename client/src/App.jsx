@@ -8,10 +8,12 @@ import History from './pages/History';
 import DevUpdates from './pages/DevUpdates';
 import Login from './pages/Login';
 import AdminRequests from './pages/AdminRequests';
+import AdminFeedback from './pages/AdminFeedback';
 import ManageStaff from './pages/ManageStaff';
 import Reports from './pages/Reports';
 import PharmacistNewRequest from './pages/PharmacistNewRequest';
 import PharmacistHistory from './pages/PharmacistHistory';
+import PharmacistWhatsNew from './pages/PharmacistWhatsNew';
 import PharmacistLayout from './components/Layout/PharmacistLayout';
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -35,30 +37,8 @@ const AdminRoute = () => {
   return user && user.role === 'admin' ? <Outlet /> : <Navigate to="/pharmacist-dashboard" replace />;
 };
 
-function App() {
-  const [isServerReady, setIsServerReady] = useState(false);
-
-  useEffect(() => {
-    const checkServer = async () => {
-      try {
-        // Simple health check or just relying on auth logic directly
-        // await api.get('/suppliers'); 
-        setIsServerReady(true);
-      } catch (err) {
-        console.error("Server check failed", err);
-        setIsServerReady(true); 
-      }
-    };
-    checkServer();
-  }, []);
-
-  if (!isServerReady) {
-    return (
-        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ServerLoader />
-        </div>
-    );
-  }
+const App = () => {
+    // ... existing provider logic ...
 
   return (
     <AuthProvider>
@@ -81,6 +61,7 @@ function App() {
                         <Route path="staff" element={<ManageStaff />} />
                         <Route path="history" element={<History />} />
                         <Route path="reports" element={<Reports />} />
+                        <Route path="feedback" element={<AdminFeedback />} />
                         <Route path="updates" element={<DevUpdates />} />
                     </Route>
                 </Route>
@@ -90,6 +71,7 @@ function App() {
                     <Route index element={<Navigate to="new" replace />} />
                     <Route path="new" element={<PharmacistNewRequest />} />
                     <Route path="history" element={<PharmacistHistory />} />
+                    <Route path="updates" element={<PharmacistWhatsNew />} />
                 </Route>
                 
                 <Route path="*" element={<Navigate to="/" replace />} />

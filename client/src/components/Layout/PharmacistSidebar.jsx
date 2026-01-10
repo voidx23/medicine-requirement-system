@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { PlusCircle, History, LogOut } from 'lucide-react';
+import { PlusCircle, History, LogOut, Sparkles } from 'lucide-react';
 import { useContext } from 'react';
 import Frame from '../../assets/frame.svg?react';
 import AuthContext from '../../context/AuthContext';
@@ -10,6 +10,7 @@ const PharmacistSidebar = () => {
   const links = [
     { to: '/pharmacist-dashboard/new', icon: PlusCircle, label: 'New Request' },
     { to: '/pharmacist-dashboard/history', icon: History, label: 'Req History' },
+    { to: '/pharmacist-dashboard/updates', icon: Sparkles, label: "What's New" },
   ];
 
   return (

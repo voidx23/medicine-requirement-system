@@ -1,5 +1,5 @@
 import express from 'express';
-import { submitRequest, getRequests, updateRequestStatus, getStats } from '../controllers/requestController.js';
+import { submitRequest, getRequests, updateRequestStatus, getStats, deleteRequest } from '../controllers/requestController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -12,5 +12,6 @@ router.get('/stats', getStats);
 router.post('/submit', submitRequest);
 router.get('/', getRequests);
 router.put('/:id/status', admin, updateRequestStatus);
+router.delete('/:id', admin, deleteRequest);
 
 export default router;

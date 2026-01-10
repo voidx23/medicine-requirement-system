@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut, ClipboardList, Truck, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut, ClipboardList, Truck, FileText, MessageSquare } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
 import { useContext } from 'react';
 import AuthContext from '../../context/AuthContext';
@@ -12,9 +12,10 @@ const Sidebar = () => {
     { to: '/suppliers', icon: Truck, label: 'Suppliers' },
     { to: '/medicines', icon: Pill, label: 'Medicines' },
     { to: '/staff', icon: Users, label: 'Manage Staff' },
-    { to: '/history', icon: History, label: 'History' },
+    { to: '/history', icon: History, label: 'Req History' },
     { to: '/reports', icon: FileText, label: 'Reports' },
-    { to: '/updates', icon: GitBranch, label: 'Updates' },
+    { to: '/feedback', icon: MessageSquare, label: 'Feedback' },
+    { to: '/updates', icon: GitBranch, label: 'Dev Updates' },
   ];
 
   return (

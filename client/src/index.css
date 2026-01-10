@@ -255,3 +255,23 @@ input, select {
 .spin-animation {
   animation: spin 1s linear infinite;
 }
+
+/* Sticky Header with Padding Compensation */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-color);
+  /* Compensate for Main Content Padding (Desktop: 2rem) */
+  margin: -2rem -2rem 0 -2rem;
+  padding: 2rem 2rem 1rem 2rem;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .sticky-header {
+    /* Compensate for Main Content Padding (Mobile: 1rem) */
+    margin: -1rem -1rem 0 -1rem;
+    padding: 1rem 1rem 1rem 1rem;
+  }
+}

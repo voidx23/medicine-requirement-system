@@ -1,4 +1,5 @@
 import PharmacistRequest from '../models/PharmacistRequest.js';
+import User from '../models/User.js';
 
 // @desc    Submit a new requirement list
 // @route   POST /api/requests/submit
@@ -100,6 +101,44 @@ export const getStats = async (req, res) => {
 
         const count = await PharmacistRequest.countDocuments(query);
         res.json({ todayParams: count });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Delete a request (Admin)
+// @route   DELETE /api/requests/:id
+// @access  Private (Admin)
+export const deleteRequest = async (req, res) => {
+    try {
+        const { password } = req.body;
+        const request = await PharmacistRequest.findById(req.params.id);
+
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+
+        // Verify Admin Password
+        const user = await req.user; // User is attached by protect middleware
+        if (!user || user.role !== 'admin') {
+             return res.status(401).json({ message: 'Not authorized' });
+        }
+        
+        // Check password logic (Using the user instance methods if available, or manual compare)
+        // Since `protect` middleware fetches the user without password by default usually, 
+        // we might need to fetch user AGAIN with password.
+        // Let's check middleware/authMiddleware.js to see if it selects password.
+        // Usually it does .select('-password').
+        
+        // So we need to fetch user explicitly with password
+        const adminUser = await User.findById(req.user._id); 
+        
+        if (!password || !(await adminUser.matchPassword(password))) {
+             return res.status(401).json({ message: 'Invalid Admin Password' });
+        }
+
+        await request.deleteOne();
+        res.json({ message: 'Request removed' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

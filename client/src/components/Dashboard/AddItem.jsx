@@ -11,12 +11,26 @@ const AddItem = ({ onAdd }) => {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapperRef = useRef(null);
 
-  // 1. Fetch ALL medicines on mount
+  // 1. Fetch ALL medicines on mount (with Caching)
   useEffect(() => {
     const fetchAll = async () => {
+        // Try to load from cache first for instant load
+        const cached = localStorage.getItem('cachedMedicinesMasterList');
+        if (cached) {
+            try {
+                setAllMedicines(JSON.parse(cached));
+            } catch (e) {
+                console.error("Cache parse error", e);
+            }
+        }
+
         try {
             const res = await api.get('/medicines?limit=all');
-            setAllMedicines(res.data.medicines || []);
+            const meds = res.data.medicines || [];
+            if (meds.length > 0) {
+                setAllMedicines(meds);
+                localStorage.setItem('cachedMedicinesMasterList', JSON.stringify(meds));
+            }
         } catch (err) {
             console.error('Failed to load medicines', err);
         }

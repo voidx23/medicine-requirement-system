@@ -8,15 +8,14 @@ import systemRoutes from './routes/systemRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
 import staffRoutes from './routes/staffRoutes.js';
+import feedbackRoutes from './routes/feedbackRoutes.js';
 
 const app = express();
 
 // Middleware
-app.use(cors());
-app.use(json());
+app.use(express.json()); // Body parser
+app.use(cors()); // Enable CORS
 
-// Routes
-console.log('Registering Routes...');
 app.use('/api/auth', authRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/medicines', medicineRoutes);
@@ -25,6 +24,7 @@ app.use('/api/import', importRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/feedback', feedbackRoutes);
 // Basic Route
 app.get('/', (req, res) => {
     res.send('API is running...');
