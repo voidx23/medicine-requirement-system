@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, RotateCw, Trash2 } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, RotateCw, Trash2, ListPlus, ListX } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import Button from '../components/UI/Button';
@@ -12,17 +12,24 @@ const AdminRequests = () => {
     const [expandedId, setExpandedId] = useState(null);
     const [deleteModal, setDeleteModal] = useState({ isOpen: false, requestId: null });
 
+    const [dailyListIds, setDailyListIds] = useState(new Set());
+
     const fetchRequests = async () => {
-        setLoading(true); // Ensure loading state starts
+        setLoading(true); 
         try {
-            // Wait for both the API call AND a minimum delay of 800ms
-            const [{ data }] = await Promise.all([
+            const [{ data: requestsData }, { data: todayData }] = await Promise.all([
                 api.get('/requests'),
+                api.get('/requirements/today'), // Fetch today's list to check simple existence
                 new Promise(resolve => setTimeout(resolve, 800))
             ]);
-            setRequests(data);
+            setRequests(requestsData);
+            
+            // Create a Set of medicine IDs already in today's list
+            const ids = new Set(todayData.items.map(item => item.medicineId?._id || item.medicineId));
+            setDailyListIds(ids);
+
         } catch (error) {
-            console.error("Failed to fetch requests", error);
+            console.error("Failed to fetch data", error);
         } finally {
             setLoading(false);
         }
@@ -46,11 +53,41 @@ const AdminRequests = () => {
         }
     };
 
+    const toggleShortlist = async (medicineId, medicineName) => {
+        const isAdded = dailyListIds.has(medicineId);
+
+        try {
+            if (isAdded) {
+                // Remove
+                await api.delete(`/requirements/item/${medicineId}`);
+                setDailyListIds(prev => {
+                    const next = new Set(prev);
+                    next.delete(medicineId);
+                    return next;
+                });
+                showToast(`Removed ${medicineName} from daily list`, 'info');
+            } else {
+                // Add
+                await api.post('/requirements/add-item', { medicineId });
+                setDailyListIds(prev => {
+                    const next = new Set(prev);
+                    next.add(medicineId);
+                    return next;
+                });
+                showToast(`Added ${medicineName} to daily list`, 'success');
+            }
+        } catch (error) {
+            const msg = error.response?.data?.message || 'Action failed';
+            showToast(msg, 'error');
+        }
+    };
+    
     const handleDeleteClick = (id) => {
         setDeleteModal({ isOpen: true, requestId: id });
     };
 
     const handleConfirmDelete = async (password) => {
+        // ... (existing helper) ...
         try {
             await api.delete(`/requests/${deleteModal.requestId}`, {
                 data: { password } // Send password in body
@@ -62,9 +99,11 @@ const AdminRequests = () => {
              console.error(error);
              const msg = error.response?.data?.message || 'Failed to delete request';
              showToast(msg, 'error');
-             throw error; // Re-throw so modal knows it failed
+             throw error; 
         }
     };
+
+    // ... (rest of helpers) ...
 
     const toggleExpand = (id) => {
         setExpandedId(expandedId === id ? null : id);
@@ -80,6 +119,7 @@ const AdminRequests = () => {
 
     return (
         <div>
+            {/* ... header ... */}
             <div className="flex justify-between items-center mb-6" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                 <h1 className="header-title">Pharmacist Requests</h1>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -190,6 +230,7 @@ const AdminRequests = () => {
                                                     <th style={{ paddingBottom: '0.5rem' }}>Medicine</th>
                                                     <th style={{ paddingBottom: '0.5rem' }}>Supplier</th>
                                                     <th style={{ paddingBottom: '0.5rem' }}>Qty</th>
+                                                    <th style={{ paddingBottom: '0.5rem', textAlign: 'right' }}>Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -199,6 +240,38 @@ const AdminRequests = () => {
                                                         <td style={{ padding: '0.75rem 0' }}>{item.name}</td>
                                                         <td style={{ padding: '0.75rem 0', color: 'var(--text-muted)' }}>{item.medicineId?.supplierId?.name || 'Unknown'}</td>
                                                         <td style={{ padding: '0.75rem 0', fontWeight: 'bold' }}>{item.quantity}</td>
+                                                        <td style={{ padding: '0.75rem 0', textAlign: 'right' }}>
+                                                            {item.medicineId && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        toggleShortlist(item.medicineId._id, item.name);
+                                                                    }}
+                                                                    title={dailyListIds.has(item.medicineId._id) ? "Remove from Daily List" : "Add to Daily List"}
+                                                                    style={{
+                                                                        background: dailyListIds.has(item.medicineId._id) ? '#fee2e2' : 'var(--primary-light)',
+                                                                        border: 'none',
+                                                                        borderRadius: '8px', 
+                                                                        width: '32px',
+                                                                        height: '32px',
+                                                                        cursor: 'pointer',
+                                                                        color: dailyListIds.has(item.medicineId._id) ? '#ef4444' : 'var(--primary)',
+                                                                        display: 'inline-flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        transition: 'all 0.2s',
+                                                                    }}
+                                                                    onMouseOver={(e) => {
+                                                                        e.currentTarget.style.transform = 'scale(1.1)';
+                                                                    }}
+                                                                    onMouseOut={(e) => {
+                                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                                    }}
+                                                                >
+                                                                    {dailyListIds.has(item.medicineId._id) ? <ListX size={18} /> : <ListPlus size={18} />}
+                                                                </button>
+                                                            )}
+                                                        </td>
                                                     </tr>
                                                 ))}
                                             </tbody>
