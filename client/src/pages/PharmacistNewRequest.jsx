@@ -89,9 +89,19 @@ const PharmacistNewRequest = () => {
     const handleSearch = (value) => {
         setQuery(value);
         if (value.length > 0) { 
-            const lowerQuery = value.toLowerCase();
+            const lowerQuery = value.toLowerCase().trim();
+
+            // 1. Check for EXACT Barcode Match (Scan Logic)
+            const barcodeMatch = allMedicines.find(med => med.barcode && med.barcode === lowerQuery);
+            if (barcodeMatch) {
+                initiateAdd(barcodeMatch);
+                setQuery(''); // Clear immediately for next scan
+                return;
+            }
+
+            // 2. Normal Name Search
             const filtered = allMedicines.filter(med => 
-                med.name.toLowerCase().includes(lowerQuery)
+                med.name.toLowerCase().includes(lowerQuery) || (med.barcode && med.barcode.includes(lowerQuery))
             ).slice(0, 10); // Limit results to 10
             
             setResults(filtered);
@@ -262,7 +272,7 @@ const PharmacistNewRequest = () => {
                                 <input
                                     ref={searchInputRef}
                                     type="text"
-                                    placeholder="Search medicine to add..."
+                                    placeholder="Search name or scan barcode..."
                                     value={query}
                                     onChange={(e) => {
                                         handleSearch(e.target.value);

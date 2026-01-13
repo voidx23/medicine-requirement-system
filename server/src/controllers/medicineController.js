@@ -80,14 +80,13 @@ export const addMedicine = async (req, res) => {
              return res.status(400).json({ message: 'Supplier is required' });
         }
 
-        // Check for duplicate Name + Supplier combination
+        // Check for duplicate Name globally (ignore supplier)
         const medicineExists = await Medicine.findOne({ 
-            name: { $regex: new RegExp(`^${escapeRegex(name)}$`, 'i') },
-            supplierId: supplierId
-        });
+            name: { $regex: new RegExp(`^${escapeRegex(name)}$`, 'i') }
+        }).populate('supplierId', 'name');
         
         if (medicineExists) {
-            return res.status(400).json({ message: 'Medicine already exists for this supplier' });
+            return res.status(400).json({ message: `Medicine already exists in the system (Supplier: ${medicineExists.supplierId?.name || 'Unknown'})` });
         }
 
         // Check barcode duplicate if provided
@@ -127,11 +126,11 @@ export const updateMedicine = async (req, res) => {
                 if (name && trimmedName.toLowerCase() !== medicine.name.toLowerCase()) {
                     const duplicate = await Medicine.findOne({
                         name: { $regex: new RegExp(`^${escapeRegex(trimmedName)}$`, 'i') },
-                        supplierId: medicine.supplierId, // Must be same supplier
                         _id: { $ne: req.params.id }
-                    });
+                    }).populate('supplierId', 'name');
+                    
                     if (duplicate) {
-                        return res.status(400).json({ message: 'Medicine already exists for this supplier' });
+                        return res.status(400).json({ message: `Medicine already exists in the system (Supplier: ${duplicate.supplierId?.name || 'Unknown'})` });
                     }
                 }
 
