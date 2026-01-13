@@ -1,11 +1,30 @@
 import { useState } from 'react';
-import { GitBranch, Clock, Zap, Layout, ListOrdered, CheckCircle2, MessageSquare, Save, ShieldCheck } from 'lucide-react';
+import { GitBranch, Clock, Zap, Layout, ListOrdered, CheckCircle2, MessageSquare, Save, ShieldCheck, ScanBarcode } from 'lucide-react';
 import FeedbackModal from '../components/UI/FeedbackModal';
 
 const PharmacistWhatsNew = () => {
     const [feedbackOpen, setFeedbackOpen] = useState(false);
 
     const updates = [
+        {
+            version: 'v2.4',
+            date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+            title: 'Hardware & Integrity',
+            icon: ScanBarcode,
+            color: '#ef4444', // Red
+            items: [
+                {
+                    title: 'Barcode Scanning Support',
+                    desc: 'Instant "Scan-to-Add": Scanning a barcode now automatically adds the medicine to your list without pressing Enter.',
+                    icon: ScanBarcode
+                },
+                {
+                    title: 'Global Uniqueness Policy',
+                    desc: 'Database integrity improved: Medicines must now have unique names across all suppliers to prevent duplication.',
+                    icon: ShieldCheck
+                }
+            ]
+        },
         {
             version: 'v2.2',
             date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
