@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useContext } from 'react';
 import { Search, Plus, Trash2, Send, FileText } from 'lucide-react';
 import api from '../services/api';
 import Button from '../components/UI/Button';
@@ -7,12 +7,16 @@ import StaffVerificationModal from '../components/UI/StaffVerificationModal';
 import CustomItemModal from '../components/UI/CustomItemModal';
 import DigitalClock from '../components/UI/DigitalClock';
 import { useNotification } from '../context/NotificationContext';
+import AuthContext from '../context/AuthContext';
 
 const PharmacistNewRequest = () => {
     const { showConfirm, showToast } = useNotification();
+    const { user } = useContext(AuthContext); // Get current user
+    const STORAGE_KEY = `pharmacistRequestDraft_${user?._id || 'guest'}`;
+
     const [requestItems, setRequestItems] = useState(() => {
         try {
-            const saved = localStorage.getItem('pharmacistRequestDraft');
+            const saved = localStorage.getItem(STORAGE_KEY);
             return saved ? JSON.parse(saved) : [];
         } catch {
             return [];
@@ -21,8 +25,10 @@ const PharmacistNewRequest = () => {
 
     // Save to localStorage whenever items change
     useEffect(() => {
-        localStorage.setItem('pharmacistRequestDraft', JSON.stringify(requestItems));
-    }, [requestItems]);
+        if (user?._id) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(requestItems));
+        }
+    }, [requestItems, STORAGE_KEY, user]);
     const [verifyModalOpen, setVerifyModalOpen] = useState(false);
     const [submittedToday, setSubmittedToday] = useState(0);
 
@@ -39,21 +45,15 @@ const PharmacistNewRequest = () => {
 
     const [allMedicines, setAllMedicines] = useState([]); // Master list
     const [results, setResults] = useState([]);
-    const [searching, setSearching] = useState(false);
+    
     const [isOpen, setIsOpen] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
     const wrapperRef = useRef(null);
     const searchInputRef = useRef(null);
-
     // Quantity Modal State
     const [qtyModalOpen, setQtyModalOpen] = useState(false);
     const [customModalOpen, setCustomModalOpen] = useState(false);
     const [pendingItem, setPendingItem] = useState(null);
-
-    useEffect(() => {
-        fetchStats();
-        fetchAllMedicines();
-    }, []);
 
     const fetchAllMedicines = async () => {
         try {
@@ -73,6 +73,11 @@ const PharmacistNewRequest = () => {
             console.error('Failed to load stats', error);
         }
     };
+
+    useEffect(() => {
+        fetchStats();
+        fetchAllMedicines();
+    }, []);
 
     // Click Outside to close search
     useEffect(() => {
@@ -190,7 +195,9 @@ const PharmacistNewRequest = () => {
         try {
             await api.post('/requests/submit', { items: requestItems, submittedBy: staffName });
             setRequestItems([]);
-            localStorage.removeItem('pharmacistRequestDraft');
+            if (user?._id) {
+                localStorage.removeItem(STORAGE_KEY);
+            }
             fetchStats(); // Refresh count
             
             alert(`Request Submitted Successfully! Signed by: ${staffName}`);
@@ -228,7 +235,16 @@ const PharmacistNewRequest = () => {
                 {/* Header Section (Matches Dashboard.jsx) */}
                 <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
                     <div>
-                    <h1 className="header-title" style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Create New Request</h1>
+                    <h1 className="header-title" style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        Create New Request
+                        <span style={{ 
+                            fontSize: '0.9rem', fontWeight: 500, color: 'var(--primary)', 
+                            background: 'var(--primary-light)', padding: '0.2rem 0.8rem', borderRadius: '20px',
+                            border: '1px solid rgba(var(--primary-rgb), 0.2)'
+                        }}>
+                            {user?.username?.toUpperCase() || 'PHARMACY'}
+                        </span>
+                    </h1>
                     <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', color: 'var(--text-muted)' }}>
                             <p>{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                             <div style={{ width: '1px', height: '16px', background: 'rgba(0,0,0,0.1)' }}></div>
@@ -293,9 +309,7 @@ const PharmacistNewRequest = () => {
                                     position: 'absolute', top: '110%', left: 0, right: 0, maxHeight: '300px', overflowY: 'auto', zIndex: 50,
                                     padding: '0.5rem', background: 'rgba(255, 255, 255, 0.95)'
                                 }}>
-                                    {searching ? (
-                                        <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>Searching...</div>
-                                    ) : results.length > 0 ? (
+                                    {results.length > 0 ? (
                                         results.map((medicine, index) => (
                                             <button
                                                 key={medicine._id}

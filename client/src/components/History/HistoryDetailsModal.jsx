@@ -4,13 +4,12 @@ import { createPortal } from 'react-dom';
 import { X, Search, Filter, Package, Calendar } from 'lucide-react';
 
 const HistoryDetailsModal = ({ isOpen, onClose, data }) => {
-    if (!isOpen || !data) return null;
-
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedSupplier, setSelectedSupplier] = useState('');
 
     // Extract unique suppliers from the items
     const suppliers = useMemo(() => {
+        if (!data) return [];
         const unique = new Set();
         data.items.forEach(item => {
             if (item.medicineId?.supplierId?.name) {
@@ -22,6 +21,7 @@ const HistoryDetailsModal = ({ isOpen, onClose, data }) => {
 
     // Filter items
     const filteredItems = useMemo(() => {
+        if (!data) return [];
         return data.items.filter(item => {
             const medName = item.medicineId?.name?.toLowerCase() || '';
             const supName = item.medicineId?.supplierId?.name || '';
@@ -32,6 +32,8 @@ const HistoryDetailsModal = ({ isOpen, onClose, data }) => {
             return matchesSearch && matchesSupplier;
         });
     }, [data, searchQuery, selectedSupplier]);
+
+    if (!isOpen || !data) return null;
 
     return createPortal(
         <div style={{

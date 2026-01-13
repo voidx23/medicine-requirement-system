@@ -27,14 +27,23 @@ const RequirementList = ({ items, onRemove }) => {
               <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{index + 1}</td>
               <td style={{ padding: '1rem', fontWeight: 500 }}>{item.medicineId?.name || 'Unknown'}</td>
               <td style={{ padding: '1rem' }}>
-                <span style={{ 
-                    padding: '0.25rem 0.6rem', 
-                    background: 'var(--primary-light)', 
-                    color: 'var(--primary)', 
-                    borderRadius: '20px',
-                    fontSize: '0.85rem',
-                    fontWeight: 500
-                }}>
+                <span 
+                    title={item.medicineId?.supplierId?.name || 'Unknown'}
+                    style={{ 
+                        padding: '0.25rem 0.6rem', 
+                        background: 'var(--primary-light)', 
+                        color: 'var(--primary)', 
+                        borderRadius: '20px',
+                        fontSize: '0.85rem',
+                        fontWeight: 500,
+                        display: 'inline-block',
+                        maxWidth: '200px',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        verticalAlign: 'middle'
+                    }}
+                >
                     {item.medicineId?.supplierId?.name || 'Unknown'}
                 </span>
               </td>

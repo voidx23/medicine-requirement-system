@@ -143,7 +143,6 @@ input, select {
 .main-content {
   flex: 1;
   margin-left: var(--sidebar-width);
-  padding: 2rem;
   width: calc(100% - var(--sidebar-width));
   position: relative;
   z-index: 1;
@@ -260,8 +259,11 @@ input, select {
 .sticky-header {
   position: sticky;
   top: 0;
-  z-index: 20;
-  background: var(--bg-color);
+  z-index: 1000;
+  background: rgba(248, 250, 252, 0.98); /* Force nearly opaque background */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(0,0,0,0.05); /* Visual separation */
   /* Compensate for Main Content Padding (Desktop: 2rem) */
   margin: -2rem -2rem 0 -2rem;
   padding: 2rem 2rem 1rem 2rem;

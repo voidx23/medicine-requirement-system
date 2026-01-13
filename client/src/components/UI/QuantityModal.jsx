@@ -9,7 +9,7 @@ const QuantityModal = ({ isOpen, onClose, onConfirm, medicine }) => {
 
     useEffect(() => {
         if (isOpen) {
-            setQuantity(1);
+            setQuantity(prev => (prev !== 1 ? 1 : prev));
             // Small timeout to ensure modal is rendered before focus
             setTimeout(() => inputRef.current?.focus(), 50);
         }

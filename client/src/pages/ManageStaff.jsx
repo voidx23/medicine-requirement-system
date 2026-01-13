@@ -9,7 +9,7 @@ const ManageStaff = () => {
     const [branches, setBranches] = useState([]);
     const [selectedBranch, setSelectedBranch] = useState(null);
     const [staffList, setStaffList] = useState([]);
-    const [loading, setLoading] = useState(false);
+    // Removed unused loading state
     
     // Add Staff Modal State
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -24,18 +24,6 @@ const ManageStaff = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editBranchData, setEditBranchData] = useState({ id: '', username: '', password: '', location: '', contactNumber: '' });
 
-    useEffect(() => {
-        fetchBranches();
-    }, []);
-
-    useEffect(() => {
-        if (selectedBranch) {
-            fetchStaff(selectedBranch._id);
-        } else {
-            setStaffList([]);
-        }
-    }, [selectedBranch]);
-
     const fetchBranches = async () => {
         try {
             const data = await staffService.getBranches();
@@ -48,15 +36,26 @@ const ManageStaff = () => {
         }
     };
 
+    useEffect(() => {
+        fetchBranches();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (selectedBranch) {
+            fetchStaff(selectedBranch._id);
+        } else {
+            setStaffList([]);
+        }
+    }, [selectedBranch]);
+
+
     const fetchStaff = async (branchId) => {
-        setLoading(true);
         try {
             const data = await staffService.getAll(branchId);
             setStaffList(data);
         } catch (error) {
             console.error(error);
-        } finally {
-            setLoading(false);
         }
     };
 

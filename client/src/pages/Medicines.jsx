@@ -13,7 +13,9 @@ import Loading from '../components/UI/Loading';
 const Medicines = () => {
   const { showConfirm, showToast } = useNotification();
   const [medicines, setMedicines] = useState([]); // Displayed list
-  const [allMedicines, setAllMedicines] = useState([]); // Master list
+  const [allMedicines, setAllMedicines] = useState([]); 
+  const [filteredCount, setFilteredCount] = useState(0); // Count matching search
+  const [dbTotalCount, setDbTotalCount] = useState(0); // GLOBAL Total in DB
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   
@@ -21,15 +23,30 @@ const Medicines = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState(null);
 
+  // 1. Fetch Global Total (Independent of Search)
+  const fetchDbTotal = async () => {
+      try {
+          const { data } = await api.get('/medicines?limit=1'); // Minimal fetch
+          setDbTotalCount(data.totalCount || 0);
+      } catch (e) {
+          console.error('Failed to fetch total count');
+      }
+  };
+
+  // 2. Init: Fetch Total on Mount
+  useEffect(() => {
+      fetchDbTotal();
+  }, []);
+
   // Server-Side Search/Pagination
   const fetchMedicines = useCallback(async (searchTerm = '') => {
     setLoading(true);
     try {
-        // Fetch only 50 most relevant items for better performance (User can search for specifics)
         const response = await api.get(`/medicines?limit=50&search=${encodeURIComponent(searchTerm)}`);
         const data = response.data.medicines || [];
         setMedicines(data);
-        setAllMedicines(data); // "All" is now just "Current Page" context
+        setAllMedicines(data); 
+        setFilteredCount(response.data.totalCount || 0);
     } catch (error) {
       console.error('Failed to fetch medicines:', error);
       showToast('Failed to fetch medicines', 'error');
@@ -42,7 +59,7 @@ const Medicines = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
         fetchMedicines(search);
-    }, 500); // 500ms debounce
+    }, 500); 
 
     return () => clearTimeout(timer);
   }, [search, fetchMedicines]);
@@ -63,7 +80,8 @@ const Medicines = () => {
 
     try {
       await api.delete(`/medicines/${id}`);
-      setAllMedicines(prev => prev.filter(m => m._id !== id)); // Update master list
+      setAllMedicines(prev => prev.filter(m => m._id !== id)); // Update local list
+      setDbTotalCount(prev => Math.max(0, prev - 1)); // Decrement GLOBAL count
       showToast('Medicine deleted successfully', 'success');
     } catch (error) {
       console.error('Failed to delete medicine:', error);
@@ -73,7 +91,8 @@ const Medicines = () => {
 
   const handleSuccess = () => {
     setIsModalOpen(false);
-    fetchMedicines(); // Reload all
+    fetchMedicines(); // Reload list
+    fetchDbTotal(); // Reload Global stats
     showToast(selectedMedicine ? 'Medicine updated' : 'Medicine added', 'success');
   };
 
@@ -91,7 +110,7 @@ const Medicines = () => {
                  borderRadius: '20px',
                  fontWeight: 600
              }}>
-                 {allMedicines.length}
+                 {dbTotalCount} Items
              </span>
            </h1>
            <p style={{ color: 'var(--text-muted)' }}>Manage your medicine inventory</p>
