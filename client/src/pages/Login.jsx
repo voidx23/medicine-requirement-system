@@ -1,11 +1,14 @@
 import { useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
-import { Lock, User, ArrowRight, Activity } from 'lucide-react';
+import { Lock, User, ArrowRight, Activity, ShieldCheck } from 'lucide-react';
 import Frame from '../assets/frame.svg?react';
 
 const Login = () => {
-    const [username, setUsername] = useState('');
+    const [searchParams] = useSearchParams();
+    const branchParam = searchParams.get('branch'); // Get ?branch=xyz
+
+    const [username, setUsername] = useState(branchParam || '');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -19,15 +22,31 @@ const Login = () => {
         }
     }, [user, navigate]);
 
+    // Force username from param if present
+    useEffect(() => {
+        if (branchParam) {
+            setUsername(branchParam);
+        }
+    }, [branchParam]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
+        
+        // 1. If username locked by param -> It's safe (already restricted).
+        // 2. If NO param -> Must be ADMIN. Everyone else is BLOCKED.
+        if (!branchParam && username.toLowerCase() !== 'admin') {
+             setError('Security Restriction: You must use the Secure Desktop Shortcut to log in.');
+             setIsLoading(false);
+             return;
+        }
+
         try {
             await login(username, password);
              // Navigation happens in useEffect
         } catch (err) {
-            setError('Invalid username or password');
+            setError('Invalid credentials');
             setIsLoading(false);
         }
     };
@@ -119,6 +138,26 @@ const Login = () => {
                         {error}
                     </div>
                 )}
+                
+                {branchParam && (
+                    <div style={{ 
+                        background: 'rgba(22, 163, 74, 0.1)', 
+                        border: '1px solid rgba(22, 163, 74, 0.2)',
+                        color: '#166534', 
+                        padding: '0.75rem', 
+                        borderRadius: '12px', 
+                        marginBottom: '1.5rem', 
+                        fontSize: '0.9rem', 
+                        textAlign: 'center',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem'
+                    }}>
+                        <ShieldCheck size={16} />
+                        Secure Login for <b>{branchParam.toUpperCase()}</b>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                     <div className="input-group" style={{ position: 'relative' }}>
@@ -138,6 +177,7 @@ const Login = () => {
                             placeholder="Username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
+                            readOnly={!!branchParam} // Lock if param is present
                             required
                             style={{
                                 width: '100%',
@@ -145,23 +185,40 @@ const Login = () => {
                                 border: '1px solid rgba(203, 213, 225, 0.6)',
                                 borderRadius: '12px',
                                 fontSize: '1rem',
-                                background: 'rgba(255, 255, 255, 0.6)',
+                                background: branchParam ? '#f1f5f9' : 'rgba(255, 255, 255, 0.6)', // Greyed out if locked
                                 backdropFilter: 'blur(4px)',
                                 transition: 'all 0.2s ease',
                                 outline: 'none',
-                                color: 'var(--text-main)'
+                                color: 'var(--text-main)',
+                                cursor: branchParam ? 'not-allowed' : 'text'
                             }}
                             onFocus={(e) => {
-                                e.target.style.borderColor = 'var(--primary)';
-                                e.target.style.background = 'white';
-                                e.target.style.boxShadow = '0 0 0 3px var(--primary-light)';
+                                if (!branchParam) {
+                                    e.target.style.borderColor = 'var(--primary)';
+                                    e.target.style.background = 'white';
+                                    e.target.style.boxShadow = '0 0 0 3px var(--primary-light)';
+                                }
                             }}
                             onBlur={(e) => {
-                                e.target.style.borderColor = 'rgba(203, 213, 225, 0.6)';
-                                e.target.style.background = 'rgba(255, 255, 255, 0.6)';
-                                e.target.style.boxShadow = 'none';
+                                if (!branchParam) {
+                                    e.target.style.borderColor = 'rgba(203, 213, 225, 0.6)';
+                                    e.target.style.background = 'rgba(255, 255, 255, 0.6)';
+                                    e.target.style.boxShadow = 'none';
+                                }
                             }}
                         />
+                         {branchParam && (
+                            <Lock 
+                                size={16} 
+                                style={{ 
+                                    position: 'absolute', 
+                                    right: '16px', 
+                                    top: '50%', 
+                                    transform: 'translateY(-50%)',
+                                    color: 'var(--text-muted)'
+                                }} 
+                            />
+                        )}
                     </div>
 
                     <div className="input-group" style={{ position: 'relative' }}>

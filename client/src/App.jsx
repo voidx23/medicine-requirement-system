@@ -14,6 +14,7 @@ import Reports from './pages/Reports';
 import PharmacistNewRequest from './pages/PharmacistNewRequest';
 import PharmacistHistory from './pages/PharmacistHistory';
 import PharmacistWhatsNew from './pages/PharmacistWhatsNew';
+import SetupDevice from './pages/SetupDevice';
 import PharmacistLayout from './components/Layout/PharmacistLayout';
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -47,6 +48,7 @@ const App = () => {
           <Routes>
             {/* Public Route */}
             <Route path="/login" element={<Login />} />
+            <Route path="/setup-device" element={<SetupDevice />} />
 
             {/* Protected Routes */}
             <Route element={<PrivateRoute />}>
