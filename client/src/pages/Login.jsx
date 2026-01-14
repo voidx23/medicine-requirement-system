@@ -27,10 +27,17 @@ const Login = () => {
         }
     }, [user, navigate, location]);
 
-    // Force username from param if present
+    // Force username from param if present, or load from sticky storage
     useEffect(() => {
         if (branchParam) {
             setUsername(branchParam);
+            localStorage.setItem('sticky_branch', branchParam); // SAVE for PWA
+        } else {
+            // Check if we have a saved branch context (for PWA usage)
+            const stickyBranch = localStorage.getItem('sticky_branch');
+            if (stickyBranch) {
+                setUsername(stickyBranch);
+            }
         }
     }, [branchParam]);
 
@@ -39,10 +46,20 @@ const Login = () => {
         setIsLoading(true);
         setError('');
         
-        // 1. If username locked by param -> It's safe (already restricted).
-        // 2. If NO param -> Must be ADMIN. Everyone else is BLOCKED.
-        if (!branchParam && username.toLowerCase() !== 'admin') {
-             setError('Security Restriction: You must use the Secure Desktop Shortcut to log in.');
+        // Determine the active lock (either from URL or Storage)
+        const lockedBranch = branchParam || localStorage.getItem('sticky_branch');
+
+        // 1. If username locked -> It's safe.
+        // 2. If NO lock -> Must be ADMIN. Everyone else is BLOCKED.
+        if (!lockedBranch && username.toLowerCase() !== 'admin') {
+             setError('Security Restriction: You must use the Secure Desktop Shortcut (or Magic Link) to setup this device first.');
+             setIsLoading(false);
+             return;
+        }
+
+        // Strict validation: If locked, they MUST use that username
+        if (lockedBranch && username.trim().toLowerCase() !== lockedBranch.toLowerCase()) {
+             setError(`Login Locked: You can only log in as '${lockedBranch.toUpperCase()}' on this device.`);
              setIsLoading(false);
              return;
         }
