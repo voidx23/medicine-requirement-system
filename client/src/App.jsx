@@ -48,13 +48,13 @@ const App = () => {
           <Routes>
             {/* Public Route */}
             <Route path="/login" element={<Login />} />
-            <Route path="/setup-device" element={<SetupDevice />} />
 
             {/* Protected Routes */}
             <Route element={<PrivateRoute />}>
                 
                 {/* Admin Routes */}
                 <Route element={<AdminRoute />}>
+                    <Route path="/setup-device" element={<SetupDevice />} />
                     <Route path="/" element={<Layout />}>
                         <Route index element={<Dashboard />} />
                         <Route path="requests" element={<AdminRequests />} />
