@@ -16,6 +16,7 @@ import PharmacistHistory from './pages/PharmacistHistory';
 import PharmacistWhatsNew from './pages/PharmacistWhatsNew';
 import SetupDevice from './pages/SetupDevice';
 import PharmacistLayout from './components/Layout/PharmacistLayout';
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import { NotificationProvider } from './context/NotificationContext';
 import { AuthProvider } from './context/AuthContext';
@@ -82,6 +83,7 @@ const App = () => {
           
           <ToastContainer />
           <ConfirmDialog />
+          <SpeedInsights />
         </Router>
       </NotificationProvider>
     </AuthProvider>
