@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Suppliers from './pages/Suppliers';
@@ -29,8 +29,10 @@ import api from './services/api';
 // Route Protection Components
 const PrivateRoute = () => {
   const { user, loading } = useContext(AuthContext);
+  const location = useLocation();
+
   if (loading) return <div>Loading...</div>;
-  return user ? <Outlet /> : <Navigate to="/login" replace />;
+  return user ? <Outlet /> : <Navigate to="/login" state={{ from: location }} replace />;
 };
 
 const AdminRoute = () => {

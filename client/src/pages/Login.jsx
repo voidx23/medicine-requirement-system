@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import { Lock, User, ArrowRight, Activity, ShieldCheck } from 'lucide-react';
 import Frame from '../assets/frame.svg?react';
@@ -15,12 +15,17 @@ const Login = () => {
     const { login, user } = useContext(AuthContext);
     const navigate = useNavigate();
 
+    const location = useLocation();
+
     useEffect(() => {
         if (user) {
-            if (user.role === 'admin') navigate('/');
-            else navigate('/pharmacist-dashboard');
+            // Check if there's a page they came from (e.g. /setup-device)
+            const from = location.state?.from?.pathname;
+            const defaultDashboard = user.role === 'admin' ? '/' : '/pharmacist-dashboard';
+            
+            navigate(from || defaultDashboard, { replace: true });
         }
-    }, [user, navigate]);
+    }, [user, navigate, location]);
 
     // Force username from param if present
     useEffect(() => {
