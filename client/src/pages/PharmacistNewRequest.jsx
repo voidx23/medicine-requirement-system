@@ -109,7 +109,95 @@ const PharmacistNewRequest = () => {
         }
     };
 
-    // ... (initiateAdd, confirmAdd, etc. unchanged)
+    // Step 1: User selects item -> Open Modal
+    const initiateAdd = (medicine) => {
+        setPendingItem(medicine);
+        setQtyModalOpen(true);
+        setIsOpen(false); // Close dropdown
+    };
+
+    // Step 2: User confirms quantity -> Add to Request List
+    const confirmAdd = (quantity) => {
+        if (!pendingItem) return;
+
+        // Check if exists
+        const exists = requestItems.find(item => item._id === pendingItem._id);
+        if (exists) {
+            showToast('Medicine is already in the list. Please update the quantity in the table if needed.', 'error');
+            setQtyModalOpen(false);
+            setPendingItem(null);
+            return;
+        }
+
+        setRequestItems(prev => {
+            // Add new
+            return [...prev, { ...pendingItem, quantity }];
+        });
+
+        // Cleanup
+        setQtyModalOpen(false);
+        setPendingItem(null);
+        setQuery('');
+        setResults([]);
+        setHighlightedIndex(-1);
+        
+        // Refocus search for next item (smoothness!)
+        setTimeout(() => searchInputRef.current?.focus(), 100);
+    };
+
+    const handleAddCustom = (name, quantity) => {
+        // Check duplicate by name (case-insensitive)
+        const exists = requestItems.find(item => item.name.toLowerCase() === name.trim().toLowerCase());
+        if (exists) {
+            showToast('Item with this name already exists in the list.', 'error');
+            return;
+        }
+
+        const newItem = {
+            _id: `custom-${Date.now()}`, // Temporary ID
+            name: name.trim(),
+            supplierId: null, // No supplier
+            quantity,
+            isCustom: true
+        };
+
+        setRequestItems(prev => [...prev, newItem]);
+        setCustomModalOpen(false);
+        showToast('Custom item added to list', 'success');
+        setTimeout(() => searchInputRef.current?.focus(), 100);
+    };
+
+    const removeItem = async (id) => {
+        const isConfirmed = await showConfirm('Are you sure you want to remove this medicine?');
+        if (isConfirmed) {
+            setRequestItems(requestItems.filter(item => item._id !== id));
+        }
+    };
+
+    const updateQuantity = (id, newQty) => {
+        setRequestItems(requestItems.map(item => item._id === id ? { ...item, quantity: parseInt(newQty) || 1 } : item));
+    };
+
+    const handleSubmitRequest = () => {
+        if (requestItems.length === 0) return;
+        setVerifyModalOpen(true);
+    };
+
+    const handleStaffVerified = async (staffName) => {
+        try {
+            await api.post('/requests/submit', { items: requestItems, submittedBy: staffName });
+            setRequestItems([]);
+            if (user?._id) {
+                localStorage.removeItem(STORAGE_KEY);
+            }
+            fetchStats(); // Refresh count
+            
+            alert(`Request Submitted Successfully! Signed by: ${staffName}`);
+        } catch (error) {
+            console.error(error);
+            alert('Failed to submit request: ' + (error.response?.data?.message || error.message));
+        }
+    };
 
     // Keyboard Navigation
     const handleKeyDown = (e) => {
