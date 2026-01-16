@@ -96,18 +96,10 @@ const PharmacistNewRequest = () => {
         if (value.length > 0) { 
             const lowerQuery = value.toLowerCase().trim();
 
-            // 1. Check for EXACT Barcode Match (Scan Logic)
-            const barcodeMatch = allMedicines.find(med => med.barcode && med.barcode === lowerQuery);
-            if (barcodeMatch) {
-                initiateAdd(barcodeMatch);
-                setQuery(''); // Clear immediately for next scan
-                return;
-            }
-
-            // 2. Normal Name Search
+            // Filter Results (Name or Barcode)
             const filtered = allMedicines.filter(med => 
                 med.name.toLowerCase().includes(lowerQuery) || (med.barcode && med.barcode.includes(lowerQuery))
-            ).slice(0, 10); // Limit results to 10
+            ).slice(0, 10); 
             
             setResults(filtered);
             setIsOpen(true);
@@ -117,101 +109,12 @@ const PharmacistNewRequest = () => {
         }
     };
 
-    // Step 1: User selects item -> Open Modal
-    const initiateAdd = (medicine) => {
-        setPendingItem(medicine);
-        setQtyModalOpen(true);
-        setIsOpen(false); // Close dropdown
-    };
+    // ... (initiateAdd, confirmAdd, etc. unchanged)
 
-    // Step 2: User confirms quantity -> Add to Request List
-    const confirmAdd = (quantity) => {
-        if (!pendingItem) return;
-
-        // Check if exists
-        const exists = requestItems.find(item => item._id === pendingItem._id);
-        if (exists) {
-            showToast('Medicine is already in the list. Please update the quantity in the table if needed.', 'error');
-            setQtyModalOpen(false);
-            setPendingItem(null);
-            return;
-        }
-
-        setRequestItems(prev => {
-            // Add new
-            return [...prev, { ...pendingItem, quantity }];
-        });
-
-        // Cleanup
-        setQtyModalOpen(false);
-        setPendingItem(null);
-        setQuery('');
-        setResults([]);
-        setHighlightedIndex(-1);
-        
-        // Refocus search for next item (smoothness!)
-        setTimeout(() => searchInputRef.current?.focus(), 100);
-    };
-
-    const handleAddCustom = (name, quantity) => {
-        // Check duplicate by name (case-insensitive)
-        const exists = requestItems.find(item => item.name.toLowerCase() === name.trim().toLowerCase());
-        if (exists) {
-            showToast('Item with this name already exists in the list.', 'error');
-            return;
-        }
-
-        const newItem = {
-            _id: `custom-${Date.now()}`, // Temporary ID
-            name: name.trim(),
-            supplierId: null, // No supplier
-            quantity,
-            isCustom: true
-        };
-
-        setRequestItems(prev => [...prev, newItem]);
-        setCustomModalOpen(false);
-        showToast('Custom item added to list', 'success');
-        setTimeout(() => searchInputRef.current?.focus(), 100);
-    };
-
-    const removeItem = async (id) => {
-        const isConfirmed = await showConfirm('Are you sure you want to remove this medicine?');
-        if (isConfirmed) {
-            setRequestItems(requestItems.filter(item => item._id !== id));
-        }
-    };
-
-    const updateQuantity = (id, newQty) => {
-        setRequestItems(requestItems.map(item => item._id === id ? { ...item, quantity: parseInt(newQty) || 1 } : item));
-    };
-
-    const handleSubmitRequest = () => {
-        if (requestItems.length === 0) return;
-        setVerifyModalOpen(true);
-    };
-
-    const handleStaffVerified = async (staffName) => {
-        try {
-            await api.post('/requests/submit', { items: requestItems, submittedBy: staffName });
-            setRequestItems([]);
-            if (user?._id) {
-                localStorage.removeItem(STORAGE_KEY);
-            }
-            fetchStats(); // Refresh count
-            
-            alert(`Request Submitted Successfully! Signed by: ${staffName}`);
-        } catch (error) {
-            console.error(error);
-            alert('Failed to submit request: ' + (error.response?.data?.message || error.message));
-        }
-    };
-    
     // Keyboard Navigation
     const handleKeyDown = (e) => {
-        if (!isOpen || results.length === 0) return;
-
         if (e.key === 'ArrowDown') {
+            if (!isOpen) setIsOpen(true);
             e.preventDefault();
             setHighlightedIndex(prev => (prev + 1) % results.length);
         } else if (e.key === 'ArrowUp') {
@@ -219,9 +122,25 @@ const PharmacistNewRequest = () => {
             setHighlightedIndex(prev => (prev - 1 + results.length) % results.length);
         } else if (e.key === 'Enter') {
             e.preventDefault();
+            
+            // 1. If item is highlighted, add it
             if (highlightedIndex >= 0 && results[highlightedIndex]) {
                 initiateAdd(results[highlightedIndex]);
+                return;
             }
+
+            // 2. Scan Logic: If NO item highlighted, check for Exact Barcode Match
+            if (query.trim()) {
+                const lowerQuery = query.toLowerCase().trim();
+                const barcodeMatch = allMedicines.find(med => med.barcode && med.barcode === lowerQuery);
+                
+                if (barcodeMatch) {
+                    initiateAdd(barcodeMatch);
+                    setQuery(''); // Ready for next scan
+                    return;
+                }
+            }
+
         } else if (e.key === 'Escape') {
             setIsOpen(false);
             setHighlightedIndex(-1);

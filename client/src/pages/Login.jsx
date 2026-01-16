@@ -27,28 +27,32 @@ const Login = () => {
         }
     }, [user, navigate, location]);
 
-    // Force username from param if present, or load from sticky storage
+    // Unified "Locked" State
+    const [lockedBranch, setLockedBranch] = useState(null);
+
+    // Initial Load: Check URL Param OR Sticky Storage
     useEffect(() => {
-        if (branchParam) {
-            setUsername(branchParam);
-            localStorage.setItem('sticky_branch', branchParam); // SAVE for PWA
-        } else {
-            // Check if we have a saved branch context (for PWA usage)
-            const stickyBranch = localStorage.getItem('sticky_branch');
-            if (stickyBranch) {
-                setUsername(stickyBranch);
+        const param = searchParams.get('branch');
+        const stick = localStorage.getItem('sticky_branch');
+        
+        const target = param || stick;
+
+        if (target) {
+            setLockedBranch(target);
+            setUsername(target);
+            
+            // If from URL, update sticky
+            if (param) {
+                localStorage.setItem('sticky_branch', param);
             }
         }
-    }, [branchParam]);
+    }, [searchParams]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
         setError('');
         
-        // Determine the active lock (either from URL or Storage)
-        const lockedBranch = branchParam || localStorage.getItem('sticky_branch');
-
         // 1. If username locked -> It's safe.
         // 2. If NO lock -> Must be ADMIN. Everyone else is BLOCKED.
         if (!lockedBranch && username.toLowerCase() !== 'admin') {
@@ -161,7 +165,7 @@ const Login = () => {
                     </div>
                 )}
                 
-                {branchParam && (
+                {lockedBranch && (
                     <div style={{ 
                         background: 'rgba(22, 163, 74, 0.1)', 
                         border: '1px solid rgba(22, 163, 74, 0.2)',
@@ -177,7 +181,7 @@ const Login = () => {
                         gap: '0.5rem'
                     }}>
                         <ShieldCheck size={16} />
-                        Secure Login for <b>{branchParam.toUpperCase()}</b>
+                        Secure Login for <b>{lockedBranch.toUpperCase()}</b>
                     </div>
                 )}
 
@@ -199,7 +203,7 @@ const Login = () => {
                             placeholder="Username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
-                            readOnly={!!branchParam} // Lock if param is present
+                            readOnly={!!lockedBranch} // Lock if param is present
                             required
                             style={{
                                 width: '100%',
@@ -207,29 +211,29 @@ const Login = () => {
                                 border: '1px solid rgba(203, 213, 225, 0.6)',
                                 borderRadius: '12px',
                                 fontSize: '1rem',
-                                background: branchParam ? '#f1f5f9' : 'rgba(255, 255, 255, 0.6)', // Greyed out if locked
+                                background: lockedBranch ? '#f1f5f9' : 'rgba(255, 255, 255, 0.6)', // Greyed out if locked
                                 backdropFilter: 'blur(4px)',
                                 transition: 'all 0.2s ease',
                                 outline: 'none',
                                 color: 'var(--text-main)',
-                                cursor: branchParam ? 'not-allowed' : 'text'
+                                cursor: lockedBranch ? 'not-allowed' : 'text'
                             }}
                             onFocus={(e) => {
-                                if (!branchParam) {
+                                if (!lockedBranch) {
                                     e.target.style.borderColor = 'var(--primary)';
                                     e.target.style.background = 'white';
                                     e.target.style.boxShadow = '0 0 0 3px var(--primary-light)';
                                 }
                             }}
                             onBlur={(e) => {
-                                if (!branchParam) {
+                                if (!lockedBranch) {
                                     e.target.style.borderColor = 'rgba(203, 213, 225, 0.6)';
                                     e.target.style.background = 'rgba(255, 255, 255, 0.6)';
                                     e.target.style.boxShadow = 'none';
                                 }
                             }}
                         />
-                         {branchParam && (
+                         {lockedBranch && (
                             <Lock 
                                 size={16} 
                                 style={{ 
