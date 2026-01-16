@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Save, Link as LinkIcon, AlertTriangle, ExternalLink, Paperclip } from 'lucide-react';
+import { useState, useEffect, useContext } from 'react';
+import { Save, Link as LinkIcon, AlertTriangle, ExternalLink, Paperclip, LogOut } from 'lucide-react';
 import staffService from '../services/staffService';
+import AuthContext from '../context/AuthContext';
 
 const SetupDevice = () => {
     const [branches, setBranches] = useState([]);
+    const { logout } = useContext(AuthContext);
 
     useEffect(() => {
         const loadBranches = async () => {
@@ -87,8 +89,21 @@ const SetupDevice = () => {
                     ))}
                 </div>
 
-                <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    Generating secure links for {window.location.host}
+                <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+                    <button 
+                        onClick={logout}
+                        style={{
+                            background: '#ef4444', color: 'white', border: 'none', padding: '0.75rem 1.5rem',
+                            borderRadius: '8px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex',
+                            alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 6px rgba(239, 68, 68, 0.2)'
+                        }}
+                    >
+                        <LogOut size={18} />
+                        Logout Admin Session
+                    </button>
+                    <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        Generating secure links for {window.location.host}
+                    </div>
                 </div>
             </div>
         </div>
