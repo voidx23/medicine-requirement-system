@@ -17,10 +17,16 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
+        const stickyBranch = localStorage.getItem('sticky_branch');
         localStorage.removeItem('userInfo');
         setUser(null);
-        // Optional: Redirect to login
-        window.location.href = '/login';
+        
+        // Redirect: If sticky branch exists, go to Magic Link to keep context visible
+        if (stickyBranch) {
+            window.location.href = `/login?branch=${stickyBranch}`;
+        } else {
+            window.location.href = '/login';
+        }
     };
 
     return (
