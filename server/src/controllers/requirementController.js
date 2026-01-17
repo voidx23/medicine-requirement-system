@@ -293,7 +293,8 @@ export const generatePDF = async (req, res) => {
         
         let filenameDate = 'report';
         if (dateStr instanceof Date) {
-            filenameDate = dateStr.toISOString().split('T')[0];
+            // Fix: Force Dubai timezone for filename
+            filenameDate = dateStr.toLocaleDateString('en-CA', { timeZone: 'Asia/Dubai' });
         } else {
              // If dateStr is a range string, sanitize it
              filenameDate = 'range_report';
@@ -317,7 +318,8 @@ export const generatePDF = async (req, res) => {
              
              let dateDisplay = '';
              if (dateStr instanceof Date) {
-                 dateDisplay = dateStr.toLocaleDateString('en-GB');
+                 // Fix: Force Dubai timezone for report title
+                 dateDisplay = dateStr.toLocaleDateString('en-GB', { timeZone: 'Asia/Dubai' });
              } else {
                  dateDisplay = String(dateStr);
              }

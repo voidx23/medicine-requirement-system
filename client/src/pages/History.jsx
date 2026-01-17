@@ -93,8 +93,10 @@ const History = () => {
               responseType: 'blob'
           });
           
-          // Create blob link to download
-          const dateStr = new Date(selectedList.date).toISOString().split('T')[0];
+          // Fix: Use local date for filename to avoid UTC -1 day shift
+          const date = new Date(selectedList.date);
+          // Format as YYYY-MM-DD using local time (or specific locale if needed)
+          const dateStr = date.toLocaleDateString('en-CA'); // en-CA gives YYYY-MM-DD
           const url = window.URL.createObjectURL(new Blob([response.data]));
           const link = document.createElement('a');
           link.href = url;
