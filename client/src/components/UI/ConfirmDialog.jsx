@@ -23,6 +23,7 @@ const ConfirmDialog = () => {
             className="btn" 
             style={{ background: '#e2e8f0', color: '#475569' }}
             onClick={confirmDialog.onCancel}
+            aria-label="Cancel confirmation"
           >
             Cancel
           </button>
@@ -30,6 +31,7 @@ const ConfirmDialog = () => {
           <button 
             className="btn btn-danger"
             onClick={confirmDialog.onConfirm}
+            aria-label="Confirm action"
           >
             Confirm
           </button>

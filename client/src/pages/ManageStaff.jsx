@@ -146,7 +146,7 @@ const ManageStaff = () => {
                     <h2 style={{ fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Store size={20} /> Branches
                     </h2>
-                    <Button variant="secondary" onClick={() => setIsBranchModalOpen(true)} style={{ padding: '0.4rem' }} icon={Plus}>
+                    <Button variant="secondary" onClick={() => setIsBranchModalOpen(true)} style={{ padding: '0.4rem' }} icon={Plus} aria-label="Create new branch">
                         New
                     </Button>
                 </div>
@@ -181,6 +181,7 @@ const ManageStaff = () => {
                                     </h2>
                                     <button 
                                         onClick={openEditModal}
+                                        aria-label="Edit branch details"
                                         style={{ 
                                             background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', 
                                             padding: '0.25rem', borderRadius: '4px', display: 'flex', alignItems: 'center'
@@ -195,7 +196,7 @@ const ManageStaff = () => {
                                     {selectedBranch.contactNumber && <span>📞 {selectedBranch.contactNumber}</span>}
                                 </div>
                             </div>
-                            <Button variant="primary" icon={Plus} onClick={() => setIsAddModalOpen(true)}>
+                            <Button variant="primary" icon={Plus} onClick={() => setIsAddModalOpen(true)} aria-label="Register new pharmacist">
                                 Register Pharmacist
                             </Button>
                         </div>
@@ -227,6 +228,7 @@ const ManageStaff = () => {
                                                 <button 
                                                     onClick={() => handleDeleteStaff(staff._id)}
                                                     className="btn-icon"
+                                                    aria-label={`Delete staff member ${staff.name}`}
                                                     style={{ color: '#ef4444', background: '#fee2e2', borderRadius: '8px', padding: '0.5rem' }}
                                                 >
                                                     <Trash2 size={18} />

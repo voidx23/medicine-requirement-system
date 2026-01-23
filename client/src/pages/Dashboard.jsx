@@ -149,6 +149,7 @@ const Dashboard = () => {
                     onClick={() => setPdfModalOpen(true)} 
                     disabled={list.items.length === 0}
                     icon={Download}
+                    aria-label="Generate PDF report of daily requirements"
                 >
                     Generate PDF
                 </Button>

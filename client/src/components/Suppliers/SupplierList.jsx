@@ -42,6 +42,7 @@ const SupplierList = ({ suppliers, onEdit, onDelete, onProductView }) => {
           <div style={{ display: 'flex', gap: '0.5rem' }} onClick={(e) => e.stopPropagation()}>
             <button 
               onClick={() => onEdit(supplier)}
+              aria-label={`Edit ${supplier.name}`}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: '8px', borderRadius: '4px' }}
               title="Edit"
             >
@@ -49,6 +50,7 @@ const SupplierList = ({ suppliers, onEdit, onDelete, onProductView }) => {
             </button>
             <button
               onClick={() => onDelete(supplier._id)}
+              aria-label={`Delete ${supplier.name}`}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: '8px', borderRadius: '4px' }}
                 title="Delete"
             >

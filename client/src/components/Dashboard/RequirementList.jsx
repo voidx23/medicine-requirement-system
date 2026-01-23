@@ -50,6 +50,7 @@ const RequirementList = ({ items, onRemove }) => {
               <td style={{ padding: '1rem', textAlign: 'right' }}>
                 <button 
                     onClick={() => onRemove(item.medicineId?._id)}
+                    aria-label={`Remove ${item.medicineId?.name || 'item'} from list`}
                     style={{ 
                         background: 'transparent',
                         border: 'none',
