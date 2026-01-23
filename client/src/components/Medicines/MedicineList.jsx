@@ -37,6 +37,7 @@ const MedicineList = ({ medicines, onEdit, onDelete }) => {
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button 
               onClick={() => onEdit(medicine)}
+              aria-label={`Edit ${medicine.name}`}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: '8px', borderRadius: '4px' }}
               title="Edit"
             >
@@ -44,6 +45,7 @@ const MedicineList = ({ medicines, onEdit, onDelete }) => {
             </button>
             <button
               onClick={() => onDelete(medicine._id)}
+              aria-label={`Delete ${medicine.name}`}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: '8px', borderRadius: '4px' }}
                 title="Delete"
             >

@@ -78,6 +78,7 @@ const Sidebar = () => {
         ))}
       <button
             onClick={logout}
+            aria-label="Logout"
             style={{
               display: 'flex',
               alignItems: 'center',

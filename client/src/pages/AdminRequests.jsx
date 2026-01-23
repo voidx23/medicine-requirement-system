@@ -116,7 +116,7 @@ const AdminRequests = () => {
             {/* Page Header */}
             <div className="flex justify-between items-center mb-6" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                 <h1 className="header-title">Pharmacist Requests</h1>
-                <Button onClick={fetchRequests} disabled={loading} icon={RotateCw}>
+                <Button onClick={fetchRequests} disabled={loading} icon={RotateCw} aria-label="Refresh requests">
                     {loading ? 'Refreshing...' : 'Refresh'}
                 </Button>
             </div>
@@ -134,6 +134,7 @@ const AdminRequests = () => {
                         {/* 'All' Option */}
                         <button
                             onClick={() => setSelectedPharmacistId('all')}
+                            aria-label="Show all requests"
                             style={{
                                 width: '100%', textAlign: 'left', padding: '0.75rem 1rem',
                                 borderRadius: '8px', border: 'none', cursor: 'pointer',
@@ -164,6 +165,7 @@ const AdminRequests = () => {
                             <button
                                 key={pharm.id}
                                 onClick={() => setSelectedPharmacistId(pharm.id)}
+                                aria-label={`Show requests from ${pharm.name}`}
                                 style={{
                                     width: '100%', textAlign: 'left', padding: '0.75rem 1rem',
                                     borderRadius: '8px', border: 'none', cursor: 'pointer',
@@ -257,6 +259,7 @@ const AdminRequests = () => {
                                                                     <button
                                                                         onClick={(e) => { e.stopPropagation(); toggleShortlist(item.medicineId._id, item.name); }}
                                                                         title={dailyListIds.has(item.medicineId._id) ? "Remove" : "Add"}
+                                                                        aria-label={dailyListIds.has(item.medicineId._id) ? `Remove ${item.name} from shortlist` : `Add ${item.name} to shortlist`}
                                                                         style={{
                                                                             background: dailyListIds.has(item.medicineId._id) ? '#fee2e2' : 'var(--primary-light)',
                                                                             border: 'none', borderRadius: '8px', 
@@ -278,15 +281,15 @@ const AdminRequests = () => {
 
                                         {/* Footer Actions */}
                                         <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end', paddingTop: '1rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                                            <Button variant="danger" icon={Trash2} style={{ marginRight: 'auto' }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(req._id); }}>
+                                            <Button variant="danger" icon={Trash2} style={{ marginRight: 'auto' }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(req._id); }} aria-label="Delete request">
                                                 Delete
                                             </Button>
                                             {req.status === 'pending' && (
                                                 <>
-                                                    <Button variant="outline" icon={XCircle} style={{ color: '#ef4444', borderColor: '#fee2e2' }} onClick={(e) => { e.stopPropagation(); updateStatus(req._id, 'rejected'); }}>
+                                                    <Button variant="outline" icon={XCircle} style={{ color: '#ef4444', borderColor: '#fee2e2' }} onClick={(e) => { e.stopPropagation(); updateStatus(req._id, 'rejected'); }} aria-label="Reject request">
                                                         Reject
                                                     </Button>
-                                                    <Button className="btn-primary" style={{ backgroundColor: '#22c55e', borderColor: '#22c55e' }} icon={CheckCircle} onClick={(e) => { e.stopPropagation(); updateStatus(req._id, 'approved'); }}>
+                                                    <Button className="btn-primary" style={{ backgroundColor: '#22c55e', borderColor: '#22c55e' }} icon={CheckCircle} onClick={(e) => { e.stopPropagation(); updateStatus(req._id, 'approved'); }} aria-label="Approve request">
                                                         Mark as Done
                                                     </Button>
                                                 </>

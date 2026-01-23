@@ -140,6 +140,7 @@ const AddItem = ({ onAdd }) => {
             disabled={!searchTerm} 
             className="btn-icon"
             style={{ borderRadius: '50%', padding: '0.5rem' }}
+            aria-label="Add selected medicine"
         >
              <Plus size={20} />
         </Button>
@@ -165,6 +166,7 @@ const AddItem = ({ onAdd }) => {
                     <button
                         key={medicine._id}
                         onClick={() => handleSelect(medicine)}
+                        aria-label={`Select ${medicine.name}`}
                         style={{
                             width: '100%',
                             textAlign: 'left',

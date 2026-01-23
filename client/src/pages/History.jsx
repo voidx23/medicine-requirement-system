@@ -196,6 +196,7 @@ const History = () => {
                         <button 
                             onClick={(e) => { e.stopPropagation(); handlePrintClick(record); }}
                             className="btn-icon"
+                            aria-label="Print requirement list"
                             style={{ 
                                 color: 'var(--primary)', 
                                 padding: '0.5rem', 
@@ -212,6 +213,7 @@ const History = () => {
                         <button 
                         onClick={(e) => { e.stopPropagation(); handleVerifyDelete(record._id); }}
                         className="btn-icon-danger"
+                        aria-label="Delete history record"
                         title="Delete Record"
                         >
                         <Trash2 size={20} />

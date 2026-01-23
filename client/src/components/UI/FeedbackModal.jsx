@@ -56,6 +56,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
             <div className="glass-panel" style={{ width: '100%', maxWidth: '500px', padding: '2rem', position: 'relative' }}>
                 <button 
                     onClick={onClose}
+                    aria-label="Close feedback modal"
                     style={{
                         position: 'absolute', top: '1rem', right: '1rem',
                         background: 'none', border: 'none', cursor: 'pointer',
@@ -119,6 +120,7 @@ const FeedbackModal = ({ isOpen, onClose }) => {
                                         key={t}
                                         type="button"
                                         onClick={() => setType(t)}
+                                        aria-label={`Select ${t} feedback type`}
                                         style={{
                                             flex: 1,
                                             padding: type === t ? 'calc(0.75rem - 1px)' : '0.75rem',
