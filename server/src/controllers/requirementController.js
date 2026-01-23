@@ -3,6 +3,7 @@ import RequirementList from '../models/RequirementList.js';
 
 // Helper to get today's date with time set to 00:00:00
 // Helper to get today's date (Dubai Midnight)
+// Helper to get today's date (Dubai Midnight)
 const getTodayDate = () => {
     // Current time
     const now = new Date();
@@ -13,17 +14,17 @@ const getTodayDate = () => {
     // We want the timestamp that REPRESENTS Dubai Midnight.
     // Dubai Midnight = 00:00 Dubai = 20:00 UTC (Previous Day).
     
-    // Algorithm to find this specific timestamp regardless of server TZ:
-    // 1. Add 4 hours to current UTC timestamp. This gives us a timestamp where 
-    //    the UTC value matches the Dubai wall-clock time.
+    // Algorithm:
+    // 1. Shift current time to "Dubai Wall Clock Time" (UTC+4)
     const dubaiOffset = 4 * 60 * 60 * 1000;
-    const dubaiFakeUTC = new Date(utcTimestamp + dubaiOffset);
+    const dubaiTime = new Date(utcTimestamp + dubaiOffset);
     
-    // 2. Floor to Day Start using UTC methods.
-    dubaiFakeUTC.setUTCHours(0, 0, 0, 0);
+    // 2. Floor to Day Start using UTC methods (00:00:00)
+    dubaiTime.setUTCHours(0, 0, 0, 0);
     
-    // 3. Subtract the offset to get back to the Real UTC timestamp.
-    const dubaiMidnightRealUTC = new Date(dubaiFakeUTC.getTime() - dubaiOffset);
+    // 3. Shift back to real UTC (-4h)
+    // This gives us the UTC timestamp corresponding to 00:00 Dubai Time
+    const dubaiMidnightRealUTC = new Date(dubaiTime.getTime() - dubaiOffset);
     
     return dubaiMidnightRealUTC;
 };
@@ -273,6 +274,38 @@ export const getReportData = async (req, res) => {
 };
 
 
+// Helper: Adjust date for Dubai (UTC+4) and format it manually
+// This avoids server locale issues by doing pure math on the timestamp.
+const formatDubaiDate = (dateObj) => {
+    if (!(dateObj instanceof Date) || isNaN(dateObj)) return String(dateObj);
+
+    // 1. Add 4 hours to get "Dubai Wall Clock Time" as a UTC value
+    // e.g. Stored: Jan 19 20:00 UTC -> +4h -> Jan 20 00:00 UTC value
+    const dubaiOffset = 4 * 60 * 60 * 1000;
+    const shiftedDate = new Date(dateObj.getTime() + dubaiOffset);
+
+    // 2. Format using UTC methods (since we shifted the value to match the desired local time)
+    const day = String(shiftedDate.getUTCDate()).padStart(2, '0');
+    const month = String(shiftedDate.getUTCMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const year = shiftedDate.getUTCFullYear();
+
+    return `${day}/${month}/${year}`; // DD/MM/YYYY
+};
+
+const formatDubaiDateISO = (dateObj) => {
+    if (!(dateObj instanceof Date) || isNaN(dateObj)) return 'report';
+    
+    const dubaiOffset = 4 * 60 * 60 * 1000;
+    const shiftedDate = new Date(dateObj.getTime() + dubaiOffset);
+    
+    const day = String(shiftedDate.getUTCDate()).padStart(2, '0');
+    const month = String(shiftedDate.getUTCMonth() + 1).padStart(2, '0');
+    const year = shiftedDate.getUTCFullYear();
+
+    return `${year}-${month}-${day}`; // YYYY-MM-DD
+};
+
+
 // @desc    Generate PDF (Grouped by supplier, Deduplicated)
 // @route   POST /api/requirements/generate-pdf
 export const generatePDF = async (req, res) => {
@@ -291,11 +324,11 @@ export const generatePDF = async (req, res) => {
         // IMPORTANT: autoPageBreak: false is crucial to prevent "S.No on one page, Name on next"
         const doc = new PDFDocument({ margin: 50, autoPageBreak: false });
         
+        // Fix: Use deterministic date formatting for filename
         let filenameDate = 'report';
         if (dateStr instanceof Date) {
-            filenameDate = dateStr.toISOString().split('T')[0];
+            filenameDate = formatDubaiDateISO(dateStr);
         } else {
-             // If dateStr is a range string, sanitize it
              filenameDate = 'range_report';
         }
 
@@ -309,7 +342,6 @@ export const generatePDF = async (req, res) => {
         const BOTTOM_MARGIN = 750; // A4 height is ~841. leaving ~90px bottom margin
         const COL_SNO = 50;
         const COL_NAME = 100;
-        // const COL_QTY = 400; // Removed
 
         // Helper: Draw Main Title (Only used once)
         const drawMainTitle = () => {
@@ -317,9 +349,14 @@ export const generatePDF = async (req, res) => {
              
              let dateDisplay = '';
              if (dateStr instanceof Date) {
-                 dateDisplay = dateStr.toLocaleDateString('en-GB');
+                 // Fix: Use deterministic Dubai formatting
+                 dateDisplay = formatDubaiDate(dateStr);
              } else {
-                 dateDisplay = String(dateStr);
+                 // If it's a range string, it's already formatted by the helper using locale strings.
+                 // Ideally, the helper should also use our manual formatter if we wanted range fixes too,
+                 // but typically ranges come from UI selection which are usually explicitly correct.
+                 // For now, we trust the range string if it's already a string.
+                 dateDisplay = String(dateStr); 
              }
 
              doc.fontSize(12).text(`Date Range: ${dateDisplay}`, { align: 'center' });
