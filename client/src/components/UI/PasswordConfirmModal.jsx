@@ -2,7 +2,16 @@ import { useState } from 'react';
 import { X, Lock, AlertTriangle } from 'lucide-react';
 import Button from './Button';
 
-const PasswordConfirmModal = ({ isOpen, onClose, onConfirm, title = "Security Check", message = "Please enter your password to confirm this action." }) => {
+const PasswordConfirmModal = ({ 
+    isOpen, 
+    onClose, 
+    onConfirm, 
+    title = "Security Check", 
+    message = "Please enter your password to confirm this action.",
+    confirmText = "Confirm Deletion",
+    verifyingText = "Verifying...",
+    variant = "danger"
+}) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,7 +51,7 @@ const PasswordConfirmModal = ({ isOpen, onClose, onConfirm, title = "Security Ch
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
             <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: 700 }}>
-                <div style={{ background: '#fee2e2', padding: '0.5rem', borderRadius: '50%', color: '#ef4444', display: 'flex' }}>
+                <div style={{ background: variant === 'danger' ? '#fee2e2' : '#dbeafe', padding: '0.5rem', borderRadius: '50%', color: variant === 'danger' ? '#ef4444' : '#3b82f6', display: 'flex' }}>
                     <Lock size={20} />
                 </div>
                 {title}
@@ -97,8 +106,8 @@ const PasswordConfirmModal = ({ isOpen, onClose, onConfirm, title = "Security Ch
                 <Button variant="outline" onClick={onClose} disabled={loading} style={{ border: '1px solid #e2e8f0' }}>
                     Cancel
                 </Button>
-                <Button type="submit" variant="danger" isLoading={loading} disabled={!password}>
-                    {loading ? 'Verifying...' : 'Confirm Deletion'}
+                <Button type="submit" variant={variant} isLoading={loading} disabled={!password}>
+                    {loading ? verifyingText : confirmText}
                 </Button>
             </div>
         </form>

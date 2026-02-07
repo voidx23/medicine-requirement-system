@@ -31,7 +31,7 @@ const requestSchema = mongoose.Schema({
         },
         status: {
             type: String, 
-            default: 'pending' 
+            default: 'pending' // pending, packed, forwarded, skipped
         }
     }],
     status: {
@@ -41,6 +41,10 @@ const requestSchema = mongoose.Schema({
     },
     adminNotes: {
         type: String
+    },
+    forwardingProcessed: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true

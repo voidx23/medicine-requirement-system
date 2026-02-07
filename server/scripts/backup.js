@@ -5,13 +5,12 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Models - Dynamic loading or explicit import? 
-// Explicit is safer for this small project.
+// Models
 import User from '../src/models/User.js';
 import Medicine from '../src/models/Medicine.js';
 import Supplier from '../src/models/Supplier.js';
 import RequirementList from '../src/models/RequirementList.js';
-// Add other models if needed
+import PharmacistRequest from '../src/models/PharmacistRequest.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +45,7 @@ const backup = async () => {
         await dumpModel('Medicines', Medicine);
         await dumpModel('Suppliers', Supplier);
         await dumpModel('RequirementLists', RequirementList);
+        await dumpModel('PharmacistRequests', PharmacistRequest);
 
         console.log('Backup completed successfully.');
         process.exit();
