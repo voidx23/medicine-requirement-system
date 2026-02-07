@@ -1,5 +1,6 @@
 import PharmacistRequest from '../models/PharmacistRequest.js';
 import User from '../models/User.js';
+import RequirementList from '../models/RequirementList.js'; // Kept for reference but not used in forwardItems anymore
 
 // @desc    Submit a new requirement list
 // @route   POST /api/requests/submit
@@ -139,6 +140,176 @@ export const deleteRequest = async (req, res) => {
 
         await request.deleteOne();
         res.json({ message: 'Request removed' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Update status of a specific item in a request
+// @route   PUT /api/requests/:id/items/:itemId/status
+// @access  Private (Admin only)
+export const updateItemStatus = async (req, res) => {
+    try {
+        const { status } = req.body; // Expecting 'packed' or 'pending'
+        const request = await PharmacistRequest.findById(req.params.id);
+
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+
+        const item = request.items.id(req.params.itemId);
+        if (!item) {
+            return res.status(404).json({ message: 'Item not found in request' });
+        }
+
+        item.status = status;
+
+        // Auto-update request status logic
+        const allItems = request.items;
+        const totalItems = allItems.length;
+        const packedItems = allItems.filter(i => i.status === 'packed').length;
+
+        if (packedItems === 0) {
+            request.status = 'approved'; // Or pending, but presumably if we are packing it's approved
+        } else if (packedItems === totalItems) {
+            request.status = 'completed';
+        } else {
+            request.status = 'partially_fulfilled';
+        }
+        
+        await request.save();
+        res.json(request);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+// @desc    Batch fulfill items and complete request
+// @route   PUT /api/requests/:id/fulfill
+// @access  Private (Admin only)
+export const fulfillRequest = async (req, res) => {
+    try {
+        const { items } = req.body; // Expecting array of { _id, status }
+        const request = await PharmacistRequest.findById(req.params.id);
+
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+
+        // Update items based on the batch request
+        if (items && Array.isArray(items)) {
+            items.forEach(updateItem => {
+                const item = request.items.id(updateItem._id);
+                if (item && updateItem.status) {
+                    item.status = updateItem.status;
+                }
+            });
+        }
+
+        // Calculate final status
+        const allItems = request.items;
+        const totalItems = allItems.length;
+        const packedItems = allItems.filter(i => i.status === 'packed').length;
+
+        if (packedItems === totalItems) {
+            request.status = 'completed';
+        } else if (packedItems > 0) {
+            request.status = 'partially_fulfilled';
+        } else {
+            // Fallback if they uncheck everything (though unlikely in this flow)
+            request.status = 'approved'; 
+        }
+
+        const updatedRequest = await request.save();
+        res.json(updatedRequest);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Reset request status to approved (Unlock for editing)
+// @route   PUT /api/requests/:id/reset
+// @access  Private (Admin only)
+export const resetRequest = async (req, res) => {
+    try {
+        const { password } = req.body;
+        const request = await PharmacistRequest.findById(req.params.id);
+
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+
+        // Verify Admin Password
+        const user = await req.user; 
+        if (!user || user.role !== 'admin') {
+             return res.status(401).json({ message: 'Not authorized' });
+        }
+        
+        const adminUser = await User.findById(req.user._id); 
+        if (!password || !(await adminUser.matchPassword(password))) {
+             return res.status(401).json({ message: 'Invalid Admin Password' });
+        }
+
+        // Unlock logic: Set status back to 'approved' so it becomes interactive
+        request.status = 'approved';
+        
+        const updatedRequest = await request.save();
+        res.json(updatedRequest);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Forward unfulfilled items to new request cart
+// @route   POST /api/requests/:id/forward
+// @access  Private (Pharmacist)
+// @desc    Forward unfulfilled items to new request cart (Client-side)
+// @route   POST /api/requests/:id/forward
+// @access  Private (Pharmacist)
+export const forwardItems = async (req, res) => {
+    try {
+        const { itemsToForward } = req.body; // Array of item IDs
+        
+        const request = await PharmacistRequest.findById(req.params.id);
+        if (!request) return res.status(404).json({ message: "Request not found" });
+
+        if (request.forwardingProcessed) {
+            return res.status(400).json({ message: "This request has already been acted upon for forwarding." });
+        }
+
+        let forwardedItems = [];
+        
+        // Loop through request items
+        request.items.forEach(item => {
+            // Check if this item is in the 'to forward' list
+            if (itemsToForward && itemsToForward.includes(item._id.toString())) {
+                
+                // Collect item details to return to client
+                forwardedItems.push({
+                    _id: item._id, // Original ID ref (optional)
+                    medicineId: item.medicineId,
+                    name: item.name,
+                    quantity: item.quantity,
+                    isCustom: item.isCustom
+                });
+
+                // Mark as forwarded in OLD list
+                item.status = 'forwarded';
+
+            } else {
+                // Ignore unselected items (leave as skipped/pending)
+            }
+        });
+
+        request.forwardingProcessed = true;
+        
+        await request.save();
+
+        // Return the forwarded items so client can add them to localStorage cart
+        res.json({ 
+            message: `Successfully forwarded ${forwardedItems.length} items.`, 
+            forwardedItems 
+        });
+
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
