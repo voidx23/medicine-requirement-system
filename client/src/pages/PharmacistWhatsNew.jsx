@@ -1,11 +1,35 @@
 import { useState } from 'react';
-import { GitBranch, Clock, Zap, Layout, ListOrdered, CheckCircle2, MessageSquare, Save, ShieldCheck, ScanBarcode } from 'lucide-react';
+import { GitBranch, Clock, Zap, Layout, ListOrdered, CheckCircle2, MessageSquare, Save, ShieldCheck, ScanBarcode, CornerDownRight, UserCheck, Plus } from 'lucide-react';
 import FeedbackModal from '../components/UI/FeedbackModal';
 
 const PharmacistWhatsNew = () => {
     const [feedbackOpen, setFeedbackOpen] = useState(false);
 
     const updates = [
+        {
+            version: 'v2.5',
+            date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+            title: 'Workflow & Flexibility',
+            icon: CornerDownRight,
+            color: '#8b5cf6', // Violet
+            items: [
+                {
+                    title: 'Smart Re-ordering',
+                    desc: 'Partially fulfilled? You can now instantly "Forward" missing items to a new request cart with one click.',
+                    icon: CornerDownRight
+                },
+                {
+                    title: 'Manual Item Entry',
+                    desc: 'Medicine not found in search? You can now manually add custom items to your request list.',
+                    icon: Plus
+                },
+                {
+                    title: 'Staff Verification',
+                    desc: 'Requests now require a digital staff signature before submission for better accountability.',
+                    icon: UserCheck
+                }
+            ]
+        },
         {
             version: 'v2.4',
             date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
