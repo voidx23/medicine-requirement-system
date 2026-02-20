@@ -166,6 +166,16 @@ const PharmacistHistory = () => {
         }
     };
 
+    const getStatusColor = (status) => {
+        switch(status) {
+            case 'completed': return { bg: '#dcfce7', text: '#166534' }; // Green
+            case 'partially_fulfilled': return { bg: '#f3e8ff', text: '#6b21a8' }; // Purple
+            case 'approved': return { bg: '#dbeafe', text: '#1e40af' }; // Blue
+            case 'rejected': return { bg: '#fee2e2', text: '#991b1b' }; // Red
+            default: return { bg: '#fef3c7', text: '#d97706' }; // Pending (Yellow)
+        }
+    };
+
     const fetchHistory = async () => {
         setLoading(true);
         try {
@@ -263,10 +273,11 @@ const PharmacistHistory = () => {
                                     </div>
                                     <span style={{ 
                                         padding: '0.35rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600,
-                                        background: req.status === 'pending' ? '#fef3c7' : (req.status === 'approved' ? '#dcfce7' : '#fee2e2'),
-                                        color: req.status === 'pending' ? '#d97706' : (req.status === 'approved' ? '#166534' : '#991b1b')
+                                        background: getStatusColor(req.status).bg,
+                                        color: getStatusColor(req.status).text,
+                                        border: `1px solid ${getStatusColor(req.status).text}20`
                                     }}>
-                                        {req.status.toUpperCase()}
+                                        {req.status === 'partially_fulfilled' ? 'PARTIAL' : req.status.toUpperCase()}
                                     </span>
                                 </div>
                                 

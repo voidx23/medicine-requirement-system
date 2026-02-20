@@ -41,6 +41,27 @@ export const getRequests = async (req, res) => {
         // If not admin, only show own requests
         if (req.user.role !== 'admin') {
             query.pharmacistId = req.user._id;
+        } else if (req.query.branchId && req.query.branchId !== 'all') {
+            query.pharmacistId = req.query.branchId;
+        }
+
+        if (req.query.status) {
+            // e.g. status=pending,approved
+            query.status = { $in: req.query.status.split(',') };
+        }
+
+        if (req.query.startDate || req.query.endDate) {
+            query.createdAt = {};
+            if (req.query.startDate) {
+                const start = new Date(req.query.startDate);
+                start.setHours(0, 0, 0, 0);
+                query.createdAt.$gte = start;
+            }
+            if (req.query.endDate) {
+                const end = new Date(req.query.endDate);
+                end.setHours(23, 59, 59, 999);
+                query.createdAt.$lte = end;
+            }
         }
 
         const requests = await PharmacistRequest.find(query)
