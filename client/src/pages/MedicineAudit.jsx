@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, AlertCircle, Pill } from 'lucide-react';
+import { Search, AlertCircle, Pill, Activity, CalendarDays, MapPin, Hash, CheckCircle2 } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 
@@ -20,6 +20,7 @@ const MedicineAudit = () => {
 
     // Data
     const [auditData, setAuditData] = useState(null);
+    const [hasSearched, setHasSearched] = useState(false);
 
     useEffect(() => {
         // Default dates: last 30 days
@@ -81,6 +82,7 @@ const MedicineAudit = () => {
             
             const response = await api.get(`/requirements/medicine-audit?${queryParams.toString()}`);
             setAuditData(response.data.data);
+            setHasSearched(true);
             
             if (response.data.data.length === 0) {
                 showToast('No branch requested this medicine in the selected period', 'info');
@@ -105,28 +107,62 @@ const MedicineAudit = () => {
         }
     };
 
+    const getStatusText = (status) => {
+        if (status === 'partially_fulfilled') return 'Partially Fulfilled';
+        return status.charAt(0).toUpperCase() + status.slice(1);
+    };
+
     return (
-        <div>
-            <h1 className="header-title">Medicine Audit</h1>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-                Look up which branches requested a specific medicine within a time period.
+        <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                <div style={{ 
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.05) 100%)', 
+                    padding: '0.6rem', 
+                    borderRadius: '12px',
+                    color: 'var(--primary)',
+                    boxShadow: 'inset 0 0 0 1px rgba(99, 102, 241, 0.1)'
+                }}>
+                    <Activity size={24} />
+                </div>
+                <h1 className="header-title" style={{ margin: 0 }}>Medicine Audit Log</h1>
+            </div>
+            
+            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '1.05rem', paddingLeft: '0.5rem' }}>
+                Track distribution history and branch requisition records for precise auditing.
             </p>
 
             {/* Control Panel */}
-            <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                    
+            <div className="glass-panel" style={{ 
+                padding: '1.75rem', 
+                marginBottom: '2.5rem',
+                border: '1px solid rgba(255,255,255,0.4)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.04)'
+            }}>
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'minmax(250px, 2fr) 1fr 1fr auto', 
+                    gap: '1.5rem', 
+                    alignItems: 'end' 
+                }}>
                     {/* Medicine Auto-Suggest */}
-                    <div style={{ flex: '1 1 300px', position: 'relative' }}>
-                        <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Search Medicine</label>
-                        <div className="input-group">
-                            <Search className="input-icon" size={20} />
+                    <div style={{ position: 'relative' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.6rem' }}>
+                            <Pill size={16} style={{ color: 'var(--primary)' }} /> Search Medicine
+                        </label>
+                        <div className="input-group" style={{ 
+                            background: 'rgba(255,255,255,0.8)', 
+                            border: selectedMedicineId ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid var(--glass-border)',
+                            boxShadow: selectedMedicineId ? '0 0 0 3px rgba(16, 185, 129, 0.1)' : 'none',
+                            transition: 'all 0.3s'
+                        }}>
+                            {selectedMedicineId ? <CheckCircle2 className="input-icon" size={20} color="#10b981" /> : <Search className="input-icon" size={20} />}
                             <input
                                 type="text"
                                 className="glass-input"
-                                placeholder="Start typing medicine name..."
+                                placeholder="Start typing medicine generic name..."
                                 value={query}
                                 onChange={(e) => handleSearchInput(e.target.value)}
+                                style={{ background: 'transparent' }}
                             />
                         </div>
 
@@ -134,59 +170,72 @@ const MedicineAudit = () => {
                         {isDropdownOpen && (
                             <div style={{
                                 position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000,
-                                marginTop: '5px', background: 'white', borderRadius: '12px',
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.1)', border: '1px solid rgba(0,0,0,0.05)',
-                                maxHeight: '300px', overflowY: 'auto'
+                                marginTop: '8px', background: 'rgba(255, 255, 255, 0.95)', 
+                                backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+                                borderRadius: '12px',
+                                boxShadow: '0 10px 40px rgba(0,0,0,0.12)', border: '1px solid rgba(255,255,255,0.5)',
+                                maxHeight: '350px', overflowY: 'auto',
+                                transformOrigin: 'top', animation: 'dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
                             }}>
                                 {searching ? (
-                                    <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Searching...</div>
+                                    <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                        <div className="pulse" style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%', display: 'inline-block', margin: '0 4px', animation: 'pulse 1.5s infinite' }}></div>
+                                        <div className="pulse" style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%', display: 'inline-block', margin: '0 4px', animation: 'pulse 1.5s infinite 0.2s' }}></div>
+                                        <div className="pulse" style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%', display: 'inline-block', margin: '0 4px', animation: 'pulse 1.5s infinite 0.4s' }}></div>
+                                    </div>
                                 ) : results.length > 0 ? (
                                     results.map(med => (
                                         <div 
                                             key={med._id} 
                                             onClick={() => selectMedicine(med)}
                                             style={{
-                                                padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid rgba(0,0,0,0.03)',
-                                                display: 'flex', alignItems: 'center', gap: '0.75rem'
+                                                padding: '0.85rem 1.25rem', cursor: 'pointer', borderBottom: '1px solid rgba(0,0,0,0.03)',
+                                                display: 'flex', alignItems: 'center', gap: '1rem',
+                                                transition: 'background 0.2s'
                                             }}
-                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(var(--primary-rgb), 0.05)'}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)'}
                                             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                                         >
-                                            <div style={{ background: 'rgba(var(--primary-rgb), 0.1)', padding: '0.4rem', borderRadius: '8px', color: 'var(--primary)' }}>
-                                                <Pill size={16} />
+                                            <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '0.5rem', borderRadius: '10px', color: 'var(--primary)' }}>
+                                                <Pill size={18} />
                                             </div>
                                             <div>
-                                                <div style={{ fontWeight: 500, color: 'var(--text-main)', fontSize: '0.95rem' }}>{med.name}</div>
-                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{med.supplierId?.name || 'No Supplier'}</div>
+                                                <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '1rem' }}>{med.name}</div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '2px' }}>Supplier: {med.supplierId?.name || 'Unassigned'}</div>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    query.length > 1 && <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>No medicines found.</div>
+                                    query.length > 1 && <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>No matches found in inventory.</div>
                                 )}
                             </div>
                         )}
                     </div>
 
-                    {/* Date Range */}
-                    <div style={{ flex: '0 1 200px' }}>
-                        <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Start Date</label>
+                    {/* Date Range Start */}
+                    <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.6rem' }}>
+                            <CalendarDays size={16} style={{ color: 'var(--text-muted)' }} /> Start Period
+                        </label>
                         <input 
                             type="date" 
                             className="input-field" 
                             value={startDate} 
                             onChange={(e) => setStartDate(e.target.value)}
-                            style={{ width: '100%' }}
+                            style={{ width: '100%', height: '44px', background: 'rgba(255,255,255,0.8)' }}
                         />
                     </div>
-                    <div style={{ flex: '0 1 200px' }}>
-                        <label style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>End Date</label>
+                    {/* Date Range End */}
+                    <div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.6rem' }}>
+                            <CalendarDays size={16} style={{ color: 'var(--text-muted)' }} /> End Period
+                        </label>
                         <input 
                             type="date" 
                             className="input-field" 
                             value={endDate} 
                             onChange={(e) => setEndDate(e.target.value)}
-                            style={{ width: '100%' }}
+                            style={{ width: '100%', height: '44px', background: 'rgba(255,255,255,0.8)' }}
                         />
                     </div>
 
@@ -194,12 +243,23 @@ const MedicineAudit = () => {
                     <button 
                         onClick={handleSearch}
                         className="btn-primary"
-                        style={{ height: '44px', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0 1.5rem', marginTop: '1.65rem' }}
+                        style={{ 
+                            height: '44px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '0.5rem', 
+                            padding: '0 2rem',
+                            fontSize: '0.95rem',
+                            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)',
+                            transition: 'all 0.3s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 6px 16px rgba(99, 102, 241, 0.4)'}
+                        onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.25)'}
                         disabled={loading}
                     >
-                        {loading ? 'Searching...' : (
+                        {loading ? 'Processing...' : (
                             <>
-                                <Search size={18} /> Lookup
+                                <Search size={18} /> Retrieve Log
                             </>
                         )}
                     </button>
@@ -207,62 +267,112 @@ const MedicineAudit = () => {
             </div>
 
             {/* Results Area */}
+            {!auditData && !hasSearched && (
+                <div style={{ textAlign: 'center', padding: '4rem 2rem', opacity: 0.8, animation: 'fadeIn 0.6s ease-out' }}>
+                    <div style={{ 
+                        width: '80px', height: '80px', borderRadius: '50%', background: 'var(--glass-bg)', 
+                        border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', 
+                        justifyContent: 'center', margin: '0 auto 1.5rem', color: 'var(--primary)' 
+                    }}>
+                        <Activity size={36} strokeWidth={1.5} />
+                    </div>
+                    <h3 style={{ fontSize: '1.25rem', color: 'var(--text-main)', marginBottom: '0.5rem', fontWeight: 600 }}>Ready to Audit</h3>
+                    <p style={{ color: 'var(--text-muted)', maxWidth: '400px', margin: '0 auto', lineHeight: 1.6 }}>
+                        Use the filters above to pull a comprehensive history of requests for any specific medication.
+                    </p>
+                </div>
+            )}
+
             {auditData && (
-                <div className="glass-panel" style={{ padding: '0', overflow: 'hidden', animation: 'fadeIn 0.3s ease-out' }}>
+                <div className="glass-panel" style={{ padding: '0', overflow: 'hidden', animation: 'fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)' }}>
                     <div style={{ 
                         padding: '1.5rem', borderBottom: '1px solid rgba(0,0,0,0.06)', 
-                        background: 'rgba(255,255,255,0.5)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                        background: 'linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 100%)', 
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                     }}>
                         <div>
-                            <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
-                                Audit Results
+                            <h2 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <FileText size={20} className="text-primary" /> Audit Results Log
                             </h2>
-                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                                Found <strong>{auditData.length}</strong> request records for this medicine.
+                            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.4rem', paddingLeft: '28px' }}>
+                                Found <strong>{auditData.length}</strong> requisition record{auditData.length !== 1 ? 's' : ''} on file.
                             </div>
                         </div>
                     </div>
 
-                    <div style={{ padding: '1.5rem', maxHeight: '600px', overflowY: 'auto' }}>
+                    <div style={{ maxHeight: 'calc(100vh - 400px)', minHeight: '300px', overflowY: 'auto' }}>
                         {auditData.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                                <AlertCircle size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                                <p>No branches requested this medicine in the selected dates.</p>
+                            <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-muted)' }}>
+                                <AlertCircle size={48} strokeWidth={1.5} style={{ opacity: 0.4, marginBottom: '1rem', display: 'inline-block' }} />
+                                <h3 style={{ color: 'var(--text-main)', marginBottom: '0.5rem' }}>No Records Found</h3>
+                                <p style={{ fontSize: '0.95rem' }}>There were no branch requests for this medication during the specified timeframe.</p>
                             </div>
                         ) : (
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
-                                <thead>
-                                    <tr style={{ borderBottom: '2px solid rgba(0,0,0,0.05)', textAlign: 'left' }}>
-                                        <th style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)', fontWeight: 600 }}>Date</th>
-                                        <th style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)', fontWeight: 600 }}>Branch Name</th>
-                                        <th style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)', fontWeight: 600 }}>Quantity</th>
-                                        <th style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)', fontWeight: 600 }}>Request Status</th>
+                                <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(249, 250, 251, 0.95)', backdropFilter: 'blur(4px)' }}>
+                                    <tr style={{ borderBottom: '2px solid rgba(0,0,0,0.06)', textAlign: 'left' }}>
+                                        <th style={{ padding: '1.25rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                 <CalendarDays size={16} /> Date Logged
+                                            </div>
+                                        </th>
+                                        <th style={{ padding: '1.25rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                 <MapPin size={16} /> Branch Origin
+                                            </div>
+                                        </th>
+                                        <th style={{ padding: '1.25rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                 <Hash size={16} /> Quantity
+                                            </div>
+                                        </th>
+                                        <th style={{ padding: '1.25rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                 <Activity size={16} /> Fulfillment Status
+                                            </div>
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {auditData.map((record, index) => (
-                                        <tr key={`${record._id}-${index}`} style={{ borderBottom: index < auditData.length - 1 ? '1px solid rgba(0,0,0,0.03)' : 'none', transition: 'background 0.2s', cursor: 'default' }} onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'} onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
-                                            <td style={{ padding: '1rem 1.5rem', color: 'var(--text-main)' }}>
-                                                {new Date(record.date).toLocaleDateString()}
+                                        <tr key={`${record._id}-${index}`} style={{ 
+                                            borderBottom: index < auditData.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none', 
+                                            transition: 'all 0.2s ease', cursor: 'default',
+                                            background: 'transparent'
+                                        }} 
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = 'rgba(99, 102, 241, 0.03)';
+                                            e.currentTarget.style.transform = 'translateY(-1px)';
+                                        }} 
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = 'transparent';
+                                            e.currentTarget.style.transform = 'none';
+                                        }}>
+                                            <td style={{ padding: '1.1rem 1.5rem', color: 'var(--text-main)', fontWeight: 500 }}>
+                                                {new Date(record.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric'})}
                                             </td>
-                                            <td style={{ padding: '1rem 1.5rem', fontWeight: 500, color: 'var(--primary)' }}>
-                                                {record.branchName}
+                                            <td style={{ padding: '1.1rem 1.5rem' }}>
+                                                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.7)', padding: '0.2rem 0.6rem', borderRadius: '6px', border: '1px solid var(--glass-border)' }}>
+                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)', opacity: 0.8 }}></div>
+                                                    <span style={{ fontWeight: 600, color: 'var(--primary-dark)' }}>{record.branchName}</span>
+                                                </div>
                                             </td>
-                                            <td style={{ padding: '1rem 1.5rem', fontWeight: 600, color: 'var(--text-main)' }}>
-                                                {record.quantity}
+                                            <td style={{ padding: '1.1rem 1.5rem', fontWeight: 600, color: 'var(--text-main)', fontSize: '1.05rem' }}>
+                                                {record.quantity} <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>units</span>
                                             </td>
-                                            <td style={{ padding: '1rem 1.5rem' }}>
+                                            <td style={{ padding: '1.1rem 1.5rem' }}>
                                                 <span style={{
-                                                    padding: '0.25rem 0.75rem',
+                                                    padding: '0.35rem 0.85rem',
                                                     borderRadius: '20px',
                                                     fontSize: '0.8rem',
                                                     fontWeight: 600,
-                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.3px',
                                                     backgroundColor: `color-mix(in srgb, ${getStatusColor(record.status)} 15%, transparent)`,
                                                     color: getStatusColor(record.status),
-                                                    border: `1px solid color-mix(in srgb, ${getStatusColor(record.status)} 30%, transparent)`
+                                                    border: `1px solid color-mix(in srgb, ${getStatusColor(record.status)} 30%, transparent)`,
+                                                    boxShadow: `0 2px 8px color-mix(in srgb, ${getStatusColor(record.status)} 15%, transparent)`
                                                 }}>
-                                                    {record.status.replace('_', ' ')}
+                                                    {getStatusText(record.status)}
                                                 </span>
                                             </td>
                                         </tr>
@@ -276,8 +386,17 @@ const MedicineAudit = () => {
             
             <style>{`
                 @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(10px); }
+                    from { opacity: 0; transform: translateY(15px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes dropdownFadeIn {
+                    from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                @keyframes pulse {
+                    0% { transform: scale(0.8); opacity: 0.5; }
+                    50% { transform: scale(1.2); opacity: 1; }
+                    100% { transform: scale(0.8); opacity: 0.5; }
                 }
             `}</style>
         </div>
