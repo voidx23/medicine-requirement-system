@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { CheckCircle, XCircle, ChevronDown, ChevronUp, RotateCw, Trash2, ListPlus, ListX, Store, Users, Filter, PackageCheck, Edit } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronDown, ChevronUp, RotateCw, Trash2, ListPlus, ListX, Store, Users, Filter, PackageCheck, Edit, Search, Calendar } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import Button from '../components/UI/Button';
@@ -8,7 +8,9 @@ import PasswordConfirmModal from '../components/UI/PasswordConfirmModal';
 const AdminRequests = () => {
     const { showConfirm, showToast } = useNotification();
     const [requests, setRequests] = useState([]);
+    const [historyRequests, setHistoryRequests] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [historyLoading, setHistoryLoading] = useState(false);
     const [expandedId, setExpandedId] = useState(null);
     const [actionModal, setActionModal] = useState({ isOpen: false, type: 'delete', requestId: null });
     const [dailyListIds, setDailyListIds] = useState(new Set());
@@ -18,13 +20,22 @@ const AdminRequests = () => {
     const [packingState, setPackingState] = useState({});
 
     // Filter State
+    const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'history'
     const [selectedPharmacistId, setSelectedPharmacistId] = useState('all');
+    
+    // History Filter State
+    const [branches, setBranches] = useState([]);
+    const [historyFilter, setHistoryFilter] = useState({
+        branchId: 'all',
+        startDate: '',
+        endDate: ''
+    });
 
     const fetchRequests = async () => {
         setLoading(true); 
         try {
             const [{ data: requestsData }, { data: todayData }] = await Promise.all([
-                api.get('/requests'),
+                api.get('/requests?status=pending'),
                 api.get('/requirements/today'),
                 new Promise(resolve => setTimeout(resolve, 800))
             ]);
@@ -50,8 +61,37 @@ const AdminRequests = () => {
         }
     };
 
+    const fetchBranches = async () => {
+        try {
+            const { data } = await api.get('/staff/branches');
+            setBranches(data);
+        } catch (error) {
+            console.error("Failed to fetch branches", error);
+        }
+    };
+
+    const fetchHistory = async () => {
+        setHistoryLoading(true);
+        try {
+            const query = new URLSearchParams({ status: 'completed,rejected,approved,partially_fulfilled' });
+            if (historyFilter.branchId !== 'all') query.append('branchId', historyFilter.branchId);
+            if (historyFilter.startDate) query.append('startDate', historyFilter.startDate);
+            if (historyFilter.endDate) query.append('endDate', historyFilter.endDate);
+
+            const { data } = await api.get(`/requests?${query.toString()}`);
+            setHistoryRequests(data);
+            
+            setExpandedId(null); // Close any expanded rows
+        } catch (error) {
+            showToast('Failed to fetch history', 'error');
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchRequests();
+        fetchBranches();
     }, []);
 
     // --- Computed Data for Sidebar ---
@@ -181,11 +221,42 @@ const AdminRequests = () => {
     return (
         <div style={{ paddingBottom: '2rem' }}>
             {/* Page Header */}
-            <div className="flex justify-between items-center mb-6" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+            <div className="flex justify-between items-center mb-6" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
                 <h1 className="header-title">Pharmacist Requests</h1>
-                <Button onClick={fetchRequests} disabled={loading} icon={RotateCw} aria-label="Refresh requests">
-                    {loading ? 'Refreshing...' : 'Refresh'}
-                </Button>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', background: 'var(--glass-bg)', padding: '0.25rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
+                        <button
+                            onClick={() => setActiveTab('pending')}
+                            style={{
+                                padding: '0.5rem 1rem', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s',
+                                background: activeTab === 'pending' ? 'white' : 'transparent',
+                                color: activeTab === 'pending' ? 'var(--primary)' : 'var(--text-muted)',
+                                boxShadow: activeTab === 'pending' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                display: 'flex', alignItems: 'center', gap: '0.5rem'
+                            }}
+                        >
+                           <Store size={18} /> Active
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('history')}
+                            style={{
+                                padding: '0.5rem 1rem', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s',
+                                background: activeTab === 'history' ? 'white' : 'transparent',
+                                color: activeTab === 'history' ? 'var(--primary)' : 'var(--text-muted)',
+                                boxShadow: activeTab === 'history' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                                display: 'flex', alignItems: 'center', gap: '0.5rem'
+                            }}
+                        >
+                           <Calendar size={18} /> History
+                        </button>
+                    </div>
+
+                    {activeTab === 'pending' && (
+                        <Button onClick={fetchRequests} disabled={loading} icon={RotateCw} aria-label="Refresh requests">
+                            {loading ? 'Refreshing...' : 'Refresh'}
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {/* Split Layout */}
@@ -193,11 +264,13 @@ const AdminRequests = () => {
                 
                 {/* --- Left Sidebar (Filters) --- */}
                 <div className="glass-panel" style={{ padding: '1rem', position: 'sticky', top: '100px' }}>
-                    <h3 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', letterSpacing: '0.5px' }}>
-                        <Filter size={14} /> FILTER BY BRANCH
-                    </h3>
-                    
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {activeTab === 'pending' ? (
+                        <>
+                            <h3 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', letterSpacing: '0.5px' }}>
+                                <Filter size={14} /> FILTER ACTIVE BY BRANCH
+                            </h3>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {/* 'All' Option */}
                         <button
                             onClick={() => setSelectedPharmacistId('all')}
@@ -257,20 +330,78 @@ const AdminRequests = () => {
                                 )}
                             </button>
                         ))}
-                    </div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <h3 style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', letterSpacing: '0.5px' }}>
+                                <Search size={14} /> SEARCH HISTORY
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem', fontWeight: 600 }}>Branch</label>
+                                    <select
+                                        value={historyFilter.branchId}
+                                        onChange={(e) => setHistoryFilter(prev => ({ ...prev, branchId: e.target.value }))}
+                                        style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-main)', fontSize: '0.9rem' }}
+                                    >
+                                        <option value="all">All Branches</option>
+                                        {branches.map(b => (
+                                            <option key={b._id} value={b._id}>{b.username}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem', fontWeight: 600 }}>Start Date</label>
+                                    <input
+                                        type="date"
+                                        value={historyFilter.startDate}
+                                        onChange={(e) => setHistoryFilter(prev => ({ ...prev, startDate: e.target.value }))}
+                                        style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-main)', fontSize: '0.9rem' }}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.3rem', fontWeight: 600 }}>End Date</label>
+                                    <input
+                                        type="date"
+                                        value={historyFilter.endDate}
+                                        min={historyFilter.startDate}
+                                        onChange={(e) => setHistoryFilter(prev => ({ ...prev, endDate: e.target.value }))}
+                                        style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--glass-bg)', color: 'var(--text-main)', fontSize: '0.9rem' }}
+                                    />
+                                </div>
+                                
+                                <Button 
+                                    className="btn-primary w-full"
+                                    onClick={fetchHistory}
+                                    disabled={historyLoading}
+                                    icon={Search}
+                                    style={{ marginTop: '0.5rem', width: '100%', justifyContent: 'center' }}
+                                >
+                                    {historyLoading ? 'Searching...' : 'Search History'}
+                                </Button>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* --- Right Content (Request List) --- */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {loading ? (
-                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading requests...</div>
-                    ) : filteredRequests.length === 0 ? (
+                    {(activeTab === 'pending' ? loading : historyLoading) ? (
+                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                            {activeTab === 'pending' ? 'Loading active requests...' : 'Searching history...'}
+                        </div>
+                    ) : (activeTab === 'pending' ? filteredRequests : historyRequests).length === 0 ? (
                         <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                             <Store size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.3 }} />
-                            <p style={{ fontSize: '1.1rem' }}>No requests found for this filter.</p>
+                            <p style={{ fontSize: '1.1rem' }}>
+                                {activeTab === 'pending' 
+                                    ? "No active requests found for this branch." 
+                                    : "No history data. Adjust your search filters and click Search."}
+                            </p>
                         </div>
                     ) : (
-                        filteredRequests.map((req, index) => {
+                        (activeTab === 'pending' ? filteredRequests : historyRequests).map((req, index) => {
                             // Extract item statuses for this request from local state
                             const requestItemStates = packingState[req._id] || {};
                             
