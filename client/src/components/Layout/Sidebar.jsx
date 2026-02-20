@@ -1,8 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut, ClipboardList, Truck, FileText, MessageSquare } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
-import { useContext } from 'react';
-import AuthContext from '../../context/AuthContext';
+  import { useContext, useState } from 'react';
+  import AuthContext from '../../context/AuthContext';
 
 const Sidebar = () => {
   const { logout } = useContext(AuthContext);
@@ -13,10 +13,20 @@ const Sidebar = () => {
     { to: '/medicines', icon: Pill, label: 'Medicines' },
     { to: '/staff', icon: Users, label: 'Manage Staff' },
     { to: '/history', icon: History, label: 'Req History' },
-    { to: '/reports', icon: FileText, label: 'Reports' },
+    { 
+      id: 'reports-menu', 
+      icon: FileText, 
+      label: 'Reports',
+      subLinks: [
+        { to: '/reports', label: 'Requirement Report' },
+        { to: '/reports/audit', label: 'Medicine Audit' }
+      ]
+    },
     { to: '/feedback', icon: MessageSquare, label: 'Feedback' },
     { to: '/updates', icon: GitBranch, label: 'Dev Updates' },
   ];
+
+  const [isReportsOpen, setIsReportsOpen] = useState(false);
 
   return (
     <aside style={{
@@ -54,28 +64,85 @@ const Sidebar = () => {
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
-        {links.map((link) => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              textDecoration: 'none',
-              color: isActive ? 'var(--primary)' : 'var(--text-muted)',
-              backgroundColor: isActive ? 'var(--primary-light)' : 'transparent',
-              fontWeight: isActive ? 600 : 500,
-              transition: 'all 0.2s ease',
-              border: isActive ? '1px solid rgba(99, 102, 241, 0.1)' : '1px solid transparent'
-            })}
-          >
-            <link.icon size={20} />
-            {link.label}
-          </NavLink>
-        ))}
+        {links.map((link) => {
+          if (link.subLinks) {
+            return (
+              <div key={link.id} style={{ display: 'flex', flexDirection: 'column' }}>
+                <div
+                  onClick={() => setIsReportsOpen(!isReportsOpen)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    color: 'var(--text-muted)',
+                    fontWeight: 500,
+                    transition: 'all 0.2s ease',
+                    border: '1px solid transparent'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.02)'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <link.icon size={20} />
+                    {link.label}
+                  </div>
+                  <span style={{ transform: isReportsOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+                </div>
+                
+                {isReportsOpen && (
+                  <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: '2.5rem', marginTop: '0.25rem', gap: '0.25rem' }}>
+                    {link.subLinks.map(subLink => (
+                      <NavLink
+                        key={subLink.to}
+                        to={subLink.to}
+                        end={subLink.to === '/reports'} // Exact matching for /reports so it doesn't highlight both
+                        style={({ isActive }) => ({
+                          display: 'block',
+                          padding: '0.5rem 0.75rem',
+                          borderRadius: '6px',
+                          textDecoration: 'none',
+                          color: isActive ? 'var(--primary)' : 'var(--text-muted)',
+                          backgroundColor: isActive ? 'var(--primary-light)' : 'transparent',
+                          fontWeight: isActive ? 600 : 400,
+                          fontSize: '0.9rem',
+                          transition: 'all 0.2s ease'
+                        })}
+                      >
+                        {subLink.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              style={({ isActive }) => ({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                color: isActive ? 'var(--primary)' : 'var(--text-muted)',
+                backgroundColor: isActive ? 'var(--primary-light)' : 'transparent',
+                fontWeight: isActive ? 600 : 500,
+                transition: 'all 0.2s ease',
+                border: isActive ? '1px solid rgba(99, 102, 241, 0.1)' : '1px solid transparent'
+              })}
+            >
+              <link.icon size={20} />
+              {link.label}
+            </NavLink>
+          );
+        })}
       <button
             onClick={logout}
             aria-label="Logout"

@@ -11,6 +11,7 @@ import AdminRequests from './pages/AdminRequests';
 import AdminFeedback from './pages/AdminFeedback';
 import ManageStaff from './pages/ManageStaff';
 import Reports from './pages/Reports';
+import MedicineAudit from './pages/MedicineAudit';
 import PharmacistNewRequest from './pages/PharmacistNewRequest';
 import PharmacistHistory from './pages/PharmacistHistory';
 import PharmacistWhatsNew from './pages/PharmacistWhatsNew';
@@ -66,6 +67,7 @@ const App = () => {
                         <Route path="staff" element={<ManageStaff />} />
                         <Route path="history" element={<History />} />
                         <Route path="reports" element={<Reports />} />
+                        <Route path="reports/audit" element={<MedicineAudit />} />
                         <Route path="feedback" element={<AdminFeedback />} />
                         <Route path="updates" element={<DevUpdates />} />
                     </Route>
