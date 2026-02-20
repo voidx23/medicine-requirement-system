@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit';
 import RequirementList from '../models/RequirementList.js';
+import PharmacistRequest from '../models/PharmacistRequest.js';
 
 // Helper to get today's date with time set to 00:00:00
 // Helper to get today's date (Dubai Midnight)
@@ -268,6 +269,52 @@ export const getReportData = async (req, res) => {
         }));
 
         res.json({ data: result, totalItems });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get Medicine Audit Data
+// @route   GET /api/requirements/medicine-audit
+export const getMedicineAudit = async (req, res) => {
+    try {
+        const { medicineId, startDate, endDate } = req.query;
+        
+        if (!medicineId) {
+            return res.status(400).json({ message: 'Medicine ID is required' });
+        }
+
+        let query = { 'items.medicineId': medicineId };
+
+        if (startDate && endDate) {
+            const sDate = new Date(startDate);
+            sDate.setHours(0,0,0,0);
+            const eDate = new Date(endDate);
+            eDate.setHours(23,59,59,999);
+            query.createdAt = { $gte: sDate, $lte: eDate };
+        }
+
+        const requests = await PharmacistRequest.find(query)
+            .populate('pharmacistId', 'username branch')
+            .sort({ createdAt: -1 });
+
+        // Map data to return flattened results
+        const results = [];
+        requests.forEach(reqObj => {
+            const matchedItems = reqObj.items.filter(item => item.medicineId?.toString() === medicineId);
+            
+            matchedItems.forEach(item => {
+                results.push({
+                    _id: reqObj._id,
+                    branchName: reqObj.pharmacistId?.username || 'Unknown Branch',
+                    date: reqObj.createdAt,
+                    quantity: item.quantity,
+                    status: reqObj.status // Request level status
+                });
+            });
+        });
+
+        res.json({ data: results });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
