@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, AlertCircle, Pill, Activity, CalendarDays, MapPin, Hash, CheckCircle2 } from 'lucide-react';
+import { Search, AlertCircle, Pill, Activity, CalendarDays, MapPin, Hash, CheckCircle2, FileText } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 
