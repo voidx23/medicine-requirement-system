@@ -17,6 +17,7 @@ const MedicineAudit = () => {
     const [results, setResults] = useState([]);
     const [searching, setSearching] = useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
     // Data
     const [auditData, setAuditData] = useState(null);
@@ -37,6 +38,7 @@ const MedicineAudit = () => {
     const handleSearchInput = async (value) => {
         setQuery(value);
         setSelectedMedicineId(''); // Force re-selection when typing
+        setHighlightedIndex(-1);
         
         if (value.length > 1) { 
             setSearching(true);
@@ -112,6 +114,27 @@ const MedicineAudit = () => {
         return status.charAt(0).toUpperCase() + status.slice(1);
     };
 
+    const handleKeyDown = (e) => {
+        if (!isDropdownOpen || results.length === 0) return;
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            setHighlightedIndex(prev => (prev < results.length - 1 ? prev + 1 : prev));
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setHighlightedIndex(prev => (prev > 0 ? prev - 1 : 0));
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlightedIndex >= 0 && highlightedIndex < results.length) {
+                selectMedicine(results[highlightedIndex]);
+            } else if (results.length === 1) {
+                selectMedicine(results[0]);
+            }
+        } else if (e.key === 'Escape') {
+            setIsDropdownOpen(false);
+        }
+    };
+
     return (
         <div style={{ animation: 'fadeIn 0.4s ease-out' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
@@ -136,7 +159,9 @@ const MedicineAudit = () => {
                 padding: '1.75rem', 
                 marginBottom: '2.5rem',
                 border: '1px solid rgba(255,255,255,0.4)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.04)'
+                boxShadow: '0 8px 32px rgba(0,0,0,0.04)',
+                position: 'relative',
+                zIndex: 20
             }}>
                 <div style={{ 
                     display: 'grid', 
@@ -151,17 +176,17 @@ const MedicineAudit = () => {
                         </label>
                         <div className="input-group" style={{ 
                             background: 'rgba(255,255,255,0.8)', 
-                            border: selectedMedicineId ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid var(--glass-border)',
-                            boxShadow: selectedMedicineId ? '0 0 0 3px rgba(16, 185, 129, 0.1)' : 'none',
+                            border: '1px solid var(--glass-border)',
                             transition: 'all 0.3s'
                         }}>
                             {selectedMedicineId ? <CheckCircle2 className="input-icon" size={20} color="#10b981" /> : <Search className="input-icon" size={20} />}
-                            <input
+                                <input
                                 type="text"
                                 className="glass-input"
                                 placeholder="Start typing medicine generic name..."
                                 value={query}
                                 onChange={(e) => handleSearchInput(e.target.value)}
+                                onKeyDown={handleKeyDown}
                                 style={{ background: 'transparent' }}
                             />
                         </div>
@@ -184,17 +209,25 @@ const MedicineAudit = () => {
                                         <div className="pulse" style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%', display: 'inline-block', margin: '0 4px', animation: 'pulse 1.5s infinite 0.4s' }}></div>
                                     </div>
                                 ) : results.length > 0 ? (
-                                    results.map(med => (
+                                    results.map((med, index) => (
                                         <div 
                                             key={med._id} 
                                             onClick={() => selectMedicine(med)}
                                             style={{
                                                 padding: '0.85rem 1.25rem', cursor: 'pointer', borderBottom: '1px solid rgba(0,0,0,0.03)',
                                                 display: 'flex', alignItems: 'center', gap: '1rem',
-                                                transition: 'background 0.2s'
+                                                transition: 'background 0.2s',
+                                                background: index === highlightedIndex ? 'rgba(99, 102, 241, 0.08)' : 'transparent'
                                             }}
-                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)'}
-                                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                                            onMouseEnter={(e) => {
+                                                setHighlightedIndex(index);
+                                                e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (index !== highlightedIndex) {
+                                                    e.currentTarget.style.background = 'transparent';
+                                                }
+                                            }}
                                         >
                                             <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '0.5rem', borderRadius: '10px', color: 'var(--primary)' }}>
                                                 <Pill size={18} />
