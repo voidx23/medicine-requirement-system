@@ -12,6 +12,11 @@ import feedbackRoutes from './routes/feedbackRoutes.js';
 
 const app = express();
 
+// Health Check Route for Cron-Job Pinging (Instantly accessible, bypassing middleware)
+app.get('/api/ping', (req, res) => {
+    res.status(200).send('Server is awake');
+});
+
 // Middleware
 app.use(express.json()); // Body parser
 app.use(cors()); // Enable CORS
@@ -25,10 +30,6 @@ app.use('/api/system', systemRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/feedback', feedbackRoutes);
-// Health Check Route for Cron-Job Pinging
-app.get('/api/ping', (req, res) => {
-    res.status(200).send('Server is awake');
-});
 
 // Basic Route
 app.get('/', (req, res) => {
