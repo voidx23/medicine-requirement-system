@@ -4,6 +4,7 @@ import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import Button from '../components/UI/Button';
 import PasswordConfirmModal from '../components/UI/PasswordConfirmModal';
+import { RequestCardSkeleton } from '../components/UI/Skeleton';
 
 const AdminRequests = () => {
     const { showConfirm, showToast } = useNotification();
@@ -388,8 +389,8 @@ const AdminRequests = () => {
                 {/* --- Right Content (Request List) --- */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {(activeTab === 'pending' ? loading : historyLoading) ? (
-                        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                            {activeTab === 'pending' ? 'Loading active requests...' : 'Searching history...'}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {Array.from({ length: 4 }).map((_, i) => <RequestCardSkeleton key={i} />)}
                         </div>
                     ) : (activeTab === 'pending' ? filteredRequests : historyRequests).length === 0 ? (
                         <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>

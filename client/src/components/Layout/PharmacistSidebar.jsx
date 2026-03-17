@@ -1,14 +1,28 @@
 import { NavLink } from 'react-router-dom';
-import { PlusCircle, History, LogOut, Sparkles } from 'lucide-react';
-import { useContext } from 'react';
+import { PlusCircle, History, LogOut, Sparkles, ListTodo } from 'lucide-react';
+import { useContext, useEffect, useState } from 'react';
 import Frame from '../../assets/frame.svg?react';
 import AuthContext from '../../context/AuthContext';
+import taskService from '../../services/taskService';
 
 const PharmacistSidebar = () => {
-  const { logout } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
+  const [pendingTasksCount, setPendingTasksCount] = useState(0);
+
+  useEffect(() => {
+      if (user && user.token) {
+          taskService.getPharmacyTasks(user.token)
+            .then(tasks => {
+                const pending = tasks.filter(t => t.myAssignment?.status === 'Pending').length;
+                setPendingTasksCount(pending);
+            })
+            .catch(err => console.error('Failed to side-load pharmacy tasks:', err));
+      }
+  }, [user]);
   
   const links = [
     { to: '/pharmacist-dashboard/new', icon: PlusCircle, label: 'New Request' },
+    { to: '/pharmacist-dashboard/tasks', icon: ListTodo, label: 'Task Inbox', badge: pendingTasksCount },
     { to: '/pharmacist-dashboard/history', icon: History, label: 'Req History' },
     { to: '/pharmacist-dashboard/updates', icon: Sparkles, label: "What's New" },
   ];
@@ -56,7 +70,7 @@ const PharmacistSidebar = () => {
             style={({ isActive }) => ({
               display: 'flex',
               alignItems: 'center',
-              gap: '0.75rem',
+              justifyContent: 'space-between',
               padding: '0.75rem 1rem',
               borderRadius: '8px',
               textDecoration: 'none',
@@ -67,8 +81,22 @@ const PharmacistSidebar = () => {
               border: isActive ? '1px solid rgba(99, 102, 241, 0.1)' : '1px solid transparent'
             })}
           >
-            <link.icon size={20} />
-            {link.label}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <link.icon size={20} />
+              {link.label}
+            </div>
+            {link.badge > 0 && (
+                <span style={{
+                    backgroundColor: '#ef4444',
+                    color: 'white',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    padding: '0.1rem 0.4rem',
+                    borderRadius: '9999px'
+                }}>
+                    {link.badge}
+                </span>
+            )}
           </NavLink>
         ))}
       </nav>

@@ -8,7 +8,7 @@ import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 
 import PDFOptionsModal from '../components/Dashboard/PDFOptionsModal';
-import Loading from '../components/UI/Loading';
+import { DashboardRowSkeleton } from '../components/UI/Skeleton';
 
 const Dashboard = () => {
   const { showConfirm, showToast } = useNotification();
@@ -164,7 +164,9 @@ const Dashboard = () => {
       {/* List Section */}
       <div style={{ paddingBottom: '1rem', marginTop: '1rem' }}>
         {loading ? (
-            <Loading />
+            <div style={{ paddingTop: '0.5rem' }}>
+              {Array.from({ length: 7 }).map((_, i) => <DashboardRowSkeleton key={i} />)}
+            </div>
         ) : (
             <>
                 <RequirementList 

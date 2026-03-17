@@ -8,7 +8,7 @@ import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
 import Modal from '../components/UI/Modal';
 import ImportModal from '../components/UI/ImportModal';
-import Loading from '../components/UI/Loading';
+import { TableRowSkeleton } from '../components/UI/Skeleton';
 
 const Medicines = () => {
   const { showConfirm, showToast } = useNotification();
@@ -150,7 +150,20 @@ const Medicines = () => {
         onDelete={handleDelete} 
       />
       
-      {loading && allMedicines.length === 0 && <Loading />}
+      {loading && allMedicines.length === 0 && (
+        <div className="glass-panel" style={{ padding: 0, overflow: 'hidden', borderRadius: '12px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: 'rgba(255,255,255,0.5)', borderBottom: '1px solid var(--glass-border)' }}>
+                <th style={{ padding: '1rem', textAlign: 'left', width: '50%', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Medicine</th>
+                <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Supplier</th>
+                <th style={{ padding: '1rem', textAlign: 'right', width: '120px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Actions</th>
+              </tr>
+            </thead>
+            <TableRowSkeleton cols={3} rows={10} />
+          </table>
+        </div>
+      )}
 
       {!loading && medicines.length === 0 && (
         <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
