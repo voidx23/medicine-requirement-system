@@ -21,7 +21,7 @@ const PharmacyTasks = () => {
     const loadTasks = async () => {
         setLoading(true);
         try {
-            const data = await taskService.getPharmacyTasks(user.token);
+            const data = await taskService.getPharmacyTasks();
             setTasks(data);
         } catch (error) {
             console.error('Failed to load tasks:', error);
@@ -37,7 +37,7 @@ const PharmacyTasks = () => {
 
     const handleCompleteTask = async (taskId, status, comment) => {
         try {
-            await taskService.updateTaskStatus(taskId, { status, comment }, user.token);
+            await taskService.updateTaskStatus(taskId, { status, comment });
             showToast('Task marked as completed!', 'success');
             setSelectedTask(null);
             loadTasks();
@@ -48,7 +48,7 @@ const PharmacyTasks = () => {
 
     const handleSubmitTransfer = async (details) => {
         try {
-            await taskService.createTransferRequest(details, user.token);
+            await taskService.createTransferRequest(details);
             showToast('Transfer request sent!', 'success');
             setIsTransferModalOpen(false);
             loadTasks();
