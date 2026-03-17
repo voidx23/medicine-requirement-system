@@ -22,7 +22,7 @@ const AdminTasks = () => {
     const loadTasks = async () => {
         setLoading(true);
         try {
-            const data = await taskService.getAdminTasks(user.token);
+            const data = await taskService.getAdminTasks();
             setTasks(data);
         } catch (error) {
             console.error('Failed to load tasks:', error);
@@ -41,10 +41,10 @@ const AdminTasks = () => {
     const handleSubmitTask = async (taskData) => {
         try {
             if (taskToEdit) {
-                await taskService.updateTask(taskToEdit._id, taskData, user.token);
+                await taskService.updateTask(taskToEdit._id, taskData);
                 showToast('Task updated successfully', 'success');
             } else {
-                await taskService.createTask(taskData, user.token);
+                await taskService.createTask(taskData);
                 showToast('Task created successfully', 'success');
             }
             loadTasks();
@@ -59,10 +59,10 @@ const AdminTasks = () => {
     const handleSubmitTransfer = async (details, editId = null) => {
         try {
             if (editId) {
-                await taskService.updateTask(editId, { transferDetails: details }, user.token);
+                await taskService.updateTask(editId, { transferDetails: details });
                 showToast('Transfer request updated!', 'success');
             } else {
-                await taskService.createTransferRequest(details, user.token);
+                await taskService.createTransferRequest(details);
                 showToast('Transfer request sent!', 'success');
             }
             setIsCreateModalOpen(false);
@@ -76,7 +76,7 @@ const AdminTasks = () => {
 
     const handleDeleteTask = async (taskId) => {
         try {
-            await taskService.deleteTask(taskId, user.token);
+            await taskService.deleteTask(taskId);
             showToast('Task deleted successfully', 'success');
             loadTasks();
             setSelectedTask(null);

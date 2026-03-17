@@ -1,42 +1,36 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-const authHeader = (token) => ({
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-});
+import api from './api';
 
 // ── General Task (Admin only) ─────────────────────────────────────────────────
 
-const createTask = async (taskData, token) => {
-    const response = await axios.post(`${API_URL}/tasks`, { ...taskData, type: 'general' }, authHeader(token));
+const createTask = async (taskData) => {
+    const response = await api.post('/tasks', { ...taskData, type: 'general' });
     return response.data;
 };
 
-const getAdminTasks = async (token) => {
-    const response = await axios.get(`${API_URL}/tasks`, { headers: { Authorization: `Bearer ${token}` } });
+const getAdminTasks = async () => {
+    const response = await api.get('/tasks');
     return response.data;
 };
 
-const updateTask = async (taskId, taskData, token) => {
-    const response = await axios.put(`${API_URL}/tasks/${taskId}`, taskData, authHeader(token));
+const updateTask = async (taskId, taskData) => {
+    const response = await api.put(`/tasks/${taskId}`, taskData);
     return response.data;
 };
 
-const deleteTask = async (taskId, token) => {
-    const response = await axios.delete(`${API_URL}/tasks/${taskId}`, { headers: { Authorization: `Bearer ${token}` } });
+const deleteTask = async (taskId) => {
+    const response = await api.delete(`/tasks/${taskId}`);
     return response.data;
 };
 
 // ── Pharmacy Tasks ────────────────────────────────────────────────────────────
 
-const getPharmacyTasks = async (token) => {
-    const response = await axios.get(`${API_URL}/tasks/pharmacy`, { headers: { Authorization: `Bearer ${token}` } });
+const getPharmacyTasks = async () => {
+    const response = await api.get('/tasks/pharmacy');
     return response.data;
 };
 
-const updateTaskStatus = async (taskId, statusData, token) => {
-    const response = await axios.put(`${API_URL}/tasks/${taskId}/status`, statusData, authHeader(token));
+const updateTaskStatus = async (taskId, statusData) => {
+    const response = await api.put(`/tasks/${taskId}/status`, statusData);
     return response.data;
 };
 
@@ -46,11 +40,10 @@ const updateTaskStatus = async (taskId, statusData, token) => {
  * Create a transfer_request task (pharmacist or admin)
  * @param {{ medicineName, medicineId, requestedQty, donorBranchId, recipientBranchId? }} details
  */
-const createTransferRequest = async (details, token) => {
-    const response = await axios.post(
-        `${API_URL}/tasks`,
-        { type: 'transfer_request', transferDetails: details },
-        authHeader(token)
+const createTransferRequest = async (details) => {
+    const response = await api.post(
+        '/tasks',
+        { type: 'transfer_request', transferDetails: details }
     );
     return response.data;
 };
@@ -60,11 +53,10 @@ const createTransferRequest = async (details, token) => {
  * @param {'accept'|'reject'} action
  * @param {{ responseQty?, rejectionReason? }} data
  */
-const respondToTransfer = async (taskId, action, data, token) => {
-    const response = await axios.put(
-        `${API_URL}/tasks/${taskId}/transfer-respond`,
-        { action, ...data },
-        authHeader(token)
+const respondToTransfer = async (taskId, action, data) => {
+    const response = await api.put(
+        `/tasks/${taskId}/transfer-respond`,
+        { action, ...data }
     );
     return response.data;
 };
