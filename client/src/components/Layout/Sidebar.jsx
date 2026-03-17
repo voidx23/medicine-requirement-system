@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut, ClipboardList, Truck, FileText, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut, ClipboardList, Truck, FileText, MessageSquare, CheckSquare } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
   import { useContext, useState } from 'react';
   import AuthContext from '../../context/AuthContext';
@@ -8,6 +8,7 @@ const Sidebar = () => {
   const { logout } = useContext(AuthContext);
   const links = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
     { to: '/requests', icon: ClipboardList, label: 'Requests' },
     { to: '/suppliers', icon: Truck, label: 'Suppliers' },
     { to: '/medicines', icon: Pill, label: 'Medicines' },

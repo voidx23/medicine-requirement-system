@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, ChevronRight, Package, Tag, Trash2, Printer } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
-import Loading from '../components/UI/Loading';
+import { HistoryCardSkeleton } from '../components/UI/Skeleton';
 import PDFOptionsModal from '../components/Dashboard/PDFOptionsModal';
 import PasswordModal from '../components/UI/PasswordModal';
 import HistoryDetailsModal from '../components/History/HistoryDetailsModal';
@@ -117,7 +117,9 @@ const History = () => {
       <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Archive of previous daily requirements</p>
 
       {loading ? (
-        <Loading />
+        <div style={{ display: 'grid', gap: '1rem' }}>
+          {Array.from({ length: 4 }).map((_, i) => <HistoryCardSkeleton key={i} />)}
+        </div>
       ) : history.length === 0 ? (
         <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
           No history found.

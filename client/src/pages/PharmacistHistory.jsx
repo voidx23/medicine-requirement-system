@@ -5,6 +5,7 @@ import { useNotification } from '../context/NotificationContext';
 import AuthContext from '../context/AuthContext';
 
 import Modal from '../components/UI/Modal';
+import { RequestCardSkeleton } from '../components/UI/Skeleton';
 
 // Warning Modal Component
 // Warning Modal Component
@@ -136,22 +137,30 @@ const PharmacistHistory = () => {
                 const savedCart = localStorage.getItem(STORAGE_KEY);
                 let cartItems = savedCart ? JSON.parse(savedCart) : [];
 
-                // Append new items (Check for duplicates if needed, or just append)
-                // We'll append for now, similar to how manual add works.
-                // But strictly speaking we should avoid adding the EXACT same item twice if possible.
-                // However, different requests might have same items. 
-                // Let's just push them.
-                
-                const newCartItems = [...cartItems, ...data.forwardedItems.map(item => ({
-                    _id: item.medicineId || `custom-forwarded-${Date.now()}-${Math.random()}`, // Use medicineId as ID for consistency with NewRequest logic
-                    medicineId: item.medicineId, // Keep reference
-                    name: item.name,
-                    quantity: item.quantity,
-                    isCustom: item.isCustom,
-                    supplierId: null // We don't have supplier info easily here unless we populated it deeply or backend sent it. 
-                                     // NewRequest uses allMedicines to find supplier. 
-                                     // Ideally backend should return supplier, but for now 'Unknown' is acceptable or we rely on name match.
-                }))];
+                // Add forwarded items to LocalStorage Cart
+                let newCartItems = [...cartItems];
+
+                data.forwardedItems.forEach(item => {
+                    // Check if item is already in cart
+                    const existingItemIndex = newCartItems.findIndex(cartItem => 
+                        item.isCustom ? cartItem.name.toLowerCase() === item.name.toLowerCase() : cartItem.medicineId === item.medicineId
+                    );
+
+                    if (existingItemIndex >= 0) {
+                        // Increment quantity if it already exists
+                        newCartItems[existingItemIndex].quantity += item.quantity;
+                    } else {
+                        // Add new item
+                        newCartItems.push({
+                            _id: item.medicineId || `custom-forwarded-${Date.now()}-${Math.random()}`,
+                            medicineId: item.medicineId,
+                            name: item.name,
+                            quantity: item.quantity,
+                            isCustom: item.isCustom,
+                            supplierId: null
+                        });
+                    }
+                });
 
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(newCartItems));
             }
@@ -238,7 +247,11 @@ const PharmacistHistory = () => {
                 </button>
             </div>
 
-            {loading ? <div>Loading...</div> : (
+            {loading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {Array.from({ length: 4 }).map((_, i) => <RequestCardSkeleton key={i} />)}
+                </div>
+            ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {myRequests.map((req, index) => (
                         <div 

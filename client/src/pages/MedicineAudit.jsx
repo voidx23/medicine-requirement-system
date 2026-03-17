@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, AlertCircle, Pill, Activity, CalendarDays, MapPin, Hash, CheckCircle2, FileText } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
+import { AuditTableSkeleton } from '../components/UI/Skeleton';
 
 const MedicineAudit = () => {
     const [loading, setLoading] = useState(false);
@@ -300,7 +301,9 @@ const MedicineAudit = () => {
             </div>
 
             {/* Results Area */}
-            {!auditData && !hasSearched && (
+            {loading && <AuditTableSkeleton rows={6} />}
+
+            {!auditData && !hasSearched && !loading && (
                 <div style={{ textAlign: 'center', padding: '4rem 2rem', opacity: 0.8, animation: 'fadeIn 0.6s ease-out' }}>
                     <div style={{ 
                         width: '80px', height: '80px', borderRadius: '50%', background: 'var(--glass-bg)', 

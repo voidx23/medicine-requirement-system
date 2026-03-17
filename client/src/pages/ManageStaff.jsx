@@ -4,12 +4,14 @@ import api from '../services/api';
 import staffService from '../services/staffService';
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
+import Skeleton, { TableRowSkeleton } from '../components/UI/Skeleton';
 
 const ManageStaff = () => {
     const [branches, setBranches] = useState([]);
     const [selectedBranch, setSelectedBranch] = useState(null);
     const [staffList, setStaffList] = useState([]);
-    // Removed unused loading state
+    const [branchesLoading, setBranchesLoading] = useState(true);
+    const [staffLoading, setStaffLoading] = useState(false);
     
     // Add Staff Modal State
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -25,6 +27,7 @@ const ManageStaff = () => {
     const [editBranchData, setEditBranchData] = useState({ id: '', username: '', password: '', location: '', contactNumber: '' });
 
     const fetchBranches = async () => {
+        setBranchesLoading(true);
         try {
             const data = await staffService.getBranches();
             setBranches(data);
@@ -33,6 +36,8 @@ const ManageStaff = () => {
             }
         } catch (error) {
             console.error("Failed to load branches", error);
+        } finally {
+            setBranchesLoading(false);
         }
     };
 
@@ -51,11 +56,14 @@ const ManageStaff = () => {
 
 
     const fetchStaff = async (branchId) => {
+        setStaffLoading(true);
         try {
             const data = await staffService.getAll(branchId);
             setStaffList(data);
         } catch (error) {
             console.error(error);
+        } finally {
+            setStaffLoading(false);
         }
     };
 
@@ -151,7 +159,13 @@ const ManageStaff = () => {
                     </Button>
                 </div>
                 <div style={{ overflowY: 'auto', flex: 1 }}>
-                    {branches.map(branch => (
+                    {branchesLoading ? (
+                        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <Skeleton key={i} height="44px" borderRadius="8px" />
+                            ))}
+                        </div>
+                    ) : branches.map(branch => (
                         <div 
                             key={branch._id}
                             onClick={() => setSelectedBranch(branch)}
@@ -211,6 +225,9 @@ const ManageStaff = () => {
                                         <th style={{ padding: '1rem', textAlign: 'right' }}>Actions</th>
                                     </tr>
                                 </thead>
+                                {staffLoading ? (
+                                    <TableRowSkeleton cols={4} rows={4} />
+                                ) : (
                                 <tbody>
                                     {staffList.length > 0 ? staffList.map((staff, idx) => (
                                         <tr key={staff._id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
@@ -243,6 +260,7 @@ const ManageStaff = () => {
                                         </tr>
                                     )}
                                 </tbody>
+                                )}
                             </table>
                         </div>
                     </>

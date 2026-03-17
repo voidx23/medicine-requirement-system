@@ -7,6 +7,25 @@ const PharmacistWhatsNew = () => {
 
     const updates = [
         {
+            version: 'v2.6',
+            date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+            title: 'Operations & Assignments',
+            icon: ListOrdered,
+            color: '#f97316', // Orange
+            items: [
+                {
+                    title: 'New Task Inbox',
+                    desc: 'Store admins can now assign direct tasks to your pharmacy. View them in the new Task Inbox in your sidebar.',
+                    icon: Layout
+                },
+                {
+                    title: 'Digital Completion Signatures',
+                    desc: 'Respond to and complete assigned tasks instantly. Provide optional comments and digitally sign them off with your Staff PIN.',
+                    icon: ShieldCheck
+                }
+            ]
+        },
+        {
             version: 'v2.5',
             date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
             title: 'Workflow & Flexibility',

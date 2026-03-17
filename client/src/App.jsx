@@ -15,8 +15,10 @@ import MedicineAudit from './pages/MedicineAudit';
 import PharmacistNewRequest from './pages/PharmacistNewRequest';
 import PharmacistHistory from './pages/PharmacistHistory';
 import PharmacistWhatsNew from './pages/PharmacistWhatsNew';
+import PharmacyTasks from './pages/PharmacyTasks';
 import SetupDevice from './pages/SetupDevice';
 import PharmacistLayout from './components/Layout/PharmacistLayout';
+import AdminTasks from './pages/AdminTasks';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -61,6 +63,7 @@ const App = () => {
                     <Route path="/setup-device" element={<SetupDevice />} />
                     <Route path="/" element={<Layout />}>
                         <Route index element={<Dashboard />} />
+                        <Route path="tasks" element={<AdminTasks />} />
                         <Route path="requests" element={<AdminRequests />} />
                         <Route path="suppliers" element={<Suppliers />} />
                         <Route path="medicines" element={<Medicines />} />
@@ -76,6 +79,7 @@ const App = () => {
                 {/* Pharmacist Routes */}
                 <Route path="/pharmacist-dashboard" element={<PharmacistLayout><Outlet /></PharmacistLayout>}>
                     <Route index element={<Navigate to="new" replace />} />
+                    <Route path="tasks" element={<PharmacyTasks />} />
                     <Route path="new" element={<PharmacistNewRequest />} />
                     <Route path="history" element={<PharmacistHistory />} />
                     <Route path="updates" element={<PharmacistWhatsNew />} />

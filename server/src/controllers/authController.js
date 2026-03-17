@@ -28,6 +28,21 @@ export const authUser = async (req, res) => {
     }
 };
 
+// @desc    Verify admin password
+// @route   POST /api/auth/verify-password
+// @access  Private (Admin)
+export const verifyPassword = async (req, res) => {
+    const { password } = req.body;
+    
+    const user = await User.findById(req.user._id);
+    
+    if (user && (await user.matchPassword(password))) {
+        res.json({ isValid: true });
+    } else {
+        res.status(401).json({ isValid: false, message: 'Invalid Admin Password' });
+    }
+};
+
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public (Should be Admin only in future)

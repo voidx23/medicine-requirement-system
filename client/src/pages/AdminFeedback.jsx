@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { MessageSquare, Lightbulb, Bug, User, Clock, ChevronDown, ChevronUp, RotateCw } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
+import { FeedbackCardSkeleton } from '../components/UI/Skeleton';
 
 const AdminFeedback = () => {
     const { showToast } = useNotification();
@@ -91,7 +92,11 @@ const AdminFeedback = () => {
                 </button>
             </div>
 
-            {loading ? <div>Loading...</div> : (
+            {loading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {Array.from({ length: 5 }).map((_, i) => <FeedbackCardSkeleton key={i} />)}
+                </div>
+            ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {feedbacks.length === 0 && <p className="text-muted">No feedback received yet.</p>}
                     
