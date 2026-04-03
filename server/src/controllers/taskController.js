@@ -92,6 +92,10 @@ export const updateTask = async (req, res) => {
         const task = await Task.findById(req.params.id);
         if (!task) return res.status(404).json({ message: 'Task not found' });
 
+        if (!req.user.isSuperAdmin && task.createdBy.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Forbidden: You can only edit tasks/transfers that you created.' });
+        }
+
         if (task.type === 'general') {
             const { title, description, priority, dueDate } = req.body;
             task.title = title || task.title;
@@ -281,6 +285,9 @@ export const deleteTask = async (req, res) => {
     try {
         const task = await Task.findById(req.params.id);
         if (task) {
+            if (!req.user.isSuperAdmin && task.createdBy.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ message: 'Forbidden: You can only delete tasks/transfers that you created.' });
+            }
             await Task.deleteOne({ _id: req.params.id });
             res.json({ message: 'Task removed' });
         } else {
