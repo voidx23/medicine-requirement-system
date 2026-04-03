@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Plus, FileSpreadsheet, Search } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
+import { useContext } from 'react';
+import AuthContext from '../context/AuthContext';
 import SupplierList from '../components/Suppliers/SupplierList';
 import SupplierForm from '../components/Suppliers/SupplierForm';
 import SupplierProductsModal from '../components/Suppliers/SupplierProductsModal';
@@ -12,6 +14,9 @@ import Input from '../components/UI/Input';
 import Loading from '../components/UI/Loading';
 
 const Suppliers = () => {
+  const { user } = useContext(AuthContext);
+  const canEdit = user?.isSuperAdmin || user?.permissions?.includes('edit_suppliers');
+  const canImport = user?.isSuperAdmin || user?.permissions?.includes('import_excel');
   const { showConfirm, showToast } = useNotification();
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -94,12 +99,16 @@ const Suppliers = () => {
            <p style={{ color: 'var(--text-muted)' }}>Manage your medicine suppliers</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <Button onClick={() => setIsImportModalOpen(true)} variant="outline" icon={FileSpreadsheet}>
-            Import from Excel
-          </Button>
-          <Button onClick={handleAdd} icon={Plus}>
-            Add Supplier
-          </Button>
+          {canImport && (
+            <Button onClick={() => setIsImportModalOpen(true)} variant="outline" icon={FileSpreadsheet}>
+              Import from Excel
+            </Button>
+          )}
+          {canEdit && (
+            <Button onClick={handleAdd} icon={Plus}>
+              Add Supplier
+            </Button>
+          )}
         </div>
       </div>
 
@@ -120,6 +129,7 @@ const Suppliers = () => {
           onEdit={handleEdit} 
           onDelete={handleDelete}
           onProductView={setViewingSupplier} 
+          canEdit={canEdit}
         />
       )}
 

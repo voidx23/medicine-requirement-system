@@ -11,7 +11,10 @@ const ALL_MODULES = [
     { id: 'history', label: 'Order History' },
     { id: 'reports', label: 'Reports System' },
     { id: 'medicines', label: 'View Medicines' },
+    { id: 'edit_medicines', label: 'Edit Medicines' },
+    { id: 'import_excel', label: 'Import Excel (Medicines)' },
     { id: 'suppliers', label: 'View Suppliers' },
+    { id: 'edit_suppliers', label: 'Edit Suppliers' },
 ];
 
 const ManageStoreStaff = () => {

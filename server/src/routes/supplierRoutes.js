@@ -1,15 +1,15 @@
 import express from 'express';
 import { getSuppliers, addSupplier, updateSupplier, deleteSupplier } from '../controllers/supplierController.js';
-import { protect, superAdmin } from '../middleware/authMiddleware.js';
+import { protect, requirePermission } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.route('/')
     .get(protect, getSuppliers)
-    .post(protect, superAdmin, addSupplier);
+    .post(protect, requirePermission('edit_suppliers'), addSupplier);
 
 router.route('/:id')
-    .put(protect, superAdmin, updateSupplier)
-    .delete(protect, superAdmin, deleteSupplier);
+    .put(protect, requirePermission('edit_suppliers'), updateSupplier)
+    .delete(protect, requirePermission('edit_suppliers'), deleteSupplier);
 
 export default router;

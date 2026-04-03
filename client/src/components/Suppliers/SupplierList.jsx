@@ -1,7 +1,7 @@
 import { Edit2, Trash2 } from 'lucide-react';
 import Button from '../UI/Button';
 
-const SupplierList = ({ suppliers, onEdit, onDelete, onProductView }) => {
+const SupplierList = ({ suppliers, onEdit, onDelete, onProductView, canEdit }) => {
   if (!suppliers || suppliers.length === 0) {
     return (
       <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -39,24 +39,26 @@ const SupplierList = ({ suppliers, onEdit, onDelete, onProductView }) => {
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '0.5rem' }} onClick={(e) => e.stopPropagation()}>
-            <button 
-              onClick={() => onEdit(supplier)}
-              aria-label={`Edit ${supplier.name}`}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: '8px', borderRadius: '4px' }}
-              title="Edit"
-            >
-              <Edit2 size={18} />
-            </button>
-            <button
-              onClick={() => onDelete(supplier._id)}
-              aria-label={`Delete ${supplier.name}`}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: '8px', borderRadius: '4px' }}
-                title="Delete"
-            >
-              <Trash2 size={18} />
-            </button>
-          </div>
+          {canEdit && (
+            <div style={{ display: 'flex', gap: '0.5rem' }} onClick={(e) => e.stopPropagation()}>
+              <button 
+                onClick={() => onEdit(supplier)}
+                aria-label={`Edit ${supplier.name}`}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: '8px', borderRadius: '4px' }}
+                title="Edit"
+              >
+                <Edit2 size={18} />
+              </button>
+              <button
+                onClick={() => onDelete(supplier._id)}
+                aria-label={`Delete ${supplier.name}`}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: '8px', borderRadius: '4px' }}
+                  title="Delete"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          )}
         </div>
       ))}
     </div>

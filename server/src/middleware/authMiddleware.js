@@ -42,3 +42,15 @@ export const superAdmin = (req, res, next) => {
         res.status(401).json({ message: 'Not authorized as a super admin' });
     }
 };
+
+export const requirePermission = (permission) => {
+    return (req, res, next) => {
+        if (req.user && req.user.role === 'admin' && req.user.isSuperAdmin) {
+            return next();
+        }
+        if (req.user && req.user.role === 'admin' && req.user.permissions && req.user.permissions.includes(permission)) {
+            return next();
+        }
+        res.status(403).json({ message: `Forbidden: Requires ${permission} permission` });
+    };
+};

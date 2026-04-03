@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, FileSpreadsheet } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
+import { useContext } from 'react';
+import AuthContext from '../context/AuthContext';
 import MedicineList from '../components/Medicines/MedicineList';
 import MedicineForm from '../components/Medicines/MedicineForm';
 import Button from '../components/UI/Button';
@@ -11,6 +13,9 @@ import ImportModal from '../components/UI/ImportModal';
 import { TableRowSkeleton } from '../components/UI/Skeleton';
 
 const Medicines = () => {
+  const { user } = useContext(AuthContext);
+  const canEdit = user?.isSuperAdmin || user?.permissions?.includes('edit_medicines');
+  const canImport = user?.isSuperAdmin || user?.permissions?.includes('import_excel');
   const { showConfirm, showToast } = useNotification();
   const [medicines, setMedicines] = useState([]); // Displayed list
   const [allMedicines, setAllMedicines] = useState([]); 
@@ -116,12 +121,16 @@ const Medicines = () => {
            <p style={{ color: 'var(--text-muted)' }}>Manage your medicine inventory</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <Button onClick={() => setIsImportModalOpen(true)} variant="outline" icon={FileSpreadsheet}>
-            Import from Excel
-          </Button>
-          <Button onClick={handleAdd} icon={Plus}>
-            Add Medicine
-          </Button>
+          {canImport && (
+            <Button onClick={() => setIsImportModalOpen(true)} variant="outline" icon={FileSpreadsheet}>
+              Import from Excel
+            </Button>
+          )}
+          {canEdit && (
+            <Button onClick={handleAdd} icon={Plus}>
+              Add Medicine
+            </Button>
+          )}
         </div>
       </div>
 
@@ -148,6 +157,7 @@ const Medicines = () => {
         medicines={medicines} 
         onEdit={handleEdit} 
         onDelete={handleDelete} 
+        canEdit={canEdit}
       />
       
       {loading && allMedicines.length === 0 && (
