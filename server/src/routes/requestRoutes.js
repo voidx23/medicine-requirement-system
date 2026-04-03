@@ -1,6 +1,6 @@
 import express from 'express';
 import { submitRequest, getRequests, updateRequestStatus, getStats, deleteRequest, updateItemStatus, fulfillRequest, resetRequest, forwardItems } from '../controllers/requestController.js';
-import { protect, admin } from '../middleware/authMiddleware.js';
+import { protect, admin, superAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ router.put('/:id/status', admin, updateRequestStatus);
 router.put('/:id/items/:itemId/status', admin, updateItemStatus);
 router.put('/:id/fulfill', admin, fulfillRequest);
 router.put('/:id/reset', admin, resetRequest);
-router.delete('/:id', admin, deleteRequest);
+router.delete('/:id', protect, superAdmin, deleteRequest);
 router.post('/:id/forward', forwardItems);
 
 export default router;

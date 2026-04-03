@@ -1,6 +1,6 @@
 import express from 'express';
 import { submitFeedback, getAllFeedback } from '../controllers/feedbackController.js';
-import { protect, admin } from '../middleware/authMiddleware.js'; // Assuming auth middleware is exported as named exports
+import { protect, admin, superAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -8,6 +8,6 @@ const router = express.Router();
 router.post('/', protect, submitFeedback);
 
 // GET /api/feedback - View all feedback (Admin only)
-router.get('/', protect, admin, getAllFeedback);
+router.get('/', protect, superAdmin, getAllFeedback);
 
 export default router;

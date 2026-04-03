@@ -16,6 +16,14 @@ const userSchema = mongoose.Schema({
         enum: ['admin', 'pharmacist'],
         default: 'pharmacist'
     },
+    isSuperAdmin: {
+        type: Boolean,
+        default: false
+    },
+    permissions: {
+        type: [String],
+        default: []
+    },
     location: String,
     contactNumber: String
 }, {

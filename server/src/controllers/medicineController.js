@@ -62,13 +62,13 @@ export const getMedicines = async (req, res) => {
 export const addMedicine = async (req, res) => {
     try {
         let { name, supplierId, barcode, supplierName } = req.body;
-        name = name.trim();
-        const barcodeVal = barcode ? barcode.trim() : '';
+        name = String(name || '').trim();
+        const barcodeVal = barcode !== undefined && barcode !== null ? String(barcode).trim() : '';
         
         // If no ID but name provided (e.g. from Excel import), look it up
         if (!supplierId && supplierName) {
             const supplier = await Supplier.findOne({ 
-                name: { $regex: new RegExp(`^${supplierName.trim()}`, 'i') } 
+                name: { $regex: new RegExp(`^${String(supplierName).trim()}`, 'i') } 
             });
             if (!supplier) {
                 return res.status(400).json({ message: `Supplier '${supplierName}' not found` });
@@ -120,8 +120,8 @@ export const updateMedicine = async (req, res) => {
             const medicine = await Medicine.findById(req.params.id);
     
             if (medicine) {
-                const trimmedName = name ? name.trim() : medicine.name;
-                const trimmedBarcode = barcode !== undefined ? barcode.trim() : medicine.barcode;
+                const trimmedName = name !== undefined && name !== null ? String(name).trim() : medicine.name;
+                const trimmedBarcode = barcode !== undefined && barcode !== null ? String(barcode).trim() : medicine.barcode;
                 
                 if (name && trimmedName.toLowerCase() !== medicine.name.toLowerCase()) {
                     const duplicate = await Medicine.findOne({

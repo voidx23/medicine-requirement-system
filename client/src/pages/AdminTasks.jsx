@@ -33,9 +33,16 @@ const AdminTasks = () => {
     };
 
     useEffect(() => {
-        if (user && user.token) {
-            loadTasks();
-        }
+        if (!user?.token) return;
+        
+        loadTasks();
+        
+        // Background polling every 10 seconds for real-time task tracking
+        const intervalId = setInterval(() => {
+            taskService.getAdminTasks().then(setTasks).catch(console.error);
+        }, 10000);
+        
+        return () => clearInterval(intervalId);
     }, [user]);
 
     const handleSubmitTask = async (taskData) => {

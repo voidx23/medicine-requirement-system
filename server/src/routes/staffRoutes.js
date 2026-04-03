@@ -1,6 +1,6 @@
 import express from 'express';
-import { protect, admin } from '../middleware/authMiddleware.js'; // Assuming auth mware exists
-import { getStaff, addStaff, verifyStaffPin, deleteStaff, getBranches } from '../controllers/staffController.js';
+import { protect, admin, superAdmin } from '../middleware/authMiddleware.js';
+import { getStaff, addStaff, updateStaff, verifyStaffPin, deleteStaff, getBranches, assignStaffToBranch, removeStaffFromBranch } from '../controllers/staffController.js';
 
 const router = express.Router();
 
@@ -8,11 +8,15 @@ router.get('/branches', protect, getBranches);
 
 router.route('/')
     .get(protect, getStaff)
-    .post(protect, addStaff);
+    .post(protect, superAdmin, addStaff);
 
 router.post('/verify', protect, verifyStaffPin);
 
 router.route('/:id')
-    .delete(protect, deleteStaff);
+    .put(protect, superAdmin, updateStaff)
+    .delete(protect, superAdmin, deleteStaff);
+
+router.put('/:id/branch', protect, superAdmin, assignStaffToBranch);
+router.delete('/:id/branch/:branchId', protect, superAdmin, removeStaffFromBranch);
 
 export default router;

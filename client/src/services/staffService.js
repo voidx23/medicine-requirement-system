@@ -15,9 +15,27 @@ const staffService = {
         return data;
     },
 
+    // Update staff
+    update: async (id, staffData) => {
+        const { data } = await api.put(`/staff/${id}`, staffData);
+        return data;
+    },
+
     // Delete staff
     delete: async (id) => {
         const { data } = await api.delete(`/staff/${id}`);
+        return data;
+    },
+
+    // Assign branch to staff
+    assignBranch: async (staffId, branchId) => {
+        const { data } = await api.put(`/staff/${staffId}/branch`, { branchId });
+        return data;
+    },
+
+    // Remove branch from staff
+    removeBranch: async (staffId, branchId) => {
+        const { data } = await api.delete(`/staff/${staffId}/branch/${branchId}`);
         return data;
     },
 

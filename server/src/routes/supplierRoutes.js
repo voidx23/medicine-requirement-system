@@ -1,14 +1,15 @@
 import express from 'express';
 import { getSuppliers, addSupplier, updateSupplier, deleteSupplier } from '../controllers/supplierController.js';
+import { protect, superAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.route('/')
-    .get(getSuppliers)
-    .post(addSupplier);
+    .get(protect, getSuppliers)
+    .post(protect, superAdmin, addSupplier);
 
 router.route('/:id')
-    .put(updateSupplier)
-    .delete(deleteSupplier);
+    .put(protect, superAdmin, updateSupplier)
+    .delete(protect, superAdmin, deleteSupplier);
 
 export default router;

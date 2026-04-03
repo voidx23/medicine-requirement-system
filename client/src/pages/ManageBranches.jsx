@@ -1,22 +1,22 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Trash2, Key, Store, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Store, Edit2, UserPlus } from 'lucide-react';
 import api from '../services/api';
 import staffService from '../services/staffService';
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 import Skeleton, { TableRowSkeleton } from '../components/UI/Skeleton';
 
-const ManageStaff = () => {
+const ManageBranches = () => {
     const [branches, setBranches] = useState([]);
     const [selectedBranch, setSelectedBranch] = useState(null);
-    const [staffList, setStaffList] = useState([]);
+    const [branchStaffList, setBranchStaffList] = useState([]);
+    const [allStaffList, setAllStaffList] = useState([]);
     const [branchesLoading, setBranchesLoading] = useState(true);
     const [staffLoading, setStaffLoading] = useState(false);
     
-    // Add Staff Modal State
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [newStaffName, setNewStaffName] = useState('');
-    const [newStaffPin, setNewStaffPin] = useState('');
+    // Assign Staff Modal State
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [selectedStaffToAssign, setSelectedStaffToAssign] = useState('');
 
     // Add Branch Modal State
     const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
@@ -41,25 +41,35 @@ const ManageStaff = () => {
         }
     };
 
+    const fetchAllStaff = async () => {
+        try {
+            const data = await staffService.getAll();
+            setAllStaffList(data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     useEffect(() => {
         fetchBranches();
+        fetchAllStaff();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         if (selectedBranch) {
-            fetchStaff(selectedBranch._id);
+            fetchBranchStaff(selectedBranch._id);
         } else {
-            setStaffList([]);
+            setBranchStaffList([]);
         }
     }, [selectedBranch]);
 
 
-    const fetchStaff = async (branchId) => {
+    const fetchBranchStaff = async (branchId) => {
         setStaffLoading(true);
         try {
             const data = await staffService.getAll(branchId);
-            setStaffList(data);
+            setBranchStaffList(data);
         } catch (error) {
             console.error(error);
         } finally {
@@ -67,21 +77,26 @@ const ManageStaff = () => {
         }
     };
 
-    const handleAddStaff = async (e) => {
+    const handleAssignStaff = async (e) => {
         e.preventDefault();
         try {
-            await staffService.add({
-                name: newStaffName,
-                pin: newStaffPin,
-                branchId: selectedBranch._id
-            });
-            setIsAddModalOpen(false);
-            setNewStaffName('');
-            setNewStaffPin('');
-            fetchStaff(selectedBranch._id);
-            alert('Staff Added Successfully');
+            await staffService.assignBranch(selectedStaffToAssign, selectedBranch._id);
+            setIsAssignModalOpen(false);
+            setSelectedStaffToAssign('');
+            fetchBranchStaff(selectedBranch._id);
+            alert('Pharmacist Assigned Successfully');
         } catch (error) {
-            alert('Error adding staff');
+            alert('Error assigning pharmacist');
+        }
+    };
+
+    const handleRemoveStaff = async (staffId) => {
+        if (!window.confirm('Are you sure you want to remove this pharmacist from this branch?')) return;
+        try {
+            await staffService.removeBranch(staffId, selectedBranch._id);
+            fetchBranchStaff(selectedBranch._id);
+        } catch (error) {
+            alert('Error removing pharmacist from branch');
         }
     };
 
@@ -136,15 +151,10 @@ const ManageStaff = () => {
         }
     };
 
-    const handleDeleteStaff = async (id) => {
-        if (!window.confirm('Are you sure you want to remove this staff access?')) return;
-        try {
-            await staffService.delete(id);
-            fetchStaff(selectedBranch._id);
-        } catch (error) {
-            alert('Error deleting staff');
-        }
-    };
+    // Filter staff that are not already assigned to the selected branch
+    const availableStaffToAssign = allStaffList.filter(
+        staff => !branchStaffList.some(bStaff => bStaff._id === staff._id)
+    );
 
     return (
         <div style={{ display: 'flex', gap: '2rem', height: '80vh' }}>
@@ -183,7 +193,7 @@ const ManageStaff = () => {
                 </div>
             </div>
 
-            {/* Main Area: Staff Management */}
+            {/* Main Area: Branch Details & Staff */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 {selectedBranch ? (
                     <>
@@ -210,8 +220,8 @@ const ManageStaff = () => {
                                     {selectedBranch.contactNumber && <span>📞 {selectedBranch.contactNumber}</span>}
                                 </div>
                             </div>
-                            <Button variant="primary" icon={Plus} onClick={() => setIsAddModalOpen(true)} aria-label="Register new pharmacist">
-                                Register Pharmacist
+                            <Button variant="primary" icon={UserPlus} onClick={() => setIsAssignModalOpen(true)} aria-label="Assign pharmacist">
+                                Assign Pharmacist
                             </Button>
                         </div>
 
@@ -229,7 +239,7 @@ const ManageStaff = () => {
                                     <TableRowSkeleton cols={4} rows={4} />
                                 ) : (
                                 <tbody>
-                                    {staffList.length > 0 ? staffList.map((staff, idx) => (
+                                    {branchStaffList.length > 0 ? branchStaffList.map((staff, idx) => (
                                         <tr key={staff._id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                                             <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{idx + 1}</td>
                                             <td style={{ padding: '1rem', fontWeight: 500 }}>{staff.name}</td>
@@ -238,15 +248,16 @@ const ManageStaff = () => {
                                                     padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.8rem', 
                                                     background: '#dcfce7', color: '#166534', fontWeight: 600
                                                 }}>
-                                                    Active
+                                                    Assigned
                                                 </span>
                                             </td>
                                             <td style={{ padding: '1rem', textAlign: 'right' }}>
                                                 <button 
-                                                    onClick={() => handleDeleteStaff(staff._id)}
+                                                    onClick={() => handleRemoveStaff(staff._id)}
                                                     className="btn-icon"
-                                                    aria-label={`Delete staff member ${staff.name}`}
-                                                    style={{ color: '#ef4444', background: '#fee2e2', borderRadius: '8px', padding: '0.5rem' }}
+                                                    title="Remove assignment"
+                                                    aria-label={`Remove pharmacist ${staff.name} from branch`}
+                                                    style={{ color: '#ef4444', background: '#fee2e2', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', border: 'none' }}
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
@@ -255,7 +266,7 @@ const ManageStaff = () => {
                                     )) : (
                                         <tr>
                                             <td colSpan="4" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                                No pharmacists registered for this branch yet.
+                                                No pharmacists assigned to this branch yet.
                                             </td>
                                         </tr>
                                     )}
@@ -271,40 +282,32 @@ const ManageStaff = () => {
                 )}
             </div>
 
-            {/* Add Staff Modal */}
-            <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Register New Pharmacist">
-                <form onSubmit={handleAddStaff} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Assign Staff Modal */}
+            <Modal isOpen={isAssignModalOpen} onClose={() => setIsAssignModalOpen(false)} title="Assign Pharmacist to Branch">
+                <form onSubmit={handleAssignStaff} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Pharmacist Name</label>
-                        <input 
-                            type="text" 
-                            value={newStaffName}
-                            onChange={(e) => setNewStaffName(e.target.value)}
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Select Pharmacist</label>
+                        <select 
+                            value={selectedStaffToAssign}
+                            onChange={(e) => setSelectedStaffToAssign(e.target.value)}
+                            required
                             className="input-field"
-                            placeholder="e.g. Ahmed Al-Sayed"
-                            required 
-                            autoFocus
-                        />
-                    </div>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Security PIN</label>
-                        <input 
-                            type="text" 
-                            value={newStaffPin}
-                            onChange={(e) => setNewStaffPin(e.target.value)}
-                            className="input-field"
-                            placeholder="e.g. 1234"
-                            maxLength={6}
-                            minLength={4}
-                            required 
-                        />
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                            4-6 digit login PIN
-                        </p>
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
+                        >
+                            <option value="" disabled>-- Select a Pharmacist --</option>
+                            {availableStaffToAssign.map(staff => (
+                                <option key={staff._id} value={staff._id}>{staff.name}</option>
+                            ))}
+                        </select>
+                        {availableStaffToAssign.length === 0 && (
+                            <p style={{ fontSize: '0.85rem', color: '#ef4444', marginTop: '0.5rem' }}>
+                                All generated pharmacists have already been assigned to this branch! Create more pharmacists first.
+                            </p>
+                        )}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                        <Button variant="secondary" onClick={() => setIsAddModalOpen(false)} type="button">Cancel</Button>
-                        <Button variant="primary" type="submit">Create Account</Button>
+                        <Button variant="secondary" onClick={() => setIsAssignModalOpen(false)} type="button">Cancel</Button>
+                        <Button variant="primary" type="submit" disabled={!selectedStaffToAssign}>Assign</Button>
                     </div>
                 </form>
             </Modal>
@@ -321,6 +324,7 @@ const ManageStaff = () => {
                             className="input-field"
                             placeholder="e.g. Jumeirah Pharmacy"
                             required 
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                         />
                     </div>
                     <div>
@@ -332,6 +336,7 @@ const ManageStaff = () => {
                             className="input-field"
                             placeholder="Login Password"
                             required 
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                         />
                     </div>
                     <div>
@@ -342,6 +347,7 @@ const ManageStaff = () => {
                             onChange={(e) => setNewBranchData({...newBranchData, location: e.target.value})}
                             className="input-field"
                             placeholder="e.g. Building 5, Street 12, Dubai"
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                         />
                     </div>
                     <div>
@@ -352,6 +358,7 @@ const ManageStaff = () => {
                             onChange={(e) => setNewBranchData({...newBranchData, contactNumber: e.target.value})}
                             className="input-field"
                             placeholder="e.g. +971 50 123 4567"
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                         />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
@@ -372,6 +379,7 @@ const ManageStaff = () => {
                             onChange={(e) => setEditBranchData({...editBranchData, username: e.target.value})}
                             className="input-field"
                             required 
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                         />
                     </div>
                     <div>
@@ -381,6 +389,7 @@ const ManageStaff = () => {
                             value={editBranchData.location}
                             onChange={(e) => setEditBranchData({...editBranchData, location: e.target.value})}
                             className="input-field"
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                         />
                     </div>
                     <div>
@@ -390,6 +399,7 @@ const ManageStaff = () => {
                             value={editBranchData.contactNumber}
                             onChange={(e) => setEditBranchData({...editBranchData, contactNumber: e.target.value})}
                             className="input-field"
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                         />
                     </div>
                     
@@ -403,6 +413,7 @@ const ManageStaff = () => {
                             onChange={(e) => setEditBranchData({...editBranchData, password: e.target.value})}
                             className="input-field"
                             placeholder="Leave empty to keep current"
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}
                         />
                     </div>
 
@@ -416,4 +427,4 @@ const ManageStaff = () => {
     );
 };
 
-export default ManageStaff;
+export default ManageBranches;
