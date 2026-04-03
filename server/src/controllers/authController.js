@@ -21,6 +21,8 @@ export const authUser = async (req, res) => {
             _id: user._id,
             username: user.username,
             role: user.role,
+            isSuperAdmin: user.isSuperAdmin,
+            permissions: user.permissions,
             token: generateToken(user._id),
         });
     } else {
@@ -68,6 +70,8 @@ export const registerUser = async (req, res) => {
             _id: user._id,
             username: user.username,
             role: user.role,
+            isSuperAdmin: user.isSuperAdmin,
+            permissions: user.permissions,
             token: generateToken(user._id),
         });
     } else {
@@ -96,6 +100,8 @@ export const updateUser = async (req, res) => {
                 _id: updatedUser._id,
                 username: updatedUser.username,
                 role: updatedUser.role,
+                isSuperAdmin: updatedUser.isSuperAdmin,
+                permissions: updatedUser.permissions,
                 location: updatedUser.location,
                 contactNumber: updatedUser.contactNumber
             });

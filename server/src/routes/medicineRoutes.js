@@ -1,14 +1,15 @@
 import express from 'express';
 import { getMedicines, addMedicine, updateMedicine, deleteMedicine } from '../controllers/medicineController.js';
+import { protect, superAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.route('/')
-    .get(getMedicines)
-    .post(addMedicine);
+    .get(protect, getMedicines)
+    .post(protect, superAdmin, addMedicine);
 
 router.route('/:id')
-    .put(updateMedicine)
-    .delete(deleteMedicine);
+    .put(protect, superAdmin, updateMedicine)
+    .delete(protect, superAdmin, deleteMedicine);
 
 export default router;

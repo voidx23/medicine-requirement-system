@@ -9,7 +9,9 @@ import DevUpdates from './pages/DevUpdates';
 import Login from './pages/Login';
 import AdminRequests from './pages/AdminRequests';
 import AdminFeedback from './pages/AdminFeedback';
-import ManageStaff from './pages/ManageStaff';
+import ManageBranches from './pages/ManageBranches';
+import ManagePharmacists from './pages/ManagePharmacists';
+import ManageStoreStaff from './pages/ManageStoreStaff';
 import Reports from './pages/Reports';
 import MedicineAudit from './pages/MedicineAudit';
 import PharmacistNewRequest from './pages/PharmacistNewRequest';
@@ -44,6 +46,12 @@ const AdminRoute = () => {
   return user && user.role === 'admin' ? <Outlet /> : <Navigate to="/pharmacist-dashboard" replace />;
 };
 
+const SuperAdminRoute = () => {
+  const { user, loading } = useContext(AuthContext);
+  if (loading) return <div>Loading...</div>;
+  return user && user.isSuperAdmin ? <Outlet /> : <Navigate to="/" replace />;
+};
+
 const App = () => {
     // ... existing provider logic ...
 
@@ -63,16 +71,23 @@ const App = () => {
                     <Route path="/setup-device" element={<SetupDevice />} />
                     <Route path="/" element={<Layout />}>
                         <Route index element={<Dashboard />} />
+                        {/* Modules protected by their own logic or shown if permitted */}
                         <Route path="tasks" element={<AdminTasks />} />
                         <Route path="requests" element={<AdminRequests />} />
                         <Route path="suppliers" element={<Suppliers />} />
                         <Route path="medicines" element={<Medicines />} />
-                        <Route path="staff" element={<ManageStaff />} />
                         <Route path="history" element={<History />} />
                         <Route path="reports" element={<Reports />} />
                         <Route path="reports/audit" element={<MedicineAudit />} />
-                        <Route path="feedback" element={<AdminFeedback />} />
-                        <Route path="updates" element={<DevUpdates />} />
+
+                        {/* Super Admin ONLY routes */}
+                        <Route element={<SuperAdminRoute />}>
+                            <Route path="branches" element={<ManageBranches />} />
+                            <Route path="pharmacists" element={<ManagePharmacists />} />
+                            <Route path="store-staff" element={<ManageStoreStaff />} />
+                            <Route path="feedback" element={<AdminFeedback />} />
+                            <Route path="updates" element={<DevUpdates />} />
+                        </Route>
                     </Route>
                 </Route>
 

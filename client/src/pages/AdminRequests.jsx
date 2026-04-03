@@ -32,33 +32,37 @@ const AdminRequests = () => {
         endDate: ''
     });
 
-    const fetchRequests = async () => {
-        setLoading(true); 
+    const fetchRequests = async (isBackground = false) => {
+        if (!isBackground) setLoading(true); 
         try {
             const [{ data: requestsData }, { data: todayData }] = await Promise.all([
                 api.get('/requests?status=pending'),
                 api.get('/requirements/today'),
-                new Promise(resolve => setTimeout(resolve, 800))
+                isBackground ? Promise.resolve() : new Promise(resolve => setTimeout(resolve, 800))
             ]);
             setRequests(requestsData);
             
-            // Initialize local packing state from fetched requests
-            const initialPackingState = {};
-            requestsData.forEach(req => {
-                const itemStates = {};
-                req.items.forEach(item => {
-                    itemStates[item._id] = item.status;
+            // Only initialize packing state for new requests (don't overwrite active packing progress)
+            setPackingState(prev => {
+                const newState = { ...prev };
+                requestsData.forEach(req => {
+                    if (!newState[req._id]) {
+                        const itemStates = {};
+                        req.items.forEach(item => {
+                            itemStates[item._id] = item.status;
+                        });
+                        newState[req._id] = itemStates;
+                    }
                 });
-                initialPackingState[req._id] = itemStates;
+                return newState;
             });
-            setPackingState(initialPackingState);
             
             const ids = new Set(todayData.items.map(item => item.medicineId?._id || item.medicineId));
             setDailyListIds(ids);
         } catch (error) {
             console.error("Failed to fetch data", error);
         } finally {
-            setLoading(false);
+            if (!isBackground) setLoading(false);
         }
     };
 
@@ -93,6 +97,12 @@ const AdminRequests = () => {
     useEffect(() => {
         fetchRequests();
         fetchBranches();
+
+        const intervalId = setInterval(() => {
+            fetchRequests(true);
+        }, 10000);
+
+        return () => clearInterval(intervalId);
     }, []);
 
     // --- Computed Data for Sidebar ---

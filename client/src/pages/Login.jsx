@@ -53,13 +53,8 @@ const Login = () => {
         setIsLoading(true);
         setError('');
         
-        // 1. If username locked -> It's safe.
-        // 2. If NO lock -> Must be ADMIN. Everyone else is BLOCKED.
-        if (!lockedBranch && username.toLowerCase() !== 'admin') {
-             setError('Security Restriction: You must use the Secure Desktop Shortcut (or Magic Link) to setup this device first.');
-             setIsLoading(false);
-             return;
-        }
+        // Wait to see role after login instead of blocking upfront
+        // This allows other Store Staff admins to login normally.
 
         // Strict validation: If locked, they MUST use that username
         if (lockedBranch && username.trim().toLowerCase() !== lockedBranch.toLowerCase()) {
@@ -69,8 +64,17 @@ const Login = () => {
         }
 
         try {
-            await login(username, password);
-             // Navigation happens in useEffect
+            const data = await login(username, password);
+             // Verify post-login
+             if (!lockedBranch && data.role === 'pharmacist') {
+                 // Pharmacists shouldn't login to unlocked devices
+                 // To force them to use the sticky link
+                 localStorage.removeItem('userInfo'); // Immediate logout logic since login already set it
+                 setError('Security Restriction: Pharmacists must use the Secure Desktop Shortcut to setup this device first.');
+                 setIsLoading(false);
+                 return;
+             }
+             // Navigation happens in useEffect automatically
         } catch (err) {
             setError('Invalid credentials');
             setIsLoading(false);

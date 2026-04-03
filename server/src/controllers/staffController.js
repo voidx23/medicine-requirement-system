@@ -10,15 +10,15 @@ const getStaff = async (req, res) => {
         
         // If it's a pharmacist, only show their own staff
         if (req.user.role === 'pharmacist') {
-            query.branchId = req.user._id;
+            query.branches = req.user._id;
         }
         
         // If specific branch requested (Admin view)
         if (req.query.branchId) {
-            query.branchId = req.query.branchId;
+            query.branches = req.query.branchId;
         }
 
-        const staff = await Staff.find(query).sort({ name: 1 });
+        const staff = await Staff.find(query).sort({ name: 1 }).populate('branches', 'username');
         res.json(staff);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
@@ -29,27 +29,90 @@ const getStaff = async (req, res) => {
 // @route   POST /api/staff
 // @access  Private (Admin only ideally, but we'll allow flexible for now)
 const addStaff = async (req, res) => {
-    const { name, pin, branchId } = req.body;
+    const { name, pin } = req.body;
 
     try {
-        // If pharmacist is adding, force branchId to be themselves
-        const targetBranchId = req.user.role === 'pharmacist' ? req.user._id : branchId;
-
-        if (!targetBranchId) {
-            return res.status(400).json({ message: 'Branch ID is required' });
-        }
-
         const staff = await Staff.create({
             name,
             pin,
-            branchId: targetBranchId
+            branches: [] // Start with empty branches
         });
 
         res.status(201).json({
             _id: staff._id,
             name: staff.name,
-            branchId: staff.branchId
+            branches: staff.branches
         });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Update a staff member's name and PIN
+// @route   PUT /api/staff/:id
+// @access  Private (Admin)
+const updateStaff = async (req, res) => {
+    const { name, pin } = req.body;
+
+    try {
+        const staff = await Staff.findById(req.params.id);
+
+        if (!staff) {
+            return res.status(404).json({ message: 'Staff not found' });
+        }
+
+        if (name) staff.name = name;
+        if (pin) staff.pin = pin;
+
+        await staff.save();
+
+        res.json({
+            _id: staff._id,
+            name: staff.name,
+            branches: staff.branches
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Assign a branch to a staff member
+// @route   PUT /api/staff/:id/branch
+// @access  Private (Admin)
+const assignStaffToBranch = async (req, res) => {
+    const { branchId } = req.body;
+    try {
+        const staff = await Staff.findById(req.params.id);
+        if (!staff) {
+            return res.status(404).json({ message: 'Staff not found' });
+        }
+        if (!staff.branches.includes(branchId)) {
+            staff.branches.push(branchId);
+            await staff.save();
+        }
+        // Return full staff with branches populated
+        const updatedStaff = await Staff.findById(staff._id).populate('branches', 'username');
+        res.json(updatedStaff);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
+
+// @desc    Remove a branch from a staff member
+// @route   DELETE /api/staff/:id/branch/:branchId
+// @access  Private (Admin)
+const removeStaffFromBranch = async (req, res) => {
+    const { branchId } = req.params;
+    try {
+        const staff = await Staff.findById(req.params.id);
+        if (!staff) {
+            return res.status(404).json({ message: 'Staff not found' });
+        }
+        staff.branches = staff.branches.filter(b => b.toString() !== branchId);
+        await staff.save();
+        
+        const updatedStaff = await Staff.findById(staff._id).populate('branches', 'username');
+        res.json(updatedStaff);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
@@ -109,4 +172,4 @@ const getBranches = async (req, res) => {
     }
 };
 
-export { getStaff, addStaff, verifyStaffPin, deleteStaff, getBranches };
+export { getStaff, addStaff, updateStaff, verifyStaffPin, deleteStaff, getBranches, assignStaffToBranch, removeStaffFromBranch };

@@ -1,23 +1,77 @@
-import { NavLink } from 'react-router-dom';
-import { PlusCircle, History, LogOut, Sparkles, ListTodo } from 'lucide-react';
-import { useContext, useEffect, useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { PlusCircle, History, LogOut, Sparkles, ListTodo, BellRing } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
+import { useContext, useEffect, useState, useRef } from 'react';
 import AuthContext from '../../context/AuthContext';
 import taskService from '../../services/taskService';
 
 const PharmacistSidebar = () => {
   const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [pendingTasksCount, setPendingTasksCount] = useState(0);
+  const [notiPermission, setNotiPermission] = useState(
+      typeof Notification !== 'undefined' ? Notification.permission : 'denied'
+  );
+  const isInitialLoad = useRef(true);
+
+  const requestNotiPermission = () => {
+      if (typeof Notification !== 'undefined') {
+          Notification.requestPermission().then(permission => {
+              setNotiPermission(permission);
+              if (permission === 'granted') {
+                 new Notification('Notifications Enabled', { body: 'You will now be notified of new tasks.' });
+              }
+          });
+      }
+  };
 
   useEffect(() => {
-      if (user && user.token) {
+      if (!user?.token) return;
+
+      const fetchCount = () => {
           taskService.getPharmacyTasks(user.token)
             .then(tasks => {
-                const pending = tasks.filter(t => t.myAssignment?.status === 'Pending').length;
-                setPendingTasksCount(pending);
+                const pendingTasks = tasks.filter(t => t.myAssignment?.status === 'Pending');
+                const pending = pendingTasks.length;
+                
+                setPendingTasksCount(prevCount => {
+                    if (!isInitialLoad.current && pending > prevCount && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                        const newTasksCount = pending - prevCount;
+                        let title = "New Task Assigned";
+                        let body = `You have ${newTasksCount} new pending action(s) in your Task Inbox.`;
+
+                        // If exactly 1 new task, make the notification detailed
+                        if (newTasksCount === 1 && pendingTasks.length > 0) {
+                            const latestTask = pendingTasks[0]; // Tasks are sorted descending by createdAt
+                            if (latestTask.type === 'transfer_request') {
+                                title = "Medicine Transfer Request";
+                            } else {
+                                title = latestTask.priority === 'Urgent' || latestTask.priority === 'High' ? `🚨 Urgent Task: ${latestTask.title}` : `📋 Task: ${latestTask.title}`;
+                            }
+                            body = latestTask.description || `Admin requires your action on ${latestTask.title}.`;
+                        }
+
+                        const notification = new Notification(title, { body });
+                        
+                        notification.onclick = function() {
+                            window.focus();
+                            navigate('/pharmacist-dashboard/tasks');
+                            this.close();
+                        };
+                    }
+                    
+                    if (isInitialLoad.current) {
+                        isInitialLoad.current = false;
+                    }
+                    return pending;
+                });
             })
             .catch(err => console.error('Failed to side-load pharmacy tasks:', err));
-      }
+      };
+
+      fetchCount();
+      const intervalId = setInterval(fetchCount, 10000); // 10s polling for badge
+      return () => clearInterval(intervalId);
   }, [user]);
   
   const links = [
@@ -101,7 +155,44 @@ const PharmacistSidebar = () => {
         ))}
       </nav>
       
-      <div style={{ marginTop: 'auto', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
+      <div style={{ marginTop: 'auto', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <button 
+              onClick={() => {
+                  if (notiPermission === 'default') {
+                      requestNotiPermission();
+                  } else if (notiPermission === 'granted') {
+                      new Notification('Test Alert', { body: 'Notifications are working perfectly!' });
+                  } else {
+                      alert('You have blocked notifications in your browser settings. Please click the icon near your address bar to allow them.');
+                  }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.75rem 1rem',
+                width: '100%',
+                background: notiPermission === 'granted' ? 'rgba(34, 197, 94, 0.1)' : notiPermission === 'denied' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                border: notiPermission === 'granted' ? '1px solid rgba(34, 197, 94, 0.2)' : notiPermission === 'denied' ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(59, 130, 246, 0.2)',
+                color: notiPermission === 'granted' ? '#22c55e' : notiPermission === 'denied' ? '#ef4444' : '#3b82f6',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                borderRadius: '8px',
+                transition: 'background 0.2s'
+              }}
+              onMouseOver={(e) => {
+                  const bgMap = { granted: 'rgba(34, 197, 94, 0.2)', denied: 'rgba(239, 68, 68, 0.2)', default: 'rgba(59, 130, 246, 0.2)' };
+                  e.currentTarget.style.background = bgMap[notiPermission] || bgMap.default;
+              }}
+              onMouseOut={(e) => {
+                  const bgMap = { granted: 'rgba(34, 197, 94, 0.1)', denied: 'rgba(239, 68, 68, 0.1)', default: 'rgba(59, 130, 246, 0.1)' };
+                  e.currentTarget.style.background = bgMap[notiPermission] || bgMap.default;
+              }}
+            >
+              <BellRing size={18} />
+              {notiPermission === 'default' ? 'Enable Alerts' : notiPermission === 'granted' ? 'Alerts Enabled (Test)' : 'Alerts Blocked'}
+            </button>
         <button 
           onClick={logout}
           style={{

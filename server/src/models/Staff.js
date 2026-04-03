@@ -11,11 +11,10 @@ const staffSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    branchId: {
+    branches: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
+        ref: 'User'
+    }],
     isActive: {
         type: Boolean,
         default: true

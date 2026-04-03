@@ -32,7 +32,16 @@ const PharmacyTasks = () => {
     };
 
     useEffect(() => {
-        if (user?.token) loadTasks();
+        if (!user?.token) return;
+        
+        loadTasks();
+        
+        // Background polling every 10 seconds for real-time task updates
+        const intervalId = setInterval(() => {
+            taskService.getPharmacyTasks().then(setTasks).catch(console.error);
+        }, 10000);
+        
+        return () => clearInterval(intervalId);
     }, [user]);
 
     const handleCompleteTask = async (taskId, status, comment) => {
