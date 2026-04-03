@@ -39,6 +39,8 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
     const isRequester = transferRole === 'requester';
     const alreadyResponded = tr?.responseStatus !== 'pending';
 
+    const isCreatorOrSuperAdmin = user?.isSuperAdmin || task.createdBy?._id === user?._id || task.createdBy === user?._id;
+
     const handleSubmit = async () => {
         if (action === 'accept' && (!responseQty || Number(responseQty) <= 0)) {
             showToast('Please enter a valid quantity to give', 'error');
@@ -100,7 +102,7 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {/* Admin Edit / Delete */}
-                        {isAdminView && (
+                        {isAdminView && isCreatorOrSuperAdmin && (
                             <>
                                 {alreadyResponded ? null : (
                                     <button onClick={() => setAuthAction('edit')} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3b82f6', padding: '0.25rem' }}>

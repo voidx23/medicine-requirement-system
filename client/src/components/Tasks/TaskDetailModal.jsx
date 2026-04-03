@@ -4,14 +4,19 @@ import StaffVerificationModal from '../UI/StaffVerificationModal';
 import PasswordConfirmModal from '../UI/PasswordConfirmModal';
 import TransferRequestModal from './TransferRequestModal';
 import api from '../../services/api';
+import { useContext } from 'react';
+import AuthContext from '../../context/AuthContext';
 
 const TaskDetailModal = ({ task, onClose, onComplete, isAdminView, onEdit, onDelete, onResponded }) => {
+    const { user } = useContext(AuthContext);
     const [comment, setComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showVerification, setShowVerification] = useState(false);
     const [authAction, setAuthAction] = useState(null);
 
     if (!task) return null;
+
+    const isCreatorOrSuperAdmin = user?.isSuperAdmin || task.createdBy?._id === user?._id || task.createdBy === user?._id;
 
     // Route transfer_request tasks to their own modal
     if (task.type === 'transfer_request') {
@@ -68,7 +73,7 @@ const TaskDetailModal = ({ task, onClose, onComplete, isAdminView, onEdit, onDel
                         </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        {isAdminView && (
+                        {isAdminView && isCreatorOrSuperAdmin && (
                             <>
                                 {!isFullyCompleted && (
                                     <button onClick={() => setAuthAction('edit')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3b82f6', padding: '0.25rem' }} title="Edit Task">
