@@ -2,11 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { CheckCircle, XCircle, ChevronDown, ChevronUp, RotateCw, Trash2, ListPlus, ListX, Store, Users, Filter, PackageCheck, Edit, Search, Calendar } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
+import { useContext } from 'react';
+import AuthContext from '../context/AuthContext';
 import Button from '../components/UI/Button';
 import PasswordConfirmModal from '../components/UI/PasswordConfirmModal';
 import { RequestCardSkeleton } from '../components/UI/Skeleton';
 
 const AdminRequests = () => {
+    const { user } = useContext(AuthContext);
     const { showConfirm, showToast } = useNotification();
     const [requests, setRequests] = useState([]);
     const [historyRequests, setHistoryRequests] = useState([]);
@@ -535,9 +538,11 @@ const AdminRequests = () => {
 
                                             {/* Footer Actions */}
                                             <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end', paddingTop: '1rem', borderTop: '1px solid rgba(0,0,0,0.05)' }}>
-                                                <Button variant="danger" icon={Trash2} style={{ marginRight: 'auto' }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(req._id); }} aria-label="Delete request">
-                                                    Delete
-                                                </Button>
+                                                {user?.isSuperAdmin && (
+                                                    <Button variant="danger" icon={Trash2} style={{ marginRight: 'auto' }} onClick={(e) => { e.stopPropagation(); handleDeleteClick(req._id); }} aria-label="Delete request">
+                                                        Delete
+                                                    </Button>
+                                                )}
                                                 
                                                 {/* Action Buttons based on Status */}
                                                 {(req.status === 'pending' || req.status === 'approved') ? (
@@ -552,32 +557,34 @@ const AdminRequests = () => {
                                                     </Button>
                                                 ) : (
                                                     // Edit button for completed/locked requests
-                                                    <button 
-                                                        onClick={(e) => { e.stopPropagation(); handleEditClick(req._id); }}
-                                                        aria-label="Unlock to Edit"
-                                                        title="Unlock Request for Editing"
-                                                        style={{
-                                                            background: 'rgba(59, 130, 246, 0.1)', 
-                                                            border: '1px solid rgba(59, 130, 246, 0.3)', 
-                                                            borderRadius: '8px', 
-                                                            width: '40px', height: '40px', 
-                                                            cursor: 'pointer',
-                                                            color: '#3b82f6',
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                            transition: 'all 0.2s',
-                                                            marginLeft: '1rem' // Add some spacing just in case
-                                                        }}
-                                                        onMouseEnter={(e) => {
-                                                            e.currentTarget.style.background = '#3b82f6';
-                                                            e.currentTarget.style.color = 'white';
-                                                        }}
-                                                        onMouseLeave={(e) => {
-                                                            e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
-                                                            e.currentTarget.style.color = '#3b82f6';
-                                                        }}
-                                                    >
-                                                        <Edit size={20} />
-                                                    </button>
+                                                    user?.isSuperAdmin && (
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); handleEditClick(req._id); }}
+                                                            aria-label="Unlock to Edit"
+                                                            title="Unlock Request for Editing"
+                                                            style={{
+                                                                background: 'rgba(59, 130, 246, 0.1)', 
+                                                                border: '1px solid rgba(59, 130, 246, 0.3)', 
+                                                                borderRadius: '8px', 
+                                                                width: '40px', height: '40px', 
+                                                                cursor: 'pointer',
+                                                                color: '#3b82f6',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                transition: 'all 0.2s',
+                                                                marginLeft: '1rem' // Add some spacing just in case
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.currentTarget.style.background = '#3b82f6';
+                                                                e.currentTarget.style.color = 'white';
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
+                                                                e.currentTarget.style.color = '#3b82f6';
+                                                            }}
+                                                        >
+                                                            <Edit size={20} />
+                                                        </button>
+                                                    )
                                                 )}
                                             </div>
                                         </div>
