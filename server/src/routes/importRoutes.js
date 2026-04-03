@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { importSuppliers, importMedicines } from '../controllers/importController.js';
+import { protect, requirePermission } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ const upload = multer({
     }
 });
 
-router.post('/suppliers', upload.single('file'), importSuppliers);
-router.post('/medicines', upload.single('file'), importMedicines);
+router.post('/suppliers', protect, requirePermission('import_excel'), upload.single('file'), importSuppliers);
+router.post('/medicines', protect, requirePermission('import_excel'), upload.single('file'), importMedicines);
 
 export default router;
