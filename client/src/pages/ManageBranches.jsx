@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, Store, Edit2, UserPlus } from 'lucide-react';
 import api from '../services/api';
 import staffService from '../services/staffService';
+import { useNotification } from '../context/NotificationContext';
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 import Skeleton, { TableRowSkeleton } from '../components/UI/Skeleton';
 
 const ManageBranches = () => {
+    const { showConfirm, showToast } = useNotification();
     const [branches, setBranches] = useState([]);
     const [selectedBranch, setSelectedBranch] = useState(null);
     const [branchStaffList, setBranchStaffList] = useState([]);
@@ -151,6 +153,23 @@ const ManageBranches = () => {
         }
     };
 
+    const handleDeleteBranch = async () => {
+        if (!selectedBranch) return;
+        const confirmed = await showConfirm(
+            `Are you sure you want to permanently delete "${selectedBranch.username}"? This cannot be undone.`,
+            'danger'
+        );
+        if (!confirmed) return;
+        try {
+            await api.delete(`/auth/users/${selectedBranch._id}`);
+            showToast('Branch deleted successfully', 'success');
+            setSelectedBranch(null);
+            fetchBranches();
+        } catch (error) {
+            showToast(error.response?.data?.message || 'Failed to delete branch', 'error');
+        }
+    };
+
     // Filter staff that are not already assigned to the selected branch
     const availableStaffToAssign = allStaffList.filter(
         staff => !branchStaffList.some(bStaff => bStaff._id === staff._id)
@@ -213,6 +232,18 @@ const ManageBranches = () => {
                                         title="Edit Branch Details"
                                     >
                                         <Edit2 size={16} />
+                                    </button>
+                                    <button 
+                                        onClick={handleDeleteBranch}
+                                        aria-label="Delete branch"
+                                        style={{ 
+                                            background: '#fee2e2', border: 'none', cursor: 'pointer', color: '#ef4444', 
+                                            padding: '0.35rem 0.6rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                            fontSize: '0.78rem', fontWeight: 600
+                                        }}
+                                        title="Delete Branch"
+                                    >
+                                        <Trash2 size={14} /> Delete Branch
                                     </button>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>

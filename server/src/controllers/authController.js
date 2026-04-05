@@ -112,3 +112,31 @@ export const updateUser = async (req, res) => {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
 };
+
+// @desc    Delete a user/branch (Super Admin only)
+// @route   DELETE /api/auth/users/:id
+// @access  Private (Super Admin)
+export const deleteUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Prevent deleting yourself
+        if (user._id.toString() === req.user._id.toString()) {
+            return res.status(400).json({ message: 'You cannot delete your own account' });
+        }
+
+        // Prevent deleting another super admin
+        if (user.isSuperAdmin) {
+            return res.status(400).json({ message: 'Cannot delete a super admin account' });
+        }
+
+        await User.deleteOne({ _id: req.params.id });
+        res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error', error: error.message });
+    }
+};
