@@ -6,6 +6,7 @@ import { useNotification } from '../context/NotificationContext';
 import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 import Skeleton, { TableRowSkeleton } from '../components/UI/Skeleton';
+import PasswordConfirmModal from '../components/UI/PasswordConfirmModal';
 
 const ManageBranches = () => {
     const { showConfirm, showToast } = useNotification();
@@ -15,6 +16,7 @@ const ManageBranches = () => {
     const [allStaffList, setAllStaffList] = useState([]);
     const [branchesLoading, setBranchesLoading] = useState(true);
     const [staffLoading, setStaffLoading] = useState(false);
+    const [showDeletePasswordModal, setShowDeletePasswordModal] = useState(false);
     
     // Assign Staff Modal State
     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -150,13 +152,13 @@ const ManageBranches = () => {
         }
     };
 
-    const handleDeleteBranch = async () => {
+    const handleDeleteBranch = () => {
         if (!selectedBranch) return;
-        const confirmed = await showConfirm(
-            `Are you sure you want to permanently delete "${selectedBranch.name}"? This cannot be undone.`,
-            'danger'
-        );
-        if (!confirmed) return;
+        // Open password confirmation modal — actual deletion happens on password verify
+        setShowDeletePasswordModal(true);
+    };
+
+    const handleConfirmDelete = async () => {
         try {
             await api.delete(`/branches/${selectedBranch._id}`);
             showToast('Branch deleted successfully', 'success');
@@ -451,6 +453,22 @@ const ManageBranches = () => {
                     </div>
                 </form>
             </Modal>
+
+            {/* Super Admin Password Confirm for Branch Deletion */}
+            <PasswordConfirmModal
+                isOpen={showDeletePasswordModal}
+                onClose={() => setShowDeletePasswordModal(false)}
+                title="Confirm Branch Deletion"
+                message={`Enter your Super Admin password to permanently delete "${selectedBranch?.name}". This cannot be undone.`}
+                confirmText="Delete Branch"
+                variant="danger"
+                onConfirm={async (pwd) => {
+                    const { data } = await api.post('/auth/verify-password', { password: pwd });
+                    if (!data.isValid) throw new Error('Invalid Password');
+                    setShowDeletePasswordModal(false);
+                    await handleConfirmDelete();
+                }}
+            />
         </div>
     );
 };
