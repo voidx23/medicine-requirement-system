@@ -77,7 +77,7 @@ const Sidebar = () => {
   }, [user]);
 
   const rawLinks = [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/', icon: LayoutDashboard, label: 'Daily Requirement List', reqPerm: 'dashboard' },
     { to: '/tasks', icon: CheckSquare, label: 'Tasks', reqPerm: 'tasks' },
     { to: '/requests', icon: ClipboardList, label: 'Requests', badge: pendingRequestsCount, reqPerm: 'requests' },
     { to: '/suppliers', icon: Truck, label: 'Suppliers', reqPerm: 'suppliers' },
@@ -124,11 +124,12 @@ const Sidebar = () => {
           const perms = user?.permissions || [];
           return perms.includes(link.reqPerm);
       }
-      return true; // Dashboard or superAdmin bypass
+      return true; // dashboard/superAdmin logic handled above
   });
 
   const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [isNetworkOpen, setIsNetworkOpen] = useState(false);
+  const [isStoreAdminOpen, setIsStoreAdminOpen] = useState(false);
 
   return (
     <aside style={{
@@ -168,11 +169,15 @@ const Sidebar = () => {
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
         {links.map((link) => {
           if (link.subLinks) {
-            const isOpen = link.id === 'reports-menu' ? isReportsOpen : isNetworkOpen;
+            let isOpen = false;
+            if (link.id === 'reports-menu') isOpen = isReportsOpen;
+            else if (link.id === 'pharmacy-network') isOpen = isNetworkOpen;
+            else if (link.id === 'store-administration') isOpen = isStoreAdminOpen;
+
             const toggleOpen = () => {
                 if (link.id === 'reports-menu') setIsReportsOpen(!isReportsOpen);
-                if (link.id === 'pharmacy-network') setIsNetworkOpen(!isNetworkOpen);
-                if (link.id === 'store-administration') setIsNetworkOpen(!isNetworkOpen); // Share network open state
+                else if (link.id === 'pharmacy-network') setIsNetworkOpen(!isNetworkOpen);
+                else if (link.id === 'store-administration') setIsStoreAdminOpen(!isStoreAdminOpen);
             };
 
             return (

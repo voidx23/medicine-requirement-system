@@ -19,18 +19,20 @@ const assignmentSchema = new mongoose.Schema({
     comment: { type: String },
 }, { _id: false });
 
-const transferDetailsSchema = new mongoose.Schema({
+const transferItemSchema = new mongoose.Schema({
     medicineName:    { type: String, required: true },
     medicineId:      { type: mongoose.Schema.Types.ObjectId, ref: 'Medicine', default: null },
     requestedQty:    { type: Number, required: true },
+    // Response fields per item
+    responseStatus:  { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
+    responseQty:     { type: Number },
+    rejectionReason: { type: String },
+}, { _id: true });
+
+const transferDetailsSchema = new mongoose.Schema({
+    items: [transferItemSchema],
     donorBranchId:   { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
     recipientBranchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
-}, { _id: false });
-
-const transferResponseSchema = new mongoose.Schema({
-    responseStatus:   { type: String, enum: ['pending', 'accepted', 'rejected'], default: 'pending' },
-    responseQty:      { type: Number },
-    rejectionReason:  { type: String },
     respondedAt:      { type: Date },
 }, { _id: false });
 
@@ -66,7 +68,6 @@ const taskSchema = new mongoose.Schema({
 
     // Only populated for transfer_request tasks
     transferDetails:  { type: transferDetailsSchema,  default: undefined },
-    transferResponse: { type: transferResponseSchema, default: undefined },
 }, { timestamps: true });
 
 export default mongoose.model('Task', taskSchema);

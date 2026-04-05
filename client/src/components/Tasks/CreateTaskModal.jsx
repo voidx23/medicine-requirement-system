@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, useRef } from 'react';
-import { X, ArrowRightLeft, CheckSquare, Search } from 'lucide-react';
+import { X, ArrowRightLeft, CheckSquare, Search, Plus } from 'lucide-react';
 import api from '../../services/api';
 import AuthContext from '../../context/AuthContext';
 
@@ -20,6 +20,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
     const [selectedPharmacies, setSelectedPharmacies] = useState([]);
 
     // ── Transfer Request Fields ───────────────────────────────────────────────
+    const [items, setItems] = useState([]); // Array of { medicineName, medicineId, requestedQty }
     const [medicineQuery, setMedicineQuery] = useState('');
     const [medicineSuggestions, setMedicineSuggestions] = useState([]);
     const [selectedMedicine, setSelectedMedicine] = useState(null); // { _id, name } or null
@@ -50,10 +51,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
             if (editTask.type === 'transfer_request') {
                 setTaskType('transfer_request');
                 const td = editTask.transferDetails || {};
-                setMedicineQuery(td.medicineName || '');
-                setSelectedMedicine(td.medicineId ? { _id: td.medicineId, name: td.medicineName } : null);
-                setManualMedicine(!td.medicineId);
-                setRequestedQty(td.requestedQty || '');
+                setItems(td.items || []);
                 setDonorBranchId(td.donorBranchId?._id || td.donorBranchId || '');
                 setRecipientBranchId(td.recipientBranchId?._id || td.recipientBranchId || '');
             } else {
@@ -68,6 +66,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
             setTaskType(isAdmin ? 'general' : 'transfer_request');
             setTitle(''); setDescription(''); setPriority('Normal'); setDueDate('');
             setTargetAudience('All'); setSelectedPharmacies([]);
+            setItems([]);
             setMedicineQuery(''); setSelectedMedicine(null); setManualMedicine(false);
             setRequestedQty(''); setDonorBranchId(''); setRecipientBranchId('');
             setError(null);
@@ -133,6 +132,29 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
         setSelectedPharmacies(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
     };
 
+    const addItem = () => {
+        const medicineName = manualMedicine ? medicineQuery.trim() : selectedMedicine?.name || medicineQuery.trim();
+        if (!medicineName) return setError('Medicine name is required');
+        if (!requestedQty || Number(requestedQty) <= 0) return setError('Valid quantity is required');
+
+        const newItem = {
+            medicineName,
+            medicineId: selectedMedicine?._id || null,
+            requestedQty: Number(requestedQty)
+        };
+
+        setItems(prev => [...prev, newItem]);
+        // Reset item inputs
+        setMedicineQuery('');
+        setSelectedMedicine(null);
+        setRequestedQty('');
+        setError(null);
+    };
+
+    const removeItem = (idx) => {
+        setItems(prev => prev.filter((_, i) => i !== idx));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
@@ -153,16 +175,16 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
 
             } else {
                 // transfer_request
-                const medicineName = manualMedicine ? medicineQuery.trim() : selectedMedicine?.name || medicineQuery.trim();
-                if (!medicineName) { setError('Please select or enter a medicine name.'); setIsSubmitting(false); return; }
-                if (!requestedQty || Number(requestedQty) <= 0) { setError('Please enter a valid quantity.'); setIsSubmitting(false); return; }
+                if (items.length === 0) {
+                    setError('Please add at least one medicine to the request.');
+                    setIsSubmitting(false);
+                    return;
+                }
                 if (!donorBranchId) { setError('Please select which branch has the medicine.'); setIsSubmitting(false); return; }
                 if (isAdmin && !recipientBranchId) { setError('Please select the recipient branch.'); setIsSubmitting(false); return; }
 
                 const details = {
-                    medicineName,
-                    medicineId: selectedMedicine?._id || null,
-                    requestedQty: Number(requestedQty),
+                    items,
                     donorBranchId,
                     ...(isAdmin && { recipientBranchId }),
                 };
@@ -275,53 +297,57 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
 
                     {/* ── Transfer Request Form ── */}
                     {taskType === 'transfer_request' && (<>
-                        <div style={{ marginBottom: '1rem', position: 'relative' }}>
-                            <label style={labelStyle}>Medicine *</label>
-                            {manualMedicine ? (
-                                <input
-                                    type="text"
-                                    value={medicineQuery}
-                                    onChange={e => setMedicineQuery(e.target.value)}
-                                    style={inputStyle}
-                                    placeholder="Enter medicine name manually..."
-                                    autoFocus
-                                />
-                            ) : (
-                                <div style={{ position: 'relative' }}>
-                                    <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                                    <input
-                                        type="text"
-                                        value={medicineQuery}
-                                        onChange={e => handleMedicineInput(e.target.value)}
-                                        onKeyDown={handleMedicineKeyDown}
-                                        style={{ ...inputStyle, paddingLeft: '2rem' }}
-                                        placeholder="Search medicine inventory..."
-                                    />
-                                </div>
-                            )}
-                            {medicineSuggestions.length > 0 && !manualMedicine && (
-                                <div ref={dropdownRef} style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', maxHeight: '160px', overflowY: 'auto' }}>
-                                    {medicineSuggestions.map((med, idx) => (
-                                        <div key={med._id} onClick={() => selectMedicine(med)}
-                                            style={{ padding: '0.6rem 1rem', cursor: 'pointer', fontSize: '0.9rem', background: highlightedIndex === idx ? '#eff6ff' : 'white', color: highlightedIndex === idx ? '#1d4ed8' : 'inherit', fontWeight: highlightedIndex === idx ? 600 : 400 }}
-                                            onMouseEnter={() => setHighlightedIndex(idx)}
-                                            onMouseLeave={() => setHighlightedIndex(-1)}>
-                                            {med.name}
+                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', marginBottom: '1.25rem' }}>
+                            <h3 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', fontWeight: 600 }}>Medicine Items</h3>
+                            
+                            {/* Added Items List */}
+                            {items.length > 0 && (
+                                <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                    {items.map((it, idx) => (
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
+                                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                                <span style={{ fontWeight: 600, color: '#1e293b' }}>{it.medicineName}</span>
+                                                <span style={{ color: '#64748b', fontSize: '0.75rem', background: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>Qty: {it.requestedQty}</span>
+                                            </div>
+                                            <button type="button" onClick={() => removeItem(idx)} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem' }}>
+                                                <X size={14} />
+                                            </button>
                                         </div>
                                     ))}
                                 </div>
                             )}
-                            <div style={{ marginTop: '0.4rem' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#64748b', cursor: 'pointer' }}>
+
+                            {/* Add Item Row */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 40px', gap: '0.5rem', alignItems: 'flex-start' }}>
+                                <div style={{ position: 'relative' }}>
+                                    {manualMedicine ? (
+                                        <input type="text" value={medicineQuery} onChange={e => setMedicineQuery(e.target.value)} style={{...inputStyle, padding: '0.45rem 0.6rem'}} placeholder="Medicine name..." />
+                                    ) : (
+                                        <div style={{ position: 'relative' }}>
+                                            <Search size={14} style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                                            <input type="text" value={medicineQuery} onChange={e => handleMedicineInput(e.target.value)} onKeyDown={handleMedicineKeyDown} style={{ ...inputStyle, padding: '0.45rem 0.6rem', paddingLeft: '1.8rem' }} placeholder="Search..." />
+                                            {medicineSuggestions.length > 0 && (
+                                                <div ref={dropdownRef} style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', zIndex: 100, boxShadow: '0 4px 12px rgba(0,0,0,0.1)', maxHeight: '120px', overflowY: 'auto' }}>
+                                                    {medicineSuggestions.map((med, idx) => (
+                                                        <div key={med._id} onClick={() => selectMedicine(med)} style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', fontSize: '0.85rem', background: highlightedIndex === idx ? '#eff6ff' : 'white' }}>{med.name}</div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                <input type="number" min="1" value={requestedQty} onChange={e => setRequestedQty(e.target.value)} style={{...inputStyle, padding: '0.45rem 0.6rem'}} placeholder="Qty" />
+                                <button type="button" onClick={addItem} style={{ background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                    <Plus size={18} />
+                                </button>
+                            </div>
+                            
+                            <div style={{ marginTop: '0.5rem' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', color: '#64748b', cursor: 'pointer' }}>
                                     <input type="checkbox" checked={manualMedicine} onChange={e => { setManualMedicine(e.target.checked); setSelectedMedicine(null); setMedicineQuery(''); setMedicineSuggestions([]); }} />
-                                    Not in inventory — enter manually
+                                    Not in inventory
                                 </label>
                             </div>
-                        </div>
-
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label style={labelStyle}>Requested Quantity *</label>
-                            <input type="number" min="1" value={requestedQty} onChange={e => setRequestedQty(e.target.value)} style={inputStyle} placeholder="e.g. 10" />
                         </div>
 
                         {/* From → To route preview */}

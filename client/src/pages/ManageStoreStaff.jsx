@@ -6,6 +6,7 @@ import Modal from '../components/UI/Modal';
 import { TableRowSkeleton } from '../components/UI/Skeleton';
 
 const ALL_MODULES = [
+    { id: 'dashboard', label: 'Daily Requirement List' },
     { id: 'tasks', label: 'Tasks' },
     { id: 'requests', label: 'Pending Requests' },
     { id: 'history', label: 'Order History' },

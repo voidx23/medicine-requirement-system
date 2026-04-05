@@ -15,7 +15,9 @@ const PharmacyTasks = () => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedTask, setSelectedTask] = useState(null);
-    const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'transfers' | 'completed'
+    const [activeMainTab, setActiveMainTab] = useState('pending'); // 'pending' | 'history'
+    const [activeSubTab, setActiveSubTab] = useState('general'); // 'general' | 'transfers'
+    const [searchQuery, setSearchQuery] = useState('');
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
     const loadTasks = async () => {
@@ -67,22 +69,60 @@ const PharmacyTasks = () => {
         }
     };
 
+    // Logic to check if a task is "Done"
+    const isFullyCompleted = (task) => {
+        if (task.type === 'transfer_request') {
+            const items = task.transferDetails?.items || [];
+            // If items exist, verify all are responded to. 
+            // If no items (legacy) or empty, move to history.
+            if (!items || items.length === 0) return true; 
+            return items.every(it => it.responseStatus !== 'pending');
+        }
+        return task.myAssignment?.status === 'Completed' || task.myAssignment?.status === 'Rejected';
+    };
+
     // Separate tasks into buckets
     const generalPending   = tasks.filter(t => t.type === 'general' && t.myAssignment?.status === 'Pending');
-    const generalCompleted = tasks.filter(t => t.type === 'general' && t.myAssignment?.status === 'Completed');
-    const transferTasks    = tasks.filter(t => t.type === 'transfer_request');
+    const generalHistory   = tasks.filter(t => t.type === 'general' && t.myAssignment?.status === 'Completed');
+    
+    // For Transfers, 'pending' means awaiting response. Any other response status moves it to history.
+    const transfersPending = tasks.filter(t => t.type === 'transfer_request' && !isFullyCompleted(t));
+    const transfersHistory = tasks.filter(t => t.type === 'transfer_request' && isFullyCompleted(t));
 
-    const displayedTasks =
-        activeTab === 'pending'   ? generalPending :
-        activeTab === 'transfers' ? transferTasks  :
-        generalCompleted;
+    let displayedTasks = [];
+    if (activeMainTab === 'pending') {
+        displayedTasks = activeSubTab === 'general' ? generalPending : transfersPending;
+    } else {
+        displayedTasks = activeSubTab === 'general' ? generalHistory : transfersHistory;
+    }
 
-    const tabStyle = (tab) => ({
-        padding: '0.5rem 1rem', border: 'none', borderRadius: '8px', cursor: 'pointer',
+    // Apply In-Depth Search for History
+    if (activeMainTab === 'history' && searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        displayedTasks = displayedTasks.filter(t => {
+            const inTitle = t.title?.toLowerCase().includes(q);
+            const inDesc  = t.description?.toLowerCase().includes(q);
+            const inComment = t.myAssignment?.comment?.toLowerCase().includes(q);
+            const inMedicine = t.transferDetails?.items?.some(it => it.medicineName?.toLowerCase().includes(q));
+            return inTitle || inDesc || inComment || inMedicine;
+        });
+    }
+
+    const mainTabStyle = (tab) => ({
+        padding: '0.6rem 1.25rem', border: 'none', borderRadius: '10px', cursor: 'pointer',
+        fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s',
+        background: activeMainTab === tab ? 'var(--primary)' : 'transparent',
+        color: activeMainTab === tab ? 'white' : 'var(--text-muted)',
+        display: 'flex', alignItems: 'center', gap: '0.5rem',
+        boxShadow: activeMainTab === tab ? '0 4px 12px rgba(99, 102, 241, 0.2)' : 'none',
+    });
+
+    const subTabStyle = (tab) => ({
+        padding: '0.4rem 1rem', border: 'none', borderRadius: '8px', cursor: 'pointer',
         fontWeight: 600, fontSize: '0.85rem', transition: 'all 0.2s',
-        background: activeTab === tab ? 'white' : 'transparent',
-        color: activeTab === tab ? 'var(--primary)' : 'var(--text-muted)',
-        boxShadow: activeTab === tab ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+        background: activeSubTab === tab ? 'white' : 'transparent',
+        color: activeSubTab === tab ? 'var(--primary)' : 'var(--text-muted)',
+        boxShadow: activeSubTab === tab ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
         display: 'flex', alignItems: 'center', gap: '0.4rem',
     });
 
@@ -109,21 +149,46 @@ const PharmacyTasks = () => {
                 </button>
             </div>
 
-            {/* Tabs */}
-            <div style={{ display: 'flex', background: 'var(--glass-bg)', padding: '0.25rem', borderRadius: '12px', border: '1px solid var(--glass-border)', marginBottom: '1.5rem', alignSelf: 'flex-start', width: 'fit-content' }}>
-                <button onClick={() => setActiveTab('pending')} style={tabStyle('pending')}>
-                    Pending {generalPending.length > 0 && <span style={{ background: '#ef4444', color: 'white', padding: '1px 6px', borderRadius: '10px', fontSize: '11px' }}>{generalPending.length}</span>}
-                </button>
-                <button onClick={() => setActiveTab('transfers')} style={tabStyle('transfers')}>
-                    <ArrowRightLeft size={15} /> Transfers {transferTasks.filter(t => t.transferResponse?.responseStatus === 'pending' && t.transferRole === 'donor').length > 0 && (
-                        <span style={{ background: '#f59e0b', color: 'white', padding: '1px 6px', borderRadius: '10px', fontSize: '11px' }}>
-                            {transferTasks.filter(t => t.transferResponse?.responseStatus === 'pending' && t.transferRole === 'donor').length}
-                        </span>
+            {/* Navigation Sections */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
+                {/* Main Level Tabs */}
+                <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.03)', padding: '0.4rem', borderRadius: '14px', width: 'fit-content' }}>
+                    <button onClick={() => setActiveMainTab('pending')} style={mainTabStyle('pending')}>
+                        <ListTodo size={18} /> Active Inbox
+                    </button>
+                    <button onClick={() => setActiveMainTab('history')} style={mainTabStyle('history')}>
+                        <HistoryIcon size={18} /> Task History
+                    </button>
+                </div>
+
+                {/* Sub Level Tabs & Search */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div style={{ display: 'flex', background: 'var(--glass-bg)', padding: '0.25rem', borderRadius: '12px', border: '1px solid var(--glass-border)', width: 'fit-content' }}>
+                        <button onClick={() => setActiveSubTab('general')} style={subTabStyle('general')}>
+                            General Tasks
+                        </button>
+                        <button onClick={() => setActiveSubTab('transfers')} style={subTabStyle('transfers')}>
+                            Medicine Transfers
+                        </button>
+                    </div>
+
+                    {activeMainTab === 'history' && (
+                        <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
+                            <input 
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search by title, medicine, or notes..."
+                                style={{
+                                    width: '100%', padding: '0.6rem 1rem', paddingLeft: '2.5rem',
+                                    borderRadius: '10px', border: '1px solid var(--glass-border)',
+                                    background: 'white', fontSize: '0.9rem'
+                                }}
+                            />
+                            <CheckSquare size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        </div>
                     )}
-                </button>
-                <button onClick={() => setActiveTab('completed')} style={tabStyle('completed')}>
-                    <HistoryIcon size={15} /> History
-                </button>
+                </div>
             </div>
 
             {loading ? (
@@ -134,12 +199,12 @@ const PharmacyTasks = () => {
                 <div className="glass-panel" style={{ textAlign: 'center', padding: '4rem 2rem', color: '#64748b' }}>
                     <CheckSquare size={48} style={{ margin: '0 auto 1rem auto', opacity: 0.3 }} />
                     <h3 style={{ fontSize: '1.25rem', color: '#1e293b', marginBottom: '0.5rem' }}>
-                        {activeTab === 'pending' ? 'All caught up!' : activeTab === 'transfers' ? 'No transfer requests.' : 'No completed tasks yet.'}
+                        {activeMainTab === 'history' ? 'No records found' : 'All caught up!'}
                     </h3>
                     <p>
-                        {activeTab === 'pending' ? "You don't have any pending tasks." :
-                         activeTab === 'transfers' ? "No medicine transfer requests yet. Use the button above to request medicine from another branch." :
-                         "Completed tasks will appear here."}
+                        {activeMainTab === 'history' 
+                            ? (searchQuery ? `No results for "${searchQuery}"` : "Your completed tasks and transfers will appear here.") 
+                            : (activeSubTab === 'general' ? "You don't have any pending tasks." : "No active medicine transfer requests.")}
                     </p>
                 </div>
             ) : (
