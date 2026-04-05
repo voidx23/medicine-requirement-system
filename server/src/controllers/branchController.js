@@ -1,4 +1,7 @@
 import Branch from '../models/Branch.js';
+import PharmacistRequest from '../models/PharmacistRequest.js';
+import Task from '../models/Task.js';
+import Staff from '../models/Staff.js';
 import jwt from 'jsonwebtoken';
 
 const generateToken = (id, role = 'branch') => {
@@ -97,6 +100,37 @@ export const deleteBranch = async (req, res) => {
         const branch = await Branch.findById(req.params.id);
         if (!branch) return res.status(404).json({ message: 'Branch not found' });
 
+        // ── Safety Check 1: Pending or active requests ──────────────────────────
+        const activeRequests = await PharmacistRequest.countDocuments({
+            pharmacistId: branch._id,
+            status: { $in: ['pending', 'approved', 'partially_fulfilled'] }
+        });
+        if (activeRequests > 0) {
+            return res.status(400).json({
+                message: `Cannot delete "${branch.name}": it has ${activeRequests} active request(s) that are still pending or in progress. Resolve them first.`
+            });
+        }
+
+        // ── Safety Check 2: Open tasks assigned to this branch ──────────────────
+        const openTasks = await Task.countDocuments({
+            'assignments.pharmacyId': branch._id,
+            'assignments.status': { $in: ['Pending', 'In Progress'] }
+        });
+        if (openTasks > 0) {
+            return res.status(400).json({
+                message: `Cannot delete "${branch.name}": it has ${openTasks} open task(s) still assigned to it. Complete or reassign them first.`
+            });
+        }
+
+        // ── Safety Check 3: Staff still assigned to this branch ─────────────────
+        const assignedStaff = await Staff.countDocuments({ branches: branch._id });
+        if (assignedStaff > 0) {
+            return res.status(400).json({
+                message: `Cannot delete "${branch.name}": ${assignedStaff} pharmacist(s) are still assigned to it. Remove them first from the Pharmacists page.`
+            });
+        }
+
+        // All clear — proceed with deletion
         await Branch.deleteOne({ _id: req.params.id });
         res.json({ message: 'Branch deleted successfully' });
     } catch (error) {
