@@ -1,5 +1,6 @@
 import Staff from '../models/Staff.js';
 import User from '../models/User.js';
+import Branch from '../models/Branch.js';
 
 // @desc    Get all staff for the logged-in branch (or all if admin)
 // @route   GET /api/staff
@@ -8,8 +9,8 @@ const getStaff = async (req, res) => {
     try {
         let query = { isActive: true };
         
-        // If it's a pharmacist, only show their own staff
-        if (req.user.role === 'pharmacist') {
+        // If it's a branch, only show their own staff
+        if (req.user.role === 'branch') {
             query.branches = req.user._id;
         }
         
@@ -18,7 +19,7 @@ const getStaff = async (req, res) => {
             query.branches = req.query.branchId;
         }
 
-        const staff = await Staff.find(query).sort({ name: 1 }).populate('branches', 'username');
+        const staff = await Staff.find(query).sort({ name: 1 }).populate('branches', 'name');
         res.json(staff);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
@@ -160,12 +161,12 @@ const deleteStaff = async (req, res) => {
     }
 };
 
-// @desc    Get all branches (Pharmacist users)
+// @desc    Get all branches
 // @route   GET /api/staff/branches
-// @access  Private (Admin)
+// @access  Private
 const getBranches = async (req, res) => {
     try {
-        const branches = await User.find({ role: 'pharmacist' }).select('-password').sort({ username: 1 });
+        const branches = await Branch.find({}).select('-password').sort({ name: 1 });
         res.json(branches);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });

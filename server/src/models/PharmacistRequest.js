@@ -4,7 +4,7 @@ const requestSchema = mongoose.Schema({
     pharmacistId: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
-        ref: 'User'
+        ref: 'Branch'
     },
     submittedBy: {
         type: String, // Storing Name directly for historical permanence

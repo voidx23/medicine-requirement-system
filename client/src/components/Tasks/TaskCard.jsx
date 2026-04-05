@@ -103,14 +103,14 @@ const TaskCard = ({ task, onClick, isAdminView }) => {
                     <div style={{ display: 'flex', alignItems: 'stretch', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', overflow: 'hidden', fontSize: '0.78rem' }}>
                         <div style={{ flex: 1, padding: '0.4rem 0.6rem', textAlign: 'center' }}>
                             <div style={{ color: '#94a3b8', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>From</div>
-                            <div style={{ fontWeight: 600, color: '#0f172a', marginTop: '0.1rem' }}>{task.transferDetails?.donorBranchId?.username || '—'}</div>
+                            <div style={{ fontWeight: 600, color: '#0f172a', marginTop: '0.1rem' }}>{task.transferDetails?.donorBranchId?.name || '—'}</div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', padding: '0 0.4rem', background: '#e0f2fe', flexShrink: 0 }}>
                             <svg width="20" height="12" viewBox="0 0 28 16" fill="none"><path d="M2 8h22M20 3l6 5-6 5" stroke="#0284c7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         </div>
                         <div style={{ flex: 1, padding: '0.4rem 0.6rem', textAlign: 'center', borderLeft: '1px solid #bae6fd' }}>
                             <div style={{ color: '#94a3b8', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>To</div>
-                            <div style={{ fontWeight: 600, color: '#0f172a', marginTop: '0.1rem' }}>{task.transferDetails?.recipientBranchId?.username || task.createdBy?.username || '—'}</div>
+                            <div style={{ fontWeight: 600, color: '#0f172a', marginTop: '0.1rem' }}>{task.transferDetails?.recipientBranchId?.name || task.createdBy?.username || '—'}</div>
                         </div>
                     </div>
                 </div>

@@ -1,11 +1,45 @@
 import { useState } from 'react';
-import { GitBranch, Clock, Zap, Layout, ListOrdered, CheckCircle2, MessageSquare, Save, ShieldCheck, ScanBarcode, CornerDownRight, UserCheck, Plus } from 'lucide-react';
+import { GitBranch, Clock, Zap, Layout, ListOrdered, CheckCircle2, MessageSquare, Save, ShieldCheck, ScanBarcode, CornerDownRight, UserCheck, Plus, Store, Lock, Trash2, FileSpreadsheet, ArrowRightLeft } from 'lucide-react';
 import FeedbackModal from '../components/UI/FeedbackModal';
 
 const PharmacistWhatsNew = () => {
     const [feedbackOpen, setFeedbackOpen] = useState(false);
 
     const updates = [
+        {
+            version: 'v2.7',
+            date: '6 April 2026',
+            title: 'Branch System & Security',
+            icon: Store,
+            color: '#0ea5e9', // Sky Blue
+            items: [
+                {
+                    title: 'Branch System Upgraded',
+                    desc: 'Branches now have their own dedicated system, completely separate from user accounts. This improves security and gives each branch a cleaner, more organised identity.',
+                    icon: Store
+                },
+                {
+                    title: 'Protected Deletions',
+                    desc: 'You can now only delete requests and tasks that YOU created. Records created by other branches or the admin team are protected from accidental removal.',
+                    icon: Lock
+                },
+                {
+                    title: 'Medicine & Supplier Editing',
+                    desc: 'The admin team can now edit medicine and supplier information directly in the system, keeping the medicine catalogue accurate and up to date.',
+                    icon: CheckCircle2
+                },
+                {
+                    title: 'Import Medicines from Excel',
+                    desc: 'Admins can now bulk-import medicines from an Excel spreadsheet, making it faster to keep the medicine list up to date.',
+                    icon: FileSpreadsheet
+                },
+                {
+                    title: 'Transfer Request Improvements',
+                    desc: 'Inter-branch medicine transfer requests are now more accurate, showing the correct branch names on all task cards and response modals.',
+                    icon: ArrowRightLeft
+                }
+            ]
+        },
         {
             version: 'v2.6',
             date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),

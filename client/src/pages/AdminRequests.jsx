@@ -71,7 +71,7 @@ const AdminRequests = () => {
 
     const fetchBranches = async () => {
         try {
-            const { data } = await api.get('/staff/branches');
+            const { data } = await api.get('/branches');
             setBranches(data);
         } catch (error) {
             console.error("Failed to fetch branches", error);
@@ -113,7 +113,7 @@ const AdminRequests = () => {
         const stats = {};
         requests.forEach(req => {
             const id = req.pharmacistId?._id || 'unknown';
-            const name = req.pharmacistId?.username || 'Unknown';
+            const name = req.pharmacistId?.name || 'Unknown';
             if (!stats[id]) {
                 stats[id] = { id, name, count: 0, pending: 0 };
             }
@@ -361,7 +361,7 @@ const AdminRequests = () => {
                                     >
                                         <option value="all">All Branches</option>
                                         {branches.map(b => (
-                                            <option key={b._id} value={b._id}>{b.username}</option>
+                                            <option key={b._id} value={b._id}>{b.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -441,7 +441,7 @@ const AdminRequests = () => {
                                             }}></div>
                                             
                                             <div>
-                                                <div style={{ fontWeight: '600', fontSize: '1.05rem' }}>{req.pharmacistId?.username}</div>
+                                                <div style={{ fontWeight: '600', fontSize: '1.05rem' }}>{req.pharmacistId?.name}</div>
                                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                                     <span>{new Date(req.createdAt).toLocaleString()}</span>
                                                     {req.submittedBy && <span style={{ color: 'var(--primary)' }}>• Signed by {req.submittedBy}</span>}

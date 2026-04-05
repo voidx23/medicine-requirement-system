@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Branch from '../models/Branch.js';
 
 export const protect = async (req, res, next) => {
     let token;
@@ -13,7 +14,24 @@ export const protect = async (req, res, next) => {
 
             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_dev_only');
 
-            req.user = await User.findById(decoded.id).select('-password');
+            // Branch token has role: 'branch' in the payload
+            if (decoded.role === 'branch') {
+                const branch = await Branch.findById(decoded.id).select('-password');
+                if (branch) {
+                    req.user = {
+                        _id: branch._id,
+                        username: branch.name,
+                        role: 'branch',
+                        isSuperAdmin: false,
+                        permissions: [],
+                        location: branch.location,
+                        contactNumber: branch.contactNumber,
+                    };
+                    return next();
+                }
+            } else {
+                req.user = await User.findById(decoded.id).select('-password');
+            }
 
             next();
         } catch (error) {

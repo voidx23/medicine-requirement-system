@@ -22,22 +22,22 @@ const ManageBranches = () => {
 
     // Add Branch Modal State
     const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
-    const [newBranchData, setNewBranchData] = useState({ username: '', password: '', location: '', contactNumber: '' });
+    const [newBranchData, setNewBranchData] = useState({ name: '', password: '', location: '', contactNumber: '' });
 
     // Edit Branch State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editBranchData, setEditBranchData] = useState({ id: '', username: '', password: '', location: '', contactNumber: '' });
+    const [editBranchData, setEditBranchData] = useState({ id: '', name: '', password: '', location: '', contactNumber: '' });
 
     const fetchBranches = async () => {
         setBranchesLoading(true);
         try {
-            const data = await staffService.getBranches();
+            const { data } = await api.get('/branches');
             setBranches(data);
             if (data.length > 0 && !selectedBranch) {
                 setSelectedBranch(data[0]);
             }
         } catch (error) {
-            console.error("Failed to load branches", error);
+            console.error('Failed to load branches', error);
         } finally {
             setBranchesLoading(false);
         }
@@ -86,44 +86,41 @@ const ManageBranches = () => {
             setIsAssignModalOpen(false);
             setSelectedStaffToAssign('');
             fetchBranchStaff(selectedBranch._id);
-            alert('Pharmacist Assigned Successfully');
+            showToast('Pharmacist assigned successfully', 'success');
         } catch (error) {
-            alert('Error assigning pharmacist');
+            showToast('Error assigning pharmacist', 'error');
         }
     };
 
     const handleRemoveStaff = async (staffId) => {
-        if (!window.confirm('Are you sure you want to remove this pharmacist from this branch?')) return;
+        const confirmed = await showConfirm('Are you sure you want to remove this pharmacist from this branch?', 'warning');
+        if (!confirmed) return;
         try {
             await staffService.removeBranch(staffId, selectedBranch._id);
             fetchBranchStaff(selectedBranch._id);
         } catch (error) {
-            alert('Error removing pharmacist from branch');
+            showToast('Error removing pharmacist from branch', 'error');
         }
     };
 
     const handleCreateBranch = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/auth/register', {
-                ...newBranchData,
-                role: 'pharmacist'
-            });
-            alert('New Branch Created Successfully');
+            const { data } = await api.post('/branches', newBranchData);
+            showToast('New Branch Created Successfully', 'success');
             setIsBranchModalOpen(false);
-            setNewBranchData({ username: '', password: '', location: '', contactNumber: '' });
-            fetchBranches(); 
+            setNewBranchData({ name: '', password: '', location: '', contactNumber: '' });
+            fetchBranches();
         } catch (error) {
-            console.error(error);
-            alert('Failed to create branch: ' + (error.response?.data?.message || 'Unknown error'));
+            showToast('Failed to create branch: ' + (error.response?.data?.message || 'Unknown error'), 'error');
         }
     };
 
     const openEditModal = () => {
         setEditBranchData({
             id: selectedBranch._id,
-            username: selectedBranch.username,
-            password: '', // Don't show existing password
+            name: selectedBranch.name,
+            password: '',
             location: selectedBranch.location || '',
             contactNumber: selectedBranch.contactNumber || ''
         });
@@ -134,7 +131,7 @@ const ManageBranches = () => {
         e.preventDefault();
         try {
             const updatePayload = {
-                username: editBranchData.username,
+                name: editBranchData.name,
                 location: editBranchData.location,
                 contactNumber: editBranchData.contactNumber
             };
@@ -142,26 +139,26 @@ const ManageBranches = () => {
                 updatePayload.password = editBranchData.password;
             }
 
-            const { data } = await api.put(`/auth/users/${editBranchData.id}`, updatePayload);
+            const { data } = await api.put(`/branches/${editBranchData.id}`, updatePayload);
             
-            alert('Branch Updated Successfully');
+            showToast('Branch Updated Successfully', 'success');
             setIsEditModalOpen(false);
-            setSelectedBranch(data); // Update current views
-            fetchBranches(); // Refresh list to show new names if changed
+            setSelectedBranch(prev => ({ ...prev, ...data }));
+            fetchBranches();
         } catch (error) {
-            alert('Failed to update branch');
+            showToast('Failed to update branch', 'error');
         }
     };
 
     const handleDeleteBranch = async () => {
         if (!selectedBranch) return;
         const confirmed = await showConfirm(
-            `Are you sure you want to permanently delete "${selectedBranch.username}"? This cannot be undone.`,
+            `Are you sure you want to permanently delete "${selectedBranch.name}"? This cannot be undone.`,
             'danger'
         );
         if (!confirmed) return;
         try {
-            await api.delete(`/auth/users/${selectedBranch._id}`);
+            await api.delete(`/branches/${selectedBranch._id}`);
             showToast('Branch deleted successfully', 'success');
             setSelectedBranch(null);
             fetchBranches();
@@ -205,7 +202,7 @@ const ManageBranches = () => {
                                 fontWeight: selectedBranch?._id === branch._id ? 600 : 400
                             }}
                         >
-                            <div style={{ marginBottom: '0.25rem' }}>{branch.username}</div>
+                            <div style={{ marginBottom: '0.25rem' }}>{branch.name}</div>
                             {branch.location && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>📍 {branch.location}</div>}
                         </div>
                     ))}
@@ -220,7 +217,7 @@ const ManageBranches = () => {
                             <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.25rem' }}>
                                     <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>
-                                        {selectedBranch.username}
+                                        {selectedBranch.name}
                                     </h2>
                                     <button 
                                         onClick={openEditModal}
@@ -332,7 +329,7 @@ const ManageBranches = () => {
                         </select>
                         {availableStaffToAssign.length === 0 && (
                             <p style={{ fontSize: '0.85rem', color: '#ef4444', marginTop: '0.5rem' }}>
-                                All generated pharmacists have already been assigned to this branch! Create more pharmacists first.
+                                All pharmacists have already been assigned to this branch! Create more pharmacists first.
                             </p>
                         )}
                     </div>
@@ -347,11 +344,11 @@ const ManageBranches = () => {
             <Modal isOpen={isBranchModalOpen} onClose={() => setIsBranchModalOpen(false)} title="Open New Branch">
                 <form onSubmit={handleCreateBranch} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Branch Name (Username)</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Branch Name</label>
                         <input 
                             type="text" 
-                            value={newBranchData.username}
-                            onChange={(e) => setNewBranchData({...newBranchData, username: e.target.value})}
+                            value={newBranchData.name}
+                            onChange={(e) => setNewBranchData({...newBranchData, name: e.target.value})}
                             className="input-field"
                             placeholder="e.g. Jumeirah Pharmacy"
                             required 
@@ -403,11 +400,11 @@ const ManageBranches = () => {
             <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Edit Branch Details">
                 <form onSubmit={handleUpdateBranch} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Branch Name (Username)</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>Branch Name</label>
                         <input 
                             type="text" 
-                            value={editBranchData.username}
-                            onChange={(e) => setEditBranchData({...editBranchData, username: e.target.value})}
+                            value={editBranchData.name}
+                            onChange={(e) => setEditBranchData({...editBranchData, name: e.target.value})}
                             className="input-field"
                             required 
                             style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}

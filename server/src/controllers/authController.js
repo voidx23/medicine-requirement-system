@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Branch from '../models/Branch.js';
 import jwt from 'jsonwebtoken';
 
 // Generate JWT
@@ -14,20 +15,35 @@ const generateToken = (id) => {
 export const authUser = async (req, res) => {
     const { username, password } = req.body;
 
-    const user = await User.findOne({ username });
+    // Check Branch collection first (branches log in by name)
+    const branch = await Branch.findOne({ name: { $regex: new RegExp(`^${username}$`, 'i') } });
+    if (branch && (await branch.matchPassword(password))) {
+        return res.json({
+            _id: branch._id,
+            username: branch.name,
+            role: 'branch',
+            isSuperAdmin: false,
+            permissions: [],
+            location: branch.location,
+            contactNumber: branch.contactNumber,
+            token: jwt.sign({ id: branch._id, role: 'branch' }, process.env.JWT_SECRET || 'fallback_secret_dev_only', { expiresIn: '30d' }),
+        });
+    }
 
+    // Then check User collection (admins / store staff)
+    const user = await User.findOne({ username });
     if (user && (await user.matchPassword(password))) {
-        res.json({
+        return res.json({
             _id: user._id,
             username: user.username,
             role: user.role,
             isSuperAdmin: user.isSuperAdmin,
             permissions: user.permissions,
-            token: generateToken(user._id),
+            token: jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'fallback_secret_dev_only', { expiresIn: '30d' }),
         });
-    } else {
-        res.status(401).json({ message: 'Invalid username or password' });
     }
+
+    res.status(401).json({ message: 'Invalid username or password' });
 };
 
 // @desc    Verify admin password

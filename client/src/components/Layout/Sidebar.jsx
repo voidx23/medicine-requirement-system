@@ -41,7 +41,7 @@ const Sidebar = () => {
 
                         if (res.data && res.data.length > 0) {
                             const latestReq = res.data[0]; // Assuming backend returns newest first
-                            const branchName = latestReq.pharmacistId?.username || 'A branch';
+                            const branchName = latestReq.pharmacistId?.name || 'A branch';
                             const itemCount = latestReq.items?.length || 0;
                             
                             if (newRequestsCount === 1) {

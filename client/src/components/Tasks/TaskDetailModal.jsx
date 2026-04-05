@@ -114,7 +114,7 @@ const TaskDetailModal = ({ task, onClose, onComplete, isAdminView, onEdit, onDel
                                 {task.assignments.map(assign => (
                                     <div key={assign.pharmacyId?._id || assign.pharmacyId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
                                         <div>
-                                            <div style={{ fontWeight: 500, color: '#1e293b' }}>{assign.pharmacyId?.username || 'Unknown Pharmacy'}</div>
+                                            <div style={{ fontWeight: 500, color: '#1e293b' }}>{assign.pharmacyId?.name || 'Unknown Pharmacy'}</div>
                                             {assign.comment && <div style={{ fontSize: '0.875rem', color: '#64748b', marginTop: '0.25rem' }}>"{assign.comment}"</div>}
                                         </div>
                                         <div>

@@ -1,5 +1,6 @@
 import Task from '../models/Task.js';
 import User from '../models/User.js';
+import Branch from '../models/Branch.js';
 
 // @desc    Create a new task (general: admin only | transfer_request: admin or pharmacist)
 // @route   POST /api/tasks
@@ -9,7 +10,7 @@ export const createTask = async (req, res) => {
         const { type = 'general', title, description, priority, dueDate, targetAudience, specificPharmacyIds, transferDetails } = req.body;
 
         const isAdmin = req.user.role === 'admin';
-        const isPharmacist = req.user.role === 'pharmacist';
+        const isBranch = req.user.role === 'branch';
 
         // Role check: only admin can create general tasks
         if (type === 'general' && !isAdmin) {
@@ -24,8 +25,8 @@ export const createTask = async (req, res) => {
 
             let assignments = [];
             if (targetAudience === 'All') {
-                const pharmacies = await User.find({ role: 'pharmacist' }).select('_id');
-                assignments = pharmacies.map(ph => ({ pharmacyId: ph._id, status: 'Pending' }));
+                const branches = await Branch.find({}).select('_id');
+                assignments = branches.map(b => ({ pharmacyId: b._id, status: 'Pending' }));
             } else if (targetAudience === 'Specific') {
                 if (!specificPharmacyIds?.length) {
                     return res.status(400).json({ message: 'Specific pharmacies must be selected' });
@@ -46,8 +47,8 @@ export const createTask = async (req, res) => {
                 return res.status(400).json({ message: 'Medicine name, quantity, and donor branch are required' });
             }
 
-            // If pharmacist creates it, recipient is themselves
-            const finalRecipientId = isPharmacist ? req.user._id : recipientBranchId;
+            // If branch creates it, recipient is themselves
+            const finalRecipientId = isBranch ? req.user._id : recipientBranchId;
             if (!finalRecipientId) {
                 return res.status(400).json({ message: 'Recipient branch is required' });
             }
@@ -138,9 +139,9 @@ export const getAdminTasks = async (req, res) => {
     try {
         const tasks = await Task.find({}).sort({ createdAt: -1 })
             .populate('createdBy', 'username location')
-            .populate('assignments.pharmacyId', 'username location')
-            .populate('transferDetails.donorBranchId', 'username location')
-            .populate('transferDetails.recipientBranchId', 'username location');
+            .populate('assignments.pharmacyId', 'name location')
+            .populate('transferDetails.donorBranchId', 'name location')
+            .populate('transferDetails.recipientBranchId', 'name location');
 
         res.json(tasks);
     } catch (error) {
@@ -165,8 +166,8 @@ export const getPharmacyTasks = async (req, res) => {
         })
         .sort({ createdAt: -1 })
         .populate('createdBy', 'username location')
-        .populate('transferDetails.donorBranchId', 'username location')
-        .populate('transferDetails.recipientBranchId', 'username location');
+        .populate('transferDetails.donorBranchId', 'name location')
+        .populate('transferDetails.recipientBranchId', 'name location');
 
         const mappedTasks = tasks.map(task => {
             const myAssignment = task.assignments.find(a => a.pharmacyId?.toString() === userId.toString());

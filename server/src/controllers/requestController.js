@@ -65,7 +65,7 @@ export const getRequests = async (req, res) => {
         }
 
         const requests = await PharmacistRequest.find(query)
-            .populate('pharmacistId', 'username')
+            .populate('pharmacistId', 'name location')
             .populate({
                 path: 'items.medicineId',
                 select: 'name supplierId',

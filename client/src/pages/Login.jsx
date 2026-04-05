@@ -21,7 +21,7 @@ const Login = () => {
         if (user) {
             // Check if there's a page they came from (e.g. /setup-device)
             const from = location.state?.from?.pathname;
-            const defaultDashboard = user.role === 'admin' ? '/' : '/pharmacist-dashboard';
+            const defaultDashboard = (user.role === 'admin') ? '/' : '/pharmacist-dashboard';
             
             navigate(from || defaultDashboard, { replace: true });
         }
@@ -66,8 +66,8 @@ const Login = () => {
         try {
             const data = await login(username, password);
              // Verify post-login
-             if (!lockedBranch && data.role === 'pharmacist') {
-                 // Pharmacists shouldn't login to unlocked devices
+             if (!lockedBranch && data.role === 'branch') {
+                 // Branches shouldn't login to unlocked devices
                  // To force them to use the sticky link
                  localStorage.removeItem('userInfo'); // Immediate logout logic since login already set it
                  setError('Security Restriction: Pharmacists must use the Secure Desktop Shortcut to setup this device first.');

@@ -11,6 +11,7 @@ import staffRoutes from './routes/staffRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import storeStaffRoutes from './routes/storeStaffRoutes.js';
+import branchRoutes from './routes/branchRoutes.js';
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/staff', staffRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/store-staff', storeStaffRoutes);
+app.use('/api/branches', branchRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {
