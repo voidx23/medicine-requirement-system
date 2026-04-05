@@ -139,11 +139,11 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                             </div>
                             <div>
                                 <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '0.2rem' }}>Requesting Branch</div>
-                                <div style={{ fontWeight: 500, color: '#334155' }}>{td?.recipientBranchId?.username || task.createdBy?.username}</div>
+                                <div style={{ fontWeight: 500, color: '#334155' }}>{td?.recipientBranchId?.name || task.createdBy?.username}</div>
                             </div>
                             <div>
                                 <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '0.2rem' }}>Donor Branch</div>
-                                <div style={{ fontWeight: 500, color: '#334155' }}>{td?.donorBranchId?.username}</div>
+                                <div style={{ fontWeight: 500, color: '#334155' }}>{td?.donorBranchId?.name}</div>
                             </div>
                         </div>
                     </div>
@@ -169,7 +169,7 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                                     <div>
                                         <div style={{ fontWeight: 600, color: '#166534' }}>Transfer Accepted</div>
                                         <div style={{ fontSize: '0.88rem', color: '#15803d', marginTop: '0.25rem' }}>
-                                            {td?.donorBranchId?.username} will provide <strong>{tr.responseQty} unit(s)</strong> of {td?.medicineName}.
+                                            {td?.donorBranchId?.name} will provide <strong>{tr.responseQty} unit(s)</strong> of {td?.medicineName}.
                                         </div>
                                     </div>
                                 </div>

@@ -13,8 +13,8 @@ const userSchema = mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['admin', 'pharmacist'],
-        default: 'pharmacist'
+        enum: ['admin'],
+        default: 'admin'
     },
     isSuperAdmin: {
         type: Boolean,

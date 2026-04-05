@@ -82,7 +82,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
 
     const fetchPharmacies = async () => {
         try {
-            const { data } = await api.get('/staff/branches');
+            const { data } = await api.get('/branches');
             setPharmacies(data);
         } catch (err) {
             console.error('Failed to fetch pharmacies', err);
@@ -326,9 +326,9 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
 
                         {/* From → To route preview */}
                         {(() => {
-                            const donorName = pharmacies.find(p => p._id === donorBranchId)?.username;
+                            const donorName = pharmacies.find(p => p._id === donorBranchId)?.name;
                             const recipientName = isAdmin
-                                ? pharmacies.find(p => p._id === recipientBranchId)?.username
+                                ? pharmacies.find(p => p._id === recipientBranchId)?.name
                                 : user?.username;
                             return (
                                 <div style={{ display: 'flex', alignItems: 'stretch', marginBottom: '1.25rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden' }}>
@@ -353,7 +353,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
                                 <option value="">— Select a branch —</option>
                                 {pharmacies
                                     .filter(p => p._id !== user?._id) // can't request from yourself
-                                    .map(p => <option key={p._id} value={p._id}>{p.username} {p.location ? `(${p.location})` : ''}</option>)}
+                                    .map(p => <option key={p._id} value={p._id}>{p.name} {p.location ? `(${p.location})` : ''}</option>)}
                             </select>
                         </div>
 
@@ -364,7 +364,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
                                     <option value="">— Select a branch —</option>
                                     {pharmacies
                                         .filter(p => p._id !== donorBranchId)
-                                        .map(p => <option key={p._id} value={p._id}>{p.username} {p.location ? `(${p.location})` : ''}</option>)}
+                                        .map(p => <option key={p._id} value={p._id}>{p.name} {p.location ? `(${p.location})` : ''}</option>)}
                                 </select>
                             </div>
                         )}

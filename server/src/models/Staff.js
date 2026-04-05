@@ -13,7 +13,7 @@ const staffSchema = mongoose.Schema({
     },
     branches: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'Branch'
     }],
     isActive: {
         type: Boolean,
