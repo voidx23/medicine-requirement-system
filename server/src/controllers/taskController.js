@@ -41,10 +41,10 @@ export const createTask = async (req, res) => {
 
         // ── Transfer Request Task ─────────────────────────────────────────
         if (type === 'transfer_request') {
-            const { medicineName, medicineId, requestedQty, donorBranchId, recipientBranchId } = transferDetails || {};
+            const { items, donorBranchId, recipientBranchId } = transferDetails || {};
 
-            if (!medicineName || !requestedQty || !donorBranchId) {
-                return res.status(400).json({ message: 'Medicine name, quantity, and donor branch are required' });
+            if (!items?.length || !donorBranchId) {
+                return res.status(400).json({ message: 'At least one medicine and donor branch are required' });
             }
 
             // If branch creates it, recipient is themselves
@@ -53,24 +53,28 @@ export const createTask = async (req, res) => {
                 return res.status(400).json({ message: 'Recipient branch is required' });
             }
 
-            // Auto-generate a readable title
-            const autoTitle = `Transfer Request: ${medicineName} → ${req.user.username}`;
+            // Auto-generate a readable title: "Medicine A & 2 others"
+            const firstItemName = items[0].medicineName;
+            const otherCount = items.length - 1;
+            const autoTitle = `Transfer Request: ${firstItemName}${otherCount > 0 ? ` & ${otherCount} others` : ''} → ${req.user.username}`;
 
             const task = new Task({
                 type: 'transfer_request',
                 title: autoTitle,
-                description: `Transfer of ${requestedQty} unit(s) of ${medicineName} requested.`,
+                description: `Transfer of ${items.length} item(s) requested.`,
                 createdBy: req.user._id,
                 targetAudience: 'Specific',
                 assignments: [{ pharmacyId: donorBranchId, status: 'Pending' }],
                 transferDetails: {
-                    medicineName,
-                    medicineId: medicineId || null,
-                    requestedQty,
+                    items: items.map(it => ({
+                        medicineName: it.medicineName,
+                        medicineId: it.medicineId || null,
+                        requestedQty: it.requestedQty,
+                        responseStatus: 'pending'
+                    })),
                     donorBranchId,
                     recipientBranchId: finalRecipientId,
-                },
-                transferResponse: { responseStatus: 'pending' },
+                }
             });
 
             const createdTask = await task.save();
@@ -105,22 +109,24 @@ export const updateTask = async (req, res) => {
             task.dueDate = dueDate !== undefined ? dueDate : task.dueDate;
 
         } else if (task.type === 'transfer_request') {
-            if (task.transferResponse?.responseStatus !== 'pending') {
-                return res.status(400).json({ message: 'Cannot edit a transfer request that has already been responded to' });
+            const isFullyPending = task.transferDetails.items.every(it => it.responseStatus === 'pending');
+            if (!isFullyPending) {
+                return res.status(400).json({ message: 'Cannot edit a transfer request that has already been partially responded to' });
             }
-            const { medicineName, medicineId, requestedQty, donorBranchId, recipientBranchId } = req.body.transferDetails || {};
-            if (medicineName) task.transferDetails.medicineName = medicineName;
-            if (medicineId !== undefined) task.transferDetails.medicineId = medicineId || null;
-            if (requestedQty) task.transferDetails.requestedQty = requestedQty;
+            const { items, donorBranchId, recipientBranchId } = req.body.transferDetails || {};
+            if (items) task.transferDetails.items = items;
             if (donorBranchId) {
                 task.transferDetails.donorBranchId = donorBranchId;
                 // Update the assignment to point to the new donor
                 task.assignments = [{ pharmacyId: donorBranchId, status: 'Pending' }];
             }
             if (recipientBranchId) task.transferDetails.recipientBranchId = recipientBranchId;
+            
             // Refresh auto-title
-            task.title = `Transfer Request: ${task.transferDetails.medicineName} → ${task.transferDetails.recipientBranchId}`;
-            task.description = `Transfer of ${task.transferDetails.requestedQty} unit(s) of ${task.transferDetails.medicineName} requested.`;
+            const firstItemName = task.transferDetails.items[0]?.medicineName || 'Items';
+            const otherCount = task.transferDetails.items.length - 1;
+            task.title = `Transfer Request: ${firstItemName}${otherCount > 0 ? ` & ${otherCount} others` : ''} → ${task.createdBy.username || 'Branch'}`;
+            task.description = `Transfer of ${task.transferDetails.items.length} item(s) requested.`;
         }
 
         const updatedTask = await task.save();
@@ -230,22 +236,16 @@ export const updateTaskStatus = async (req, res) => {
     }
 };
 
-// @desc    Donor branch accepts or rejects a transfer request
+// @desc    Donor branch accepts or rejects a transfer request (per-item)
 // @route   PUT /api/tasks/:taskId/transfer-respond
 // @access  Private (Pharmacist — donor branch only)
 export const respondToTransfer = async (req, res) => {
     try {
         const { taskId } = req.params;
-        const { action, responseQty, rejectionReason } = req.body;
+        const { responses } = req.body; // Array of { itemId, action, responseQty, rejectionReason }
 
-        if (!['accept', 'reject'].includes(action)) {
-            return res.status(400).json({ message: 'action must be "accept" or "reject"' });
-        }
-        if (action === 'accept' && (!responseQty || responseQty <= 0)) {
-            return res.status(400).json({ message: 'responseQty is required when accepting' });
-        }
-        if (action === 'reject' && !rejectionReason?.trim()) {
-            return res.status(400).json({ message: 'rejectionReason is required when rejecting' });
+        if (!responses || !Array.isArray(responses)) {
+            return res.status(400).json({ message: 'responses array is required' });
         }
 
         const task = await Task.findById(taskId);
@@ -256,23 +256,29 @@ export const respondToTransfer = async (req, res) => {
         const assignmentIndex = task.assignments.findIndex(a => a.pharmacyId.toString() === req.user._id.toString());
         if (assignmentIndex === -1) return res.status(403).json({ message: 'You are not the donor for this transfer request' });
 
-        if (task.transferResponse?.responseStatus !== 'pending') {
-            return res.status(400).json({ message: 'This transfer request has already been responded to' });
+        // Update each item
+        responses.forEach(resItem => {
+            const item = task.transferDetails.items.id(resItem.itemId);
+            if (item && item.responseStatus === 'pending') {
+                item.responseStatus = resItem.action === 'accept' ? 'accepted' : 'rejected';
+                if (resItem.action === 'accept') item.responseQty = resItem.responseQty;
+                if (resItem.action === 'reject') item.rejectionReason = resItem.rejectionReason;
+            }
+        });
+
+        task.transferDetails.respondedAt = new Date();
+
+        // Check overall completion
+        const allResponded = task.transferDetails.items.every(it => it.responseStatus !== 'pending');
+        if (allResponded) {
+            const anyAccepted = task.transferDetails.items.some(it => it.responseStatus === 'accepted');
+            task.assignments[assignmentIndex].status = anyAccepted ? 'Completed' : 'Rejected';
+            task.assignments[assignmentIndex].completedAt = new Date();
+            task.assignments[assignmentIndex].completedBy = req.user._id;
         }
 
-        // Update response
-        task.transferResponse.responseStatus = action === 'accept' ? 'accepted' : 'rejected';
-        task.transferResponse.respondedAt = new Date();
-        if (action === 'accept') task.transferResponse.responseQty = responseQty;
-        if (action === 'reject') task.transferResponse.rejectionReason = rejectionReason;
-
-        // Update assignment status
-        task.assignments[assignmentIndex].status = action === 'accept' ? 'Completed' : 'Rejected';
-        task.assignments[assignmentIndex].completedAt = new Date();
-        task.assignments[assignmentIndex].completedBy = req.user._id;
-
         await task.save();
-        res.json({ message: `Transfer request ${action}ed successfully`, task });
+        res.json({ message: `Transfer response updated`, task });
     } catch (error) {
         console.error('Error responding to transfer:', error);
         res.status(500).json({ message: 'Server error responding to transfer request' });

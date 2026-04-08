@@ -466,11 +466,11 @@ const AdminRequests = () => {
                                                     <thead>
                                                         <tr style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.9rem', borderBottom: '1px solid #eee' }}>
                                                             <th style={{ padding: '0.75rem 0', width: '50px' }}>#</th>
-                                                            {req.status !== 'rejected' && <th style={{ padding: '0.75rem 0', width: '50px' }}>Packed</th>}
+                                                            {req.status !== 'rejected' && (user?.isSuperAdmin || user?.permissions?.includes('dashboard')) && <th style={{ padding: '0.75rem 0', width: '50px' }}>Packed</th>}
                                                             <th style={{ padding: '0.75rem 0' }}>Medicine</th>
                                                             <th style={{ padding: '0.75rem 0' }}>Supplier</th>
                                                             <th style={{ padding: '0.75rem 0' }}>Qty</th>
-                                                            <th style={{ padding: '0.75rem 0', textAlign: 'right' }}>Actions</th>
+                                                            {(user?.isSuperAdmin || user?.permissions?.includes('dashboard')) && <th style={{ padding: '0.75rem 0', textAlign: 'right' }}>Actions</th>}
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -485,8 +485,8 @@ const AdminRequests = () => {
                                                             return (
                                                                 <tr key={idx} style={{ borderBottom: '1px solid rgba(0,0,0,0.03)', background: isPacked ? 'rgba(34, 197, 94, 0.05)' : 'transparent' }}>
                                                                     <td style={{ padding: '0.75rem 0', color: 'var(--text-muted)' }}>{idx + 1}</td>
-                                                                    {req.status !== 'rejected' && (
-                                                                        <td style={{ padding: '0.75rem 0' }}>
+                                                                    {req.status !== 'rejected' && (user?.isSuperAdmin || user?.permissions?.includes('dashboard')) && (
+                                                                        <td style={{ width: '40px', padding: '0.75rem 0' }}>
                                                                             <button
                                                                                 disabled={!isInteractive} 
                                                                                 onClick={(e) => { e.stopPropagation(); if(isInteractive) toggleItemPacked(req._id, item._id); }}
@@ -510,25 +510,27 @@ const AdminRequests = () => {
                                                                     <td style={{ padding: '0.75rem 0', fontWeight: 500, color: isPacked ? 'var(--text-muted)' : 'inherit', textDecoration: isPacked ? 'line-through' : 'none' }}>{item.name}</td>
                                                                     <td style={{ padding: '0.75rem 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{item.medicineId?.supplierId?.name || 'Unknown'}</td>
                                                                     <td style={{ padding: '0.75rem 0', fontWeight: 'bold' }}>{item.quantity}</td>
-                                                                    <td style={{ padding: '0.75rem 0', textAlign: 'right' }}>
-                                                                        {item.medicineId && (
-                                                                            <button
-                                                                                onClick={(e) => { e.stopPropagation(); toggleShortlist(item.medicineId._id, item.name); }}
-                                                                                title={dailyListIds.has(item.medicineId._id) ? "Remove" : "Add"}
-                                                                                aria-label={dailyListIds.has(item.medicineId._id) ? `Remove ${item.name} from shortlist` : `Add ${item.name} to shortlist`}
-                                                                                style={{
-                                                                                    background: dailyListIds.has(item.medicineId._id) ? '#fee2e2' : 'var(--primary-light)',
-                                                                                    border: 'none', borderRadius: '8px', 
-                                                                                    width: '32px', height: '32px', cursor: 'pointer',
-                                                                                    color: dailyListIds.has(item.medicineId._id) ? '#ef4444' : 'var(--primary)',
-                                                                                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                                                                    transition: 'all 0.2s'
-                                                                                }}
-                                                                            >
-                                                                                {dailyListIds.has(item.medicineId._id) ? <ListX size={16} /> : <ListPlus size={16} />}
-                                                                            </button>
-                                                                        )}
-                                                                    </td>
+                                                                    {(user?.isSuperAdmin || user?.permissions?.includes('dashboard')) && (
+                                                                        <td style={{ padding: '0.75rem 0', textAlign: 'right' }}>
+                                                                            {item.medicineId && (
+                                                                                <button
+                                                                                    onClick={(e) => { e.stopPropagation(); toggleShortlist(item.medicineId._id, item.name); }}
+                                                                                    title={dailyListIds.has(item.medicineId._id) ? "Remove" : "Add"}
+                                                                                    aria-label={dailyListIds.has(item.medicineId._id) ? `Remove ${item.name} from shortlist` : `Add ${item.name} to shortlist`}
+                                                                                    style={{
+                                                                                        background: dailyListIds.has(item.medicineId._id) ? '#fee2e2' : 'var(--primary-light)',
+                                                                                        border: 'none', borderRadius: '8px', 
+                                                                                        width: '32px', height: '32px', cursor: 'pointer',
+                                                                                        color: dailyListIds.has(item.medicineId._id) ? '#ef4444' : 'var(--primary)',
+                                                                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                                                        transition: 'all 0.2s'
+                                                                                    }}
+                                                                                >
+                                                                                    {dailyListIds.has(item.medicineId._id) ? <ListX size={16} /> : <ListPlus size={16} />}
+                                                                                </button>
+                                                                            )}
+                                                                        </td>
+                                                                    )}
                                                                 </tr>
                                                             );
                                                         })}
@@ -546,15 +548,17 @@ const AdminRequests = () => {
                                                 
                                                 {/* Action Buttons based on Status */}
                                                 {(req.status === 'pending' || req.status === 'approved') ? (
-                                                    <Button 
-                                                        className="btn-primary" 
-                                                        style={{ backgroundColor: '#10b981', borderColor: '#10b981' }} // Emerald green 
-                                                        icon={PackageCheck} 
-                                                        onClick={(e) => { e.stopPropagation(); handleCompleteFulfillment(req._id); }} 
-                                                        aria-label="Complete Fulfillment"
-                                                    >
-                                                        Complete Fulfillment
-                                                    </Button>
+                                                    (user?.isSuperAdmin || user?.permissions?.includes('dashboard')) && (
+                                                        <Button 
+                                                            className="btn-primary" 
+                                                            style={{ backgroundColor: '#10b981', borderColor: '#10b981' }} // Emerald green 
+                                                            icon={PackageCheck} 
+                                                            onClick={(e) => { e.stopPropagation(); handleCompleteFulfillment(req._id); }} 
+                                                            aria-label="Complete Fulfillment"
+                                                        >
+                                                            Complete Fulfillment
+                                                        </Button>
+                                                    )
                                                 ) : (
                                                     // Edit button for completed/locked requests
                                                     user?.isSuperAdmin && (

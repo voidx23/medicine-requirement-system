@@ -49,14 +49,13 @@ const createTransferRequest = async (details) => {
 };
 
 /**
- * Donor branch responds to a transfer request
- * @param {'accept'|'reject'} action
- * @param {{ responseQty?, rejectionReason? }} data
+ * Donor branch responds to a transfer request (per-item)
+ * @param {Array<{ itemId, action, responseQty?, rejectionReason? }>} responses
  */
-const respondToTransfer = async (taskId, action, data) => {
+const respondToTransfer = async (taskId, responses) => {
     const response = await api.put(
         `/tasks/${taskId}/transfer-respond`,
-        { action, ...data }
+        { responses }
     );
     return response.data;
 };

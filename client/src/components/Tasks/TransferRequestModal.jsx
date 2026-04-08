@@ -21,9 +21,7 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
     const { user } = useContext(AuthContext);
     const { showToast } = useNotification();
 
-    const [action, setAction] = useState(null); // null | 'accept' | 'reject'
-    const [responseQty, setResponseQty] = useState('');
-    const [rejectionReason, setRejectionReason] = useState('');
+    const [itemResponses, setItemResponses] = useState({}); // { itemId: { action, qty, reason } }
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [authAction, setAuthAction] = useState(null); // 'edit' | 'delete'
 
@@ -34,37 +32,66 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
 
     if (!isOpen || !task) return null;
 
-    const { transferDetails: td, transferResponse: tr, transferRole } = task;
+    const { transferDetails: td, transferRole } = task;
     const isDonor = transferRole === 'donor';
     const isRequester = transferRole === 'requester';
-    const alreadyResponded = tr?.responseStatus !== 'pending';
+    
+    // Calculate if overall task is still pending or fully responded
+    const allItemsResponded = td?.items?.every(it => it.responseStatus !== 'pending');
+    const alreadyResponded = allItemsResponded;
 
     const isCreatorOrSuperAdmin = user?.isSuperAdmin || task.createdBy?._id === user?._id || task.createdBy === user?._id;
 
+    const handleItemAction = (itemId, action) => {
+        setItemResponses(prev => ({
+            ...prev,
+            [itemId]: { 
+                ...prev[itemId], 
+                action, 
+                qty: action === 'accept' ? (prev[itemId]?.qty || td.items.find(i => i._id === itemId).requestedQty) : '',
+                reason: action === 'reject' ? (prev[itemId]?.reason || '') : ''
+            }
+        }));
+    };
+
+    const handleItemQtyChange = (itemId, qty) => {
+        setItemResponses(prev => ({ ...prev, [itemId]: { ...prev[itemId], qty } }));
+    };
+
+    const handleItemReasonChange = (itemId, reason) => {
+        setItemResponses(prev => ({ ...prev, [itemId]: { ...prev[itemId], reason } }));
+    };
+
     const handleSubmit = async () => {
-        if (action === 'accept' && (!responseQty || Number(responseQty) <= 0)) {
-            showToast('Please enter a valid quantity to give', 'error');
+        const responsesArray = td.items
+            .filter(it => it.responseStatus === 'pending')
+            .map(it => {
+                const res = itemResponses[it._id];
+                if (!res || !res.action) return null;
+                return {
+                    itemId: it._id,
+                    action: res.action,
+                    responseQty: Number(res.qty),
+                    rejectionReason: res.reason
+                };
+            }).filter(Boolean);
+
+        if (responsesArray.length === 0) {
+            showToast('Please respond to at least one item', 'error');
             return;
         }
-        if (action === 'reject' && !rejectionReason.trim()) {
-            showToast('Please enter a reason for rejection', 'error');
-            return;
+
+        // Check if all pending items have a response selected
+        const pendingItems = td.items.filter(it => it.responseStatus === 'pending');
+        if (responsesArray.length < pendingItems.length) {
+            showToast('Please provide a response for all items', 'warning');
+            // return; // Allow partial if you want, but for now let's encourage full
         }
 
         setIsSubmitting(true);
         try {
-            await taskService.respondToTransfer(
-                task._id,
-                action,
-                action === 'accept'
-                    ? { responseQty: Number(responseQty) }
-                    : { rejectionReason },
-                user.token
-            );
-            showToast(
-                action === 'accept' ? 'Transfer accepted successfully!' : 'Transfer rejected.',
-                action === 'accept' ? 'success' : 'info'
-            );
+            await taskService.respondToTransfer(task._id, responsesArray);
+            showToast('Response submitted successfully', 'success');
             onResponded?.();
             onClose();
         } catch (err) {
@@ -74,11 +101,18 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
         }
     };
 
+    // Overall Status Logic
+    const anyAccepted = td?.items?.some(it => it.responseStatus === 'accepted');
+    const anyPending = td?.items?.some(it => it.responseStatus === 'pending');
+    
+    let statusLabel = anyPending ? 'Partially Pending' : (anyAccepted ? 'Accepted' : 'Rejected');
+    if (alreadyResponded && !anyAccepted) statusLabel = 'Rejected';
+
     const statusColor = {
-        pending:  { bg: '#fef9c3', text: '#92400e', label: 'Awaiting Response' },
-        accepted: { bg: '#dcfce7', text: '#166534', label: 'Accepted' },
-        rejected: { bg: '#fee2e2', text: '#991b1b', label: 'Rejected' },
-    }[tr?.responseStatus || 'pending'];
+        pending:  { bg: '#fef9c3', text: '#92400e', label: statusLabel },
+        accepted: { bg: '#dcfce7', text: '#166534', label: statusLabel },
+        rejected: { bg: '#fee2e2', text: '#991b1b', label: statusLabel },
+    }[anyPending ? 'pending' : (anyAccepted ? 'accepted' : 'rejected')];
 
     return (
         <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
@@ -122,30 +156,47 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                 </div>
 
                 <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    {/* Medicine Info Card */}
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                            <Package size={20} color="#6366f1" />
-                            <span style={{ fontWeight: 600, color: '#1e293b' }}>Transfer Details</span>
+                    {/* Route Info */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#eff6ff', borderRadius: '10px', padding: '0.75rem', fontSize: '0.85rem', gap: '1rem' }}>
+                        <div style={{ textAlign: 'right' }}>
+                            <div style={{ color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase' }}>From</div>
+                            <div style={{ fontWeight: 600 }}>{td?.donorBranchId?.name}</div>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.9rem' }}>
-                            <div>
-                                <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '0.2rem' }}>Medicine</div>
-                                <div style={{ fontWeight: 600, color: '#1e293b' }}>{td?.medicineName}</div>
-                            </div>
-                            <div>
-                                <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '0.2rem' }}>Requested Qty</div>
-                                <div style={{ fontWeight: 600, color: '#1e293b' }}>{td?.requestedQty} unit(s)</div>
-                            </div>
-                            <div>
-                                <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '0.2rem' }}>Requesting Branch</div>
-                                <div style={{ fontWeight: 500, color: '#334155' }}>{td?.recipientBranchId?.name || task.createdBy?.username}</div>
-                            </div>
-                            <div>
-                                <div style={{ color: '#64748b', fontSize: '0.78rem', marginBottom: '0.2rem' }}>Donor Branch</div>
-                                <div style={{ fontWeight: 500, color: '#334155' }}>{td?.donorBranchId?.name}</div>
-                            </div>
+                        <ArrowRightLeft size={16} color="#3b82f6" />
+                        <div>
+                            <div style={{ color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase' }}>To</div>
+                            <div style={{ fontWeight: 600 }}>{td?.recipientBranchId?.name || task.createdBy?.username}</div>
                         </div>
+                    </div>
+
+                    {/* Items Table/List */}
+                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+                            <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                <tr>
+                                    <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: 600 }}>Medicine</th>
+                                    <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 600 }}>Qty</th>
+                                    <th style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 600 }}>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {td?.items?.map(it => (
+                                    <tr key={it._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                        <td style={{ padding: '0.75rem' }}>{it.medicineName}</td>
+                                        <td style={{ padding: '0.75rem', textAlign: 'center' }}>{it.requestedQty}</td>
+                                        <td style={{ padding: '0.75rem', textAlign: 'right' }}>
+                                            {it.responseStatus === 'pending' ? (
+                                                <span style={{ color: '#d97706', fontWeight: 500 }}>Pending</span>
+                                            ) : it.responseStatus === 'accepted' ? (
+                                                <span style={{ color: '#16a34a', fontWeight: 600 }}>Accepted ({it.responseQty})</span>
+                                            ) : (
+                                                <span style={{ color: '#dc2626', fontWeight: 500 }}>Rejected</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
 
                     {/* Status Badge */}
@@ -156,126 +207,74 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                         </span>
                     </div>
 
-                    {/* Already Responded — show result */}
-                    {alreadyResponded && (
-                        <div style={{
-                            background: tr.responseStatus === 'accepted' ? '#f0fdf4' : '#fff1f2',
-                            border: `1px solid ${tr.responseStatus === 'accepted' ? '#bbf7d0' : '#fecdd3'}`,
-                            borderRadius: '10px', padding: '1rem'
-                        }}>
-                            {tr.responseStatus === 'accepted' ? (
-                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                                    <CheckCircle2 size={20} color="#16a34a" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
-                                    <div>
-                                        <div style={{ fontWeight: 600, color: '#166534' }}>Transfer Accepted</div>
-                                        <div style={{ fontSize: '0.88rem', color: '#15803d', marginTop: '0.25rem' }}>
-                                            {td?.donorBranchId?.name} will provide <strong>{tr.responseQty} unit(s)</strong> of {td?.medicineName}.
+                    {/* Donor Action Area — per item */}
+                    {isDonor && !alreadyResponded && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Your Response</h3>
+                            {td.items.filter(it => it.responseStatus === 'pending').map(it => {
+                                const res = itemResponses[it._id] || {};
+                                return (
+                                    <div key={it._id} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                            <span style={{ fontWeight: 600 }}>{it.medicineName} (Req: {it.requestedQty})</span>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button 
+                                                    onClick={() => handleItemAction(it._id, 'accept')}
+                                                    style={{ padding: '0.3rem 0.6rem', borderRadius: '6px', border: res.action === 'accept' ? '2px solid #22c55e' : '1px solid #cbd5e1', background: res.action === 'accept' ? '#f0fdf4' : 'white', color: res.action === 'accept' ? '#16a34a' : '#64748b', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                                                >
+                                                    Accept
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleItemAction(it._id, 'reject')}
+                                                    style={{ padding: '0.3rem 0.6rem', borderRadius: '6px', border: res.action === 'reject' ? '2px solid #ef4444' : '1px solid #cbd5e1', background: res.action === 'reject' ? '#fff1f2' : 'white', color: res.action === 'reject' ? '#dc2626' : '#64748b', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                                                >
+                                                    Reject
+                                                </button>
+                                            </div>
                                         </div>
+                                        {res.action === 'accept' && (
+                                            <input 
+                                                type="number" 
+                                                min="1"
+                                                value={res.qty}
+                                                onChange={(e) => handleItemQtyChange(it._id, e.target.value)}
+                                                placeholder="Qty to give"
+                                                style={{ width: '100%', padding: '0.4rem', borderRadius: '6px', border: '1px solid #86efac', fontSize: '0.85rem' }}
+                                            />
+                                        )}
+                                        {res.action === 'reject' && (
+                                            <input 
+                                                type="text" 
+                                                value={res.reason}
+                                                onChange={(e) => handleItemReasonChange(it._id, e.target.value)}
+                                                placeholder="Rejection reason..."
+                                                style={{ width: '100%', padding: '0.4rem', borderRadius: '6px', border: '1px solid #fca5a5', fontSize: '0.85rem' }}
+                                            />
+                                        )}
                                     </div>
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                                    <XCircle size={20} color="#dc2626" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
-                                    <div>
-                                        <div style={{ fontWeight: 600, color: '#991b1b' }}>Transfer Rejected</div>
-                                        <div style={{ fontSize: '0.88rem', color: '#b91c1c', marginTop: '0.25rem' }}>
-                                            Reason: "{tr.rejectionReason}"
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            {tr.respondedAt && (
-                                <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.75rem' }}>
-                                    Responded on {new Date(tr.respondedAt).toLocaleString()}
-                                </div>
-                            )}
+                                );
+                            })}
+                            
+                            <button 
+                                onClick={handleSubmit} 
+                                disabled={isSubmitting}
+                                style={{ marginTop: '0.5rem', padding: '0.9rem', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)' }}
+                            >
+                                {isSubmitting ? 'Submitting...' : 'Send Response'}
+                            </button>
                         </div>
                     )}
 
-                    {/* Donor Action Area — only if pending and I am the donor */}
-                    {isDonor && !alreadyResponded && (
-                        <>
-                            {/* Pick action */}
-                            {!action && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                    <button
-                                        onClick={() => setAction('accept')}
-                                        style={{
-                                            padding: '0.9rem', borderRadius: '10px', border: '2px solid #22c55e',
-                                            background: '#f0fdf4', color: '#16a34a', fontWeight: 600, cursor: 'pointer',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                            fontSize: '0.95rem', transition: 'all 0.2s'
-                                        }}
-                                        onMouseOver={e => e.currentTarget.style.background = '#dcfce7'}
-                                        onMouseOut={e => e.currentTarget.style.background = '#f0fdf4'}
-                                    >
-                                        <CheckCircle2 size={18} /> Accept
-                                    </button>
-                                    <button
-                                        onClick={() => setAction('reject')}
-                                        style={{
-                                            padding: '0.9rem', borderRadius: '10px', border: '2px solid #ef4444',
-                                            background: '#fff1f2', color: '#dc2626', fontWeight: 600, cursor: 'pointer',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                                            fontSize: '0.95rem', transition: 'all 0.2s'
-                                        }}
-                                        onMouseOver={e => e.currentTarget.style.background = '#fee2e2'}
-                                        onMouseOut={e => e.currentTarget.style.background = '#fff1f2'}
-                                    >
-                                        <XCircle size={18} /> Reject
-                                    </button>
+                    {/* Overall Rejection Reasons (if any) */}
+                    {alreadyResponded && td.items.some(it => it.responseStatus === 'rejected') && (
+                        <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '10px', padding: '1rem', fontSize: '0.85rem' }}>
+                            <div style={{ fontWeight: 600, color: '#991b1b', marginBottom: '0.5rem' }}>Rejection Details:</div>
+                            {td.items.filter(it => it.responseStatus === 'rejected').map(it => (
+                                <div key={it._id} style={{ marginBottom: '0.25rem', color: '#b91c1c' }}>
+                                    • <strong>{it.medicineName}</strong>: {it.rejectionReason}
                                 </div>
-                            )}
-
-                            {/* Accept — qty input */}
-                            {action === 'accept' && (
-                                <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '1.25rem' }}>
-                                    <label style={{ display: 'block', fontWeight: 600, color: '#166534', marginBottom: '0.6rem' }}>
-                                        How many units can you provide?
-                                    </label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={responseQty}
-                                        onChange={e => setResponseQty(e.target.value)}
-                                        placeholder={`Up to ${td?.requestedQty} requested`}
-                                        style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #86efac', fontSize: '1rem', marginBottom: '1rem', boxSizing: 'border-box' }}
-                                    />
-                                    <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                        <button onClick={() => setAction(null)} style={{ flex: 1, padding: '0.7rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', cursor: 'pointer', fontWeight: 500 }}>
-                                            Back
-                                        </button>
-                                        <button onClick={handleSubmit} disabled={isSubmitting} style={{ flex: 2, padding: '0.7rem', borderRadius: '8px', border: 'none', background: '#22c55e', color: 'white', fontWeight: 600, cursor: 'pointer' }}>
-                                            {isSubmitting ? 'Submitting...' : 'Confirm Acceptance'}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Reject — reason input */}
-                            {action === 'reject' && (
-                                <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '10px', padding: '1.25rem' }}>
-                                    <label style={{ display: 'block', fontWeight: 600, color: '#991b1b', marginBottom: '0.6rem' }}>
-                                        Reason for rejection <span style={{ fontWeight: 400, color: '#b91c1c' }}>(required)</span>
-                                    </label>
-                                    <textarea
-                                        rows={3}
-                                        value={rejectionReason}
-                                        onChange={e => setRejectionReason(e.target.value)}
-                                        placeholder="e.g. We don't have sufficient stock of this medicine right now..."
-                                        style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #fca5a5', fontSize: '0.9rem', marginBottom: '1rem', fontFamily: 'inherit', boxSizing: 'border-box', resize: 'vertical' }}
-                                    />
-                                    <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                        <button onClick={() => setAction(null)} style={{ flex: 1, padding: '0.7rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', cursor: 'pointer', fontWeight: 500 }}>
-                                            Back
-                                        </button>
-                                        <button onClick={handleSubmit} disabled={isSubmitting} style={{ flex: 2, padding: '0.7rem', borderRadius: '8px', border: 'none', background: '#ef4444', color: 'white', fontWeight: 600, cursor: 'pointer' }}>
-                                            {isSubmitting ? 'Submitting...' : 'Confirm Rejection'}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </>
+                            ))}
+                        </div>
                     )}
                 </div>
             </div>

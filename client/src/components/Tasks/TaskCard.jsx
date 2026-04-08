@@ -33,9 +33,20 @@ const TaskCard = ({ task, onClick, isAdminView }) => {
 
     const renderStatus = () => {
         if (isTransfer) {
-            const rs = task.transferResponse?.responseStatus || 'pending';
+            const items = task.transferDetails?.items || [];
+            const allPending = items.every(it => it.responseStatus === 'pending');
+            const anyAccepted = items.some(it => it.responseStatus === 'accepted');
+            const allResponded = items.every(it => it.responseStatus !== 'pending');
+
+            let rs = 'pending';
+            if (allResponded) {
+                rs = anyAccepted ? 'accepted' : 'rejected';
+            } else if (!allPending) {
+                rs = 'pending'; // Still pending if some are responded but not all
+            }
+
             const cfg = {
-                pending:  { color: '#d97706', bg: '#fef9c3', icon: <Clock size={14}/>,         label: 'Awaiting Response' },
+                pending:  { color: '#d97706', bg: '#fef9c3', icon: <Clock size={14}/>,         label: allPending ? 'Awaiting Response' : 'Partially Responded' },
                 accepted: { color: '#16a34a', bg: '#dcfce7', icon: <CheckCircle size={14}/>,   label: 'Accepted' },
                 rejected: { color: '#dc2626', bg: '#fee2e2', icon: <XCircle size={14}/>,       label: 'Rejected' },
             }[rs];
@@ -83,7 +94,16 @@ const TaskCard = ({ task, onClick, isAdminView }) => {
                         </div>
                     )}
                     <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {isTransfer ? task.transferDetails?.medicineName || task.title : task.title}
+                        {isTransfer ? (
+                            <>
+                                {task.transferDetails?.items?.[0]?.medicineName || 'Items'}
+                                {task.transferDetails?.items?.length > 1 && (
+                                    <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 400, marginLeft: '0.4rem' }}>
+                                        + {task.transferDetails.items.length - 1} more
+                                    </span>
+                                )}
+                            </>
+                        ) : task.title}
                     </h3>
                 </div>
                 {!isTransfer && renderPriority(task.priority)}
@@ -97,7 +117,7 @@ const TaskCard = ({ task, onClick, isAdminView }) => {
             {isTransfer ? (
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#64748b', marginBottom: '0.5rem' }}>
-                        <Package size={13} /> <span>Qty: <strong>{task.transferDetails?.requestedQty}</strong></span>
+                        <Package size={13} /> <span>Items: <strong>{task.transferDetails?.items?.length || 0}</strong></span>
                     </div>
                     {/* From → To route bar */}
                     <div style={{ display: 'flex', alignItems: 'stretch', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', overflow: 'hidden', fontSize: '0.78rem' }}>
