@@ -295,7 +295,7 @@ export const getMedicineAudit = async (req, res) => {
         }
 
         const requests = await PharmacistRequest.find(query)
-            .populate('pharmacistId', 'username branch')
+            .populate('pharmacistId', 'username branch name')
             .sort({ createdAt: -1 });
 
         // Map data to return flattened results
@@ -306,7 +306,7 @@ export const getMedicineAudit = async (req, res) => {
             matchedItems.forEach(item => {
                 results.push({
                     _id: reqObj._id,
-                    branchName: reqObj.pharmacistId?.username || 'Unknown Branch',
+                    branchName: reqObj.pharmacistId?.name || reqObj.pharmacistId?.username || 'Unknown Branch',
                     date: reqObj.createdAt,
                     quantity: item.quantity,
                     status: reqObj.status // Request level status
