@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing } from 'lucide-react';
+import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, UserCircle } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
 import { useContext, useState, useEffect, useRef } from 'react';
 import AuthContext from '../../context/AuthContext';
@@ -303,6 +303,25 @@ const Sidebar = () => {
           </button>
       </nav>
       <div style={{ marginTop: 'auto', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <div style={{
+            display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.5rem 0.75rem 0.5rem',
+            marginBottom: '0.25rem', borderBottom: '1px dashed var(--glass-border)'
+        }}>
+            <div style={{
+                width: '36px', height: '36px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+            }}>
+                <UserCircle size={24} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: '1.2', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                    {user?.name || user?.username || 'Admin User'}
+                </span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.2' }}>
+                    {user?.isSuperAdmin ? 'System Admin' : 'Store Admin'}
+                </span>
+            </div>
+        </div>
             <button 
               onClick={() => {
                   if (notiPermission === 'default') {

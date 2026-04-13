@@ -5,7 +5,7 @@ dotenv.config();
 
 const migrate = async () => {
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
+        await mongoose.connect(process.env.MONGO_URI);
         console.log('Connected to MongoDB');
 
         const db = mongoose.connection.db;
@@ -16,8 +16,11 @@ const migrate = async () => {
             'transferDetails.items': { $exists: false } 
         });
 
+        const tasks = await cursor.toArray();
+        console.log(`Found ${tasks.length} legacy tasks to migrate.`);
+
         let count = 0;
-        await cursor.forEach(async (task) => {
+        for (const task of tasks) {
             const td = task.transferDetails;
             if (td && !td.items) {
                 const medicineName = td.medicineName || 'Unknown Medicine';
@@ -52,7 +55,7 @@ const migrate = async () => {
                 console.log(`Migrated task: ${task._id}`);
                 count++;
             }
-        });
+        }
 
         console.log(`Migration complete. Updated ${count} tasks.`);
         process.exit(0);
