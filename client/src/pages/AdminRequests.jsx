@@ -445,6 +445,7 @@ const AdminRequests = () => {
                                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                                     <span>{new Date(req.createdAt).toLocaleString()}</span>
                                                     {req.submittedBy && <span style={{ color: 'var(--primary)' }}>• Signed by {req.submittedBy}</span>}
+                                                    <span style={{ fontWeight: 500 }}>• {req.items?.length || 0} {req.items?.length === 1 ? 'Item' : 'Items'}</span>
                                                 </div>
                                             </div>
                                         </div>
