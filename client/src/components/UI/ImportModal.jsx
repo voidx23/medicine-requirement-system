@@ -88,6 +88,7 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
                 
                 if (msg.toLowerCase().includes('duplicate') || msg.toLowerCase().includes('exists')) {
                     summary.skipped++;
+                    summary.errors.push(`Skipped: ${itemName} (Already exists in database)`);
                 } else {
                     summary.errors.push(`${itemName}: ${msg}`);
                 }
