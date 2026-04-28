@@ -54,6 +54,16 @@ const PharmacistNewRequest = () => {
     const [qtyModalOpen, setQtyModalOpen] = useState(false);
     const [customModalOpen, setCustomModalOpen] = useState(false);
     const [pendingItem, setPendingItem] = useState(null);
+    const [pendingServerItems, setPendingServerItems] = useState({});
+
+    const fetchPendingServerItems = async () => {
+        try {
+            const { data } = await api.get('/requests/my-pending-medicines');
+            setPendingServerItems(data);
+        } catch (error) {
+            console.error('Failed to load pending medicines', error);
+        }
+    };
 
     const fetchAllMedicines = async () => {
         try {
@@ -77,6 +87,7 @@ const PharmacistNewRequest = () => {
     useEffect(() => {
         fetchStats();
         fetchAllMedicines();
+        fetchPendingServerItems();
     }, []);
 
     // Click Outside to close search
@@ -111,6 +122,15 @@ const PharmacistNewRequest = () => {
 
     // Step 1: User selects item -> Open Modal
     const initiateAdd = (medicine) => {
+        // Eager duplicate check against the server
+        if (medicine._id && pendingServerItems[medicine._id]) {
+            const dateStr = new Date(pendingServerItems[medicine._id]).toLocaleDateString();
+            showToast(`This item is already in a pending request sent on ${dateStr}. Action blocked.`, 'error');
+            setIsOpen(false);
+            setQuery('');
+            return;
+        }
+
         setPendingItem(medicine);
         setQtyModalOpen(true);
         setIsOpen(false); // Close dropdown
@@ -146,8 +166,17 @@ const PharmacistNewRequest = () => {
     };
 
     const handleAddCustom = (name, quantity) => {
+        const key = name.trim().toLowerCase();
+        
+        // Eager duplicate check against the server
+        if (pendingServerItems[key]) {
+            const dateStr = new Date(pendingServerItems[key]).toLocaleDateString();
+            showToast(`This item is already in a pending request sent on ${dateStr}. Action blocked.`, 'error');
+            return;
+        }
+
         // Check duplicate by name (case-insensitive)
-        const exists = requestItems.find(item => item.name.toLowerCase() === name.trim().toLowerCase());
+        const exists = requestItems.find(item => item.name.toLowerCase() === key);
         if (exists) {
             showToast('Item with this name already exists in the list.', 'error');
             return;

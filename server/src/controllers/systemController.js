@@ -1,3 +1,5 @@
+import SystemConfig from '../models/SystemConfig.js';
+
 // Simple in-memory cache
 let commitCache = {
     data: null,
@@ -59,5 +61,46 @@ export const getCommits = async (req, res) => {
             message: 'Failed to fetch git history', 
             apiError: apiError.message 
         });
+    }
+};
+
+export const getSystemVersion = async (req, res) => {
+    try {
+        let config = await SystemConfig.findOne();
+        if (!config) {
+            config = await SystemConfig.create({ clientVersion: 1 });
+        }
+        res.json({ clientVersion: config.clientVersion });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const forceRefreshClients = async (req, res) => {
+    try {
+        let config = await SystemConfig.findOne();
+        if (!config) {
+            config = await SystemConfig.create({ clientVersion: 1 });
+        }
+        config.clientVersion += 1;
+        await config.save();
+        res.json({ message: 'Clients forced to refresh', clientVersion: config.clientVersion });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+import Branch from '../models/Branch.js';
+
+export const updateTelemetry = async (req, res) => {
+    try {
+        const { clientVersion } = req.body;
+        if (req.user && req.user.role === 'branch' && clientVersion) {
+            await Branch.findByIdAndUpdate(req.user._id, { appVersion: clientVersion });
+        }
+        res.json({ message: 'Telemetry logged' });
+    } catch (error) {
+        // Silent fail
+        res.status(200).json({ message: 'Telemetry ignored' });
     }
 };

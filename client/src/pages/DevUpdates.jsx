@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
-import { GitCommit, GitBranch, Zap, Barcode, Server, Smartphone, Search, CheckCircle, Tag, Clock } from 'lucide-react';
+import { GitCommit, GitBranch, Zap, Barcode, Server, Smartphone, Search, CheckCircle, Tag, Clock, RefreshCw } from 'lucide-react';
 import api from '../services/api';
+import Button from '../components/UI/Button';
+import { useNotification } from '../context/NotificationContext';
 
 const DevUpdates = () => {
+    const { showToast } = useNotification();
+    
     // Helper to calculate "Time Ago"
     const timeAgo = (date) => {
         const seconds = Math.floor((new Date() - new Date(date)) / 1000);
@@ -105,7 +109,21 @@ const DevUpdates = () => {
     ];
     
     // Use either fetched commits or static data
-    const displayUpdates = useStatic ? staticUpdates : commits;
+    const displayUpdates = [
+        {
+            version: 'Test Version 112',
+            timestamp: new Date().toISOString(),
+            title: 'Bossy Auto-Updater Control System',
+            icon: Zap,
+            commits: [
+                'Feat: Deployed the new "Global Client Refresh" button',
+                'Feat: Implemented invisible background polling for Auto-Updates',
+                'UX: Added sleek blurred modal countdown to warn users of reboot',
+                'Fix: Resolved the "Catch-22" of stale browser cache retention'
+            ]
+        },
+        ...(useStatic ? staticUpdates : commits)
+    ];
 
     // Force re-render every minute to update "time ago"
     const [, setTick] = useState(0);
@@ -114,17 +132,42 @@ const DevUpdates = () => {
         return () => clearInterval(timer);
     }, []);
 
+    const handleForceRefresh = async () => {
+        if (!window.confirm("Are you sure? This will instantly hard-refresh the browsers of all open pharmacy tabs.")) return;
+        
+        try {
+            await api.post('/system/force-refresh');
+            showToast('Update signal broadcasted to all active clients!', 'success');
+        } catch (error) {
+            console.error(error);
+            showToast('Failed to broadcast update signal.', 'error');
+        }
+    };
+
     return (
         <div style={{ paddingBottom: '4rem' }}>
-            <div className="page-header" style={{ marginBottom: '3rem' }}>
-                <h1 className="header-title" style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <GitBranch className="text-primary" />
-                    Development Updates
-                </h1>
-                <p style={{ color: 'var(--text-muted)' }}>
-                    Project changelog and commit history.
-                    {loading && <span style={{marginLeft: '10px', fontSize: '0.8rem'}}> (Syncing with Git...)</span>}
-                </p>
+            <div className="page-header" style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                    <h1 className="header-title" style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <GitBranch className="text-primary" />
+                        Development Updates
+                    </h1>
+                    <p style={{ color: 'var(--text-muted)' }}>
+                        Project changelog and commit history.
+                        {loading && <span style={{marginLeft: '10px', fontSize: '0.8rem'}}> (Syncing with Git...)</span>}
+                    </p>
+                </div>
+
+                {/* Bossy Remote Update Button */}
+                <div className="glass-panel" style={{ padding: '1rem', display: 'flex', gap: '1.5rem', alignItems: 'center', borderLeft: '4px solid var(--primary)' }}>
+                    <div>
+                        <p style={{ margin: 0, fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)' }}>Global Client Refresh</p>
+                        <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Forces all open browsers to reload.</p>
+                    </div>
+                    <Button onClick={handleForceRefresh} variant="primary" icon={RefreshCw}>
+                        Force Update
+                    </Button>
+                </div>
             </div>
 
             <div style={{ maxWidth: '800px', marginLeft: '1rem', position: 'relative' }}>
