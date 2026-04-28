@@ -55,6 +55,7 @@ const PharmacistNewRequest = () => {
     const [customModalOpen, setCustomModalOpen] = useState(false);
     const [pendingItem, setPendingItem] = useState(null);
     const [pendingServerItems, setPendingServerItems] = useState({});
+    const [softBlockModal, setSoftBlockModal] = useState({ isOpen: false, medicine: null, dateStr: '', isCustom: false, customName: '', customQty: 1 });
 
     const fetchPendingServerItems = async () => {
         try {
@@ -123,12 +124,20 @@ const PharmacistNewRequest = () => {
     // Step 1: User selects item -> Open Modal
     const initiateAdd = (medicine) => {
         // Eager duplicate check against the server
-        if (medicine._id && pendingServerItems[medicine._id]) {
-            const dateStr = new Date(pendingServerItems[medicine._id]).toLocaleDateString();
-            showToast(`This item was already requested on ${dateStr}. Action blocked to prevent duplicates.`, 'error');
-            setIsOpen(false);
-            setQuery('');
-            return;
+        const serverStatus = pendingServerItems[medicine._id];
+        if (serverStatus) {
+            const dateStr = new Date(serverStatus.date).toLocaleDateString();
+            
+            if (serverStatus.type === 'hard') {
+                showToast(`This item is currently in an unprocessed pending request. Action blocked to prevent duplicates.`, 'error');
+                setIsOpen(false);
+                setQuery('');
+                return;
+            } else if (serverStatus.type === 'soft') {
+                setSoftBlockModal({ isOpen: true, medicine, dateStr, isCustom: false });
+                setIsOpen(false);
+                return;
+            }
         }
 
         setPendingItem(medicine);
@@ -169,10 +178,17 @@ const PharmacistNewRequest = () => {
         const key = name.trim().toLowerCase();
         
         // Eager duplicate check against the server
-        if (pendingServerItems[key]) {
-            const dateStr = new Date(pendingServerItems[key]).toLocaleDateString();
-            showToast(`This item was already requested on ${dateStr}. Action blocked to prevent duplicates.`, 'error');
-            return;
+        const serverStatus = pendingServerItems[key];
+        if (serverStatus) {
+            const dateStr = new Date(serverStatus.date).toLocaleDateString();
+            
+            if (serverStatus.type === 'hard') {
+                showToast(`This item is currently in an unprocessed pending request. Action blocked to prevent duplicates.`, 'error');
+                return;
+            } else if (serverStatus.type === 'soft') {
+                setSoftBlockModal({ isOpen: true, medicine: null, dateStr, isCustom: true, customName: name, customQty: quantity });
+                return;
+            }
         }
 
         // Check duplicate by name (case-insensitive)
@@ -200,6 +216,35 @@ const PharmacistNewRequest = () => {
         const isConfirmed = await showConfirm('Are you sure you want to remove this medicine?');
         if (isConfirmed) {
             setRequestItems(requestItems.filter(item => item._id !== id));
+        }
+    };
+
+    const confirmSoftBlock = () => {
+        const { medicine, isCustom, customName, customQty } = softBlockModal;
+        setSoftBlockModal({ isOpen: false, medicine: null, dateStr: '', isCustom: false });
+        
+        if (isCustom) {
+            const key = customName.trim().toLowerCase();
+            const exists = requestItems.find(item => item.name.toLowerCase() === key);
+            if (exists) {
+                showToast('Item with this name already exists in the list.', 'error');
+                return;
+            }
+            const newItem = {
+                _id: `custom-${Date.now()}`,
+                name: customName.trim(),
+                supplierId: null,
+                quantity: customQty,
+                isCustom: true
+            };
+            setRequestItems(prev => [...prev, newItem]);
+            setCustomModalOpen(false);
+            showToast('Custom item added to list', 'success');
+            setTimeout(() => searchInputRef.current?.focus(), 100);
+        } else {
+            setPendingItem(medicine);
+            setQtyModalOpen(true);
+            setQuery('');
         }
     };
 
@@ -487,6 +532,35 @@ const PharmacistNewRequest = () => {
                 onClose={() => setCustomModalOpen(false)}
                 onConfirm={handleAddCustom}
             />
+
+            {/* Soft Block Warning Modal */}
+            {softBlockModal.isOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999
+                }}>
+                    <div className="glass-panel" style={{ background: 'white', padding: '2rem', borderRadius: '16px', maxWidth: '400px', width: '90%' }}>
+                        <h3 style={{ marginTop: 0, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            ⚠️ Recent Request Detected
+                        </h3>
+                        <p style={{ color: 'var(--text-main)', lineHeight: '1.5' }}>
+                            You recently requested <strong>{softBlockModal.isCustom ? softBlockModal.customName : softBlockModal.medicine?.name}</strong> on {softBlockModal.dateStr}.
+                        </p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+                            Are you sure you need to order this item again so soon?
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <Button variant="secondary" onClick={() => setSoftBlockModal({ isOpen: false, medicine: null, dateStr: '', isCustom: false })}>
+                                Cancel
+                            </Button>
+                            <Button variant="primary" onClick={confirmSoftBlock} style={{ background: '#f59e0b', borderColor: '#f59e0b' }}>
+                                Yes, Add Anyway
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
