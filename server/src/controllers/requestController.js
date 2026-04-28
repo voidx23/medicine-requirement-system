@@ -341,10 +341,16 @@ export const forwardItems = async (req, res) => {
 // @access  Private (Pharmacist)
 export const getMyPendingMedicines = async (req, res) => {
     try {
-        // Find all requests from this pharmacy that are strictly pending
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Find requests that are either currently pending OR were created today
         const pendingRequests = await PharmacistRequest.find({
             pharmacistId: req.user._id,
-            status: 'pending'
+            $or: [
+                { status: 'pending' },
+                { createdAt: { $gte: today } }
+            ]
         }).select('items createdAt');
 
         const pendingMap = {};

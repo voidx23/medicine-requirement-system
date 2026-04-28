@@ -125,7 +125,7 @@ const PharmacistNewRequest = () => {
         // Eager duplicate check against the server
         if (medicine._id && pendingServerItems[medicine._id]) {
             const dateStr = new Date(pendingServerItems[medicine._id]).toLocaleDateString();
-            showToast(`This item is already in a pending request sent on ${dateStr}. Action blocked.`, 'error');
+            showToast(`This item was already requested on ${dateStr}. Action blocked to prevent duplicates.`, 'error');
             setIsOpen(false);
             setQuery('');
             return;
@@ -171,7 +171,7 @@ const PharmacistNewRequest = () => {
         // Eager duplicate check against the server
         if (pendingServerItems[key]) {
             const dateStr = new Date(pendingServerItems[key]).toLocaleDateString();
-            showToast(`This item is already in a pending request sent on ${dateStr}. Action blocked.`, 'error');
+            showToast(`This item was already requested on ${dateStr}. Action blocked to prevent duplicates.`, 'error');
             return;
         }
 
@@ -220,6 +220,7 @@ const PharmacistNewRequest = () => {
                 localStorage.removeItem(STORAGE_KEY);
             }
             fetchStats(); // Refresh count
+            fetchPendingServerItems(); // Update pending items to prevent immediate duplicates
             
             alert(`Request Submitted Successfully! Signed by: ${staffName}`);
         } catch (error) {

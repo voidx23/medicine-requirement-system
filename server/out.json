@@ -1,0 +1,99 @@
+﻿[dotenv@17.2.3] injecting env (3) from .env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
+[
+  {
+    "_id": "69b9949227d64be232e96f9c",
+    "type": "transfer_request",
+    "title": "Transfer Request: PANA NATURAL COUGH SYRUP 128G ΓåÆ test branch",
+    "description": "Transfer of 10 unit(s) of PANA NATURAL COUGH SYRUP 128G requested.",
+    "priority": "Normal",
+    "createdBy": "6967976c6dd7b2ad67fa915c",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b2",
+        "status": "Rejected",
+        "completedAt": "2026-03-17T20:26:04.827Z",
+        "completedBy": "695065f504dae3686e8129b2"
+      }
+    ],
+    "transferDetails": {
+      "medicineName": "PANA NATURAL COUGH SYRUP 128G",
+      "medicineId": "6965f28cbd93f580a17166c5",
+      "requestedQty": 10,
+      "donorBranchId": "695065f504dae3686e8129b2",
+      "recipientBranchId": "6967976c6dd7b2ad67fa915c"
+    },
+    "transferResponse": {
+      "responseStatus": "rejected",
+      "rejectionReason": "TESTING",
+      "respondedAt": "2026-03-17T20:26:04.827Z"
+    },
+    "createdAt": "2026-03-17T17:51:14.384Z",
+    "updatedAt": "2026-03-17T20:26:04.829Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b9b51027d64be232ea2345",
+    "type": "transfer_request",
+    "title": "Transfer Request: ULTRA MAGNESIUM 60S ΓåÆ admin",
+    "description": "Transfer of 1 unit(s) of ULTRA MAGNESIUM 60S requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695d11784827d00c00d0f1a5",
+        "status": "Rejected",
+        "completedAt": "2026-03-17T20:20:05.474Z",
+        "completedBy": "695d11784827d00c00d0f1a5"
+      }
+    ],
+    "transferDetails": {
+      "medicineName": "ULTRA MAGNESIUM 60S",
+      "medicineId": "6950d6f6f871b2b81009e883",
+      "requestedQty": 1,
+      "donorBranchId": "695d11784827d00c00d0f1a5",
+      "recipientBranchId": "695d119f4827d00c00d0f1b1"
+    },
+    "transferResponse": {
+      "responseStatus": "rejected",
+      "rejectionReason": "no stock",
+      "respondedAt": "2026-03-17T20:20:05.474Z"
+    },
+    "createdAt": "2026-03-17T20:09:52.576Z",
+    "updatedAt": "2026-03-17T20:20:05.475Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b9c8b027d64be232eae587",
+    "type": "transfer_request",
+    "title": "Transfer Request: GOLD MEDAL OIL 3ML ΓåÆ admin",
+    "description": "Transfer of 2 unit(s) of GOLD MEDAL OIL 3ML requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Rejected",
+        "completedAt": "2026-03-19T20:32:11.571Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "medicineName": "GOLD MEDAL OIL 3ML",
+      "medicineId": "69b9c85027d64be232eae55c",
+      "requestedQty": 2,
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "695d11924827d00c00d0f1ab"
+    },
+    "transferResponse": {
+      "responseStatus": "rejected",
+      "rejectionReason": "nil stock",
+      "respondedAt": "2026-03-19T20:32:11.571Z"
+    },
+    "createdAt": "2026-03-17T21:33:36.576Z",
+    "updatedAt": "2026-03-19T20:32:11.572Z",
+    "__v": 0
+  }
+]
