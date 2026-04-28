@@ -235,6 +235,13 @@ const PharmacistSidebar = () => {
           <LogOut size={20} />
           Logout
         </button>
+        <div style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+            <div style={{ marginTop: '0.5rem' }}>
+                <span style={{ background: '#f1f5f9', color: '#64748b', padding: '0.2rem 0.6rem', borderRadius: '12px', fontWeight: 600 }}>
+                    {localStorage.getItem('appVersion') || 'v1.0.0'}
+                </span>
+            </div>
+        </div>
       </div>
     </aside>
   );

@@ -212,7 +212,7 @@ const ManageBranches = () => {
                                     backgroundColor: branch.appVersion ? '#dcfce7' : '#f1f5f9',
                                     color: branch.appVersion ? '#166534' : '#64748b'
                                 }}>
-                                    {branch.appVersion ? `v${branch.appVersion}` : 'Unknown'}
+                                    {branch.appVersion ? branch.appVersion : 'Unknown'}
                                 </span>
                             </div>
                         </div>
@@ -266,7 +266,7 @@ const ManageBranches = () => {
                                         border: '1px solid',
                                         borderColor: selectedBranch.appVersion ? '#bbf7d0' : '#e2e8f0'
                                     }}>
-                                        App Version: {selectedBranch.appVersion ? `v${selectedBranch.appVersion}` : 'Unknown / Outdated'}
+                                        App Version: {selectedBranch.appVersion ? selectedBranch.appVersion : 'Unknown / Outdated'}
                                     </span>
                                 </div>
                             </div>

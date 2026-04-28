@@ -66,14 +66,16 @@ const VersionPoller = () => {
             try {
                 const res = await api.get('/system/version');
                 const serverVersion = res.data.clientVersion;
+                const versionString = res.data.versionString || 'v1.0.0';
                 
                 if (isFirstLoad) {
                     setLocalVersion(serverVersion);
+                    localStorage.setItem('appVersion', versionString);
                     isFirstLoad = false;
                     
                     // Fire telemetry beacon now that we have loaded successfully
                     // We wrap it in a silent catch block so if the user isn't logged in yet, it fails gracefully
-                    api.post('/system/telemetry', { clientVersion: serverVersion }).catch(() => {});
+                    api.post('/system/telemetry', { versionString }).catch(() => {});
                     
                 } else if (localVersion !== null && serverVersion > localVersion) {
                     setIsUpdating(true);

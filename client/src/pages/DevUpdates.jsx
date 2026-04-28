@@ -132,12 +132,27 @@ const DevUpdates = () => {
         return () => clearInterval(timer);
     }, []);
 
-    const handleForceRefresh = async () => {
-        if (!window.confirm("Are you sure? This will instantly hard-refresh the browsers of all open pharmacy tabs.")) return;
+    const [updateModalOpen, setUpdateModalOpen] = useState(false);
+    const [currentVersionString, setCurrentVersionString] = useState('v1.0.0');
+
+    const openUpdateModal = async () => {
+        try {
+            const res = await api.get('/system/version');
+            setCurrentVersionString(res.data.versionString || 'v1.0.0');
+            setUpdateModalOpen(true);
+        } catch (err) {
+            showToast('Failed to fetch current version', 'error');
+        }
+    };
+
+    const handleForceRefresh = async (type) => {
+        if (!window.confirm(`Are you sure you want to broadcast a ${type.toUpperCase()} update to all active pharmacy tabs?`)) return;
         
         try {
-            await api.post('/system/force-refresh');
-            showToast('Update signal broadcasted to all active clients!', 'success');
+            const res = await api.post('/system/force-refresh', { updateType: type });
+            showToast(`Update signal broadcasted! New version: ${res.data.versionString}`, 'success');
+            setUpdateModalOpen(false);
+            localStorage.setItem('appVersion', res.data.versionString);
         } catch (error) {
             console.error(error);
             showToast('Failed to broadcast update signal.', 'error');
@@ -164,11 +179,64 @@ const DevUpdates = () => {
                         <p style={{ margin: 0, fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)' }}>Global Client Refresh</p>
                         <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>Forces all open browsers to reload.</p>
                     </div>
-                    <Button onClick={handleForceRefresh} variant="primary" icon={RefreshCw}>
+                    <Button onClick={openUpdateModal} variant="primary" icon={RefreshCw}>
                         Force Update
                     </Button>
                 </div>
             </div>
+
+            {updateModalOpen && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center',
+                    zIndex: 99999
+                }}>
+                    <div className="glass-panel" style={{
+                        background: 'white', padding: '2rem', borderRadius: '16px',
+                        maxWidth: '500px', width: '90%', position: 'relative'
+                    }}>
+                        <h2 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-main)', fontSize: '1.4rem' }}>Broadcast Update Signal</h2>
+                        <p style={{ margin: '0 0 1.5rem 0', color: 'var(--text-muted)' }}>
+                            Current System Version: <strong style={{ color: 'var(--primary)', background: 'var(--primary-light)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>{currentVersionString}</strong>
+                        </p>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div 
+                                onClick={() => handleForceRefresh('patch')}
+                                style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
+                                onMouseOut={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                            >
+                                <h3 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-main)' }}>Patch Update</h3>
+                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Bug fixes and small tweaks. (e.g. 1.0.0 → 1.0.1)</p>
+                            </div>
+                            <div 
+                                onClick={() => handleForceRefresh('minor')}
+                                style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
+                                onMouseOut={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                            >
+                                <h3 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-main)' }}>Minor Update</h3>
+                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>New features and enhancements. (e.g. 1.0.0 → 1.1.0)</p>
+                            </div>
+                            <div 
+                                onClick={() => handleForceRefresh('major')}
+                                style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                onMouseOver={(e) => e.currentTarget.style.borderColor = '#ef4444'}
+                                onMouseOut={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                            >
+                                <h3 style={{ margin: '0 0 0.25rem 0', color: '#ef4444' }}>Major Update</h3>
+                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Massive redesigns or breaking changes. (e.g. 1.0.0 → 2.0.0)</p>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                            <Button onClick={() => setUpdateModalOpen(false)} variant="secondary">Cancel</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div style={{ maxWidth: '800px', marginLeft: '1rem', position: 'relative' }}>
                 {/* Main Vertical Timeline Line */}
