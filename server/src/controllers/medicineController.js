@@ -241,6 +241,7 @@ export const bulkUpdatePricing = async (req, res) => {
                     summary.updated++;
                 } else {
                     summary.skipped++;
+                    summary.errors.push(`Skipped: ${medicine.name} (Price is already up to date)`);
                 }
 
             } catch (err) {
