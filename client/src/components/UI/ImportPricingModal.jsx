@@ -9,6 +9,7 @@ const ImportPricingModal = ({ isOpen, onClose, onImportSuccess }) => {
     const [uploading, setUploading] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
+    const [logs, setLogs] = useState([]);
     
     // Progress State
     const [progress, setProgress] = useState({
@@ -82,9 +83,9 @@ const ImportPricingModal = ({ isOpen, onClose, onImportSuccess }) => {
             throw new Error("No valid pricing data found in file. Make sure you have 'Barcode' or 'Name', and 'Cost Price' or 'Selling Price' columns.");
         }
 
-        // Send in chunks of 50 to avoid payload size issues, but update UI
+        // Send in smaller chunks for smooth UI updates
         const summary = { total: payloadItems.length, updated: 0, skipped: 0, errors: [] };
-        const BATCH_SIZE = 50;
+        const BATCH_SIZE = 5;
         let completed = 0;
 
         for (let i = 0; i < payloadItems.length; i += BATCH_SIZE) {
@@ -106,10 +107,14 @@ const ImportPricingModal = ({ isOpen, onClose, onImportSuccess }) => {
                 if (batchSummary.errors && batchSummary.errors.length > 0) {
                     summary.errors.push(...batchSummary.errors);
                 }
+                
+                setLogs(prev => [...prev, `✅ Batch ${Math.floor(i/BATCH_SIZE) + 1} complete. Updated: ${batchSummary.updated}, Skipped: ${batchSummary.skipped}`]);
             } catch (err) {
                 console.error("Batch error", err);
-                summary.errors.push(`Failed batch ${Math.floor(i/BATCH_SIZE) + 1}: ` + (err.response?.data?.message || err.message));
+                const errMsg = err.response?.data?.message || err.message;
+                summary.errors.push(`Failed batch ${Math.floor(i/BATCH_SIZE) + 1}: ` + errMsg);
                 summary.skipped += batch.length;
+                setLogs(prev => [...prev, `❌ Batch ${Math.floor(i/BATCH_SIZE) + 1} failed: ${errMsg}`]);
             }
 
             completed += batch.length;
@@ -131,6 +136,7 @@ const ImportPricingModal = ({ isOpen, onClose, onImportSuccess }) => {
         setUploading(true);
         setError(null);
         setResult(null);
+        setLogs([]);
         setProgress({ current: 0, total: 0, currentItem: 'Initializing...', percent: 0 });
 
         const reader = new FileReader();
@@ -182,6 +188,7 @@ const ImportPricingModal = ({ isOpen, onClose, onImportSuccess }) => {
         setFile(null);
         setResult(null);
         setError(null);
+        setLogs([]);
         setProgress({ current: 0, total: 0, currentItem: '', percent: 0 });
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
@@ -291,9 +298,31 @@ const ImportPricingModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                 transition: 'width 0.2s ease-out'
                                             }} />
                                         </div>
-                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                            {progress.currentItem}
-                                        </p>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                            <span>{progress.currentItem}</span>
+                                            <span>{progress.current} / {progress.total}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Live Console */}
+                                    <div style={{ 
+                                        width: '100%', 
+                                        height: '100px', 
+                                        background: '#1e293b', 
+                                        color: '#38bdf8', 
+                                        borderRadius: '6px', 
+                                        padding: '0.5rem', 
+                                        overflowY: 'auto',
+                                        fontSize: '0.75rem',
+                                        textAlign: 'left',
+                                        fontFamily: 'monospace',
+                                        display: 'flex',
+                                        flexDirection: 'column'
+                                    }}>
+                                        <div style={{ color: '#94a3b8', marginBottom: '4px' }}>System Activity Console...</div>
+                                        {[...logs].reverse().map((log, idx) => (
+                                            <div key={idx} style={{ padding: '2px 0' }}>{log}</div>
+                                        ))}
                                     </div>
                                 </div>
                             ) : file ? (

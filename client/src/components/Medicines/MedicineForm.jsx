@@ -94,7 +94,7 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
             type="number"
             step="0.01"
             min="0"
-            label="Cost Price (AED)"
+            label="Cost Price (OMR)"
             value={formData.costPrice}
             onChange={handleChange}
             placeholder="0.00"
@@ -104,7 +104,7 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
             type="number"
             step="0.01"
             min="0"
-            label="Selling Price (AED)"
+            label="Selling Price (OMR)"
             value={formData.sellingPrice}
             onChange={handleChange}
             placeholder="0.00"
