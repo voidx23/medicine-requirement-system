@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
+import { Zap } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
@@ -52,6 +53,93 @@ const SuperAdminRoute = () => {
   return user && user.isSuperAdmin ? <Outlet /> : <Navigate to="/" replace />;
 };
 
+const VersionPoller = () => {
+    const [localVersion, setLocalVersion] = useState(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [countdown, setCountdown] = useState(5); // 5 second countdown
+
+    useEffect(() => {
+        let isFirstLoad = true;
+        
+        const checkVersion = async () => {
+            if (isUpdating) return;
+            try {
+                const res = await api.get('/system/version');
+                const serverVersion = res.data.clientVersion;
+                
+                if (isFirstLoad) {
+                    setLocalVersion(serverVersion);
+                    isFirstLoad = false;
+                    
+                    // Fire telemetry beacon now that we have loaded successfully
+                    // We wrap it in a silent catch block so if the user isn't logged in yet, it fails gracefully
+                    api.post('/system/telemetry', { clientVersion: serverVersion }).catch(() => {});
+                    
+                } else if (localVersion !== null && serverVersion > localVersion) {
+                    setIsUpdating(true);
+                }
+            } catch (err) {
+                // Ignore silent background fails
+            }
+        };
+
+        checkVersion();
+        const interval = setInterval(checkVersion, 15000); 
+        return () => clearInterval(interval);
+    }, [localVersion, isUpdating]);
+
+    useEffect(() => {
+        if (isUpdating) {
+            const timer = setInterval(() => {
+                setCountdown((prev) => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        window.location.reload(true);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [isUpdating]);
+
+    if (!isUpdating) return null;
+
+    return (
+        <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(255, 255, 255, 0.5)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 999999,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            textAlign: 'center', padding: '2rem'
+        }}>
+            <div style={{
+                background: 'white', padding: '3rem', borderRadius: '24px',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                maxWidth: '500px', width: '100%',
+                border: '1px solid rgba(99, 102, 241, 0.2)'
+            }}>
+                <Zap size={48} color="var(--primary)" style={{ margin: '0 auto 1.5rem auto' }} />
+                <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '1rem' }}>
+                    Remote Update In Progress
+                </h2>
+                <p style={{ fontSize: '1.1rem', color: 'var(--text-muted)', lineHeight: '1.6', marginBottom: '2rem' }}>
+                    A remote update is currently taking place. This will automatically do a hard refresh to apply the latest server changes.<br/><br/>
+                    <strong>Don't worry, you won't lose any of your list data!</strong>
+                </p>
+                <div style={{
+                    background: 'var(--primary-light)', color: 'var(--primary)',
+                    padding: '1rem', borderRadius: '12px', fontWeight: 700, fontSize: '1.2rem'
+                }}>
+                    Rebooting in {countdown} seconds...
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const App = () => {
     // ... existing provider logic ...
 
@@ -59,6 +147,7 @@ const App = () => {
     <AuthProvider>
       <NotificationProvider>
         <Router>
+          <VersionPoller />
           <Routes>
             {/* Public Route */}
             <Route path="/login" element={<Login />} />

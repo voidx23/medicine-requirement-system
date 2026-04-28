@@ -7,6 +7,25 @@ const PharmacistWhatsNew = () => {
 
     const updates = [
         {
+            version: 'v2.8',
+            date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
+            title: 'System Stability & Auto-Updates',
+            icon: Zap,
+            color: '#10b981', // Emerald
+            items: [
+                {
+                    title: 'Smart Duplicate Prevention',
+                    desc: 'The system now actively monitors your "Pending" histories. It will strictly block you from adding an item to a new cart if it is already sitting in a pending state with the Admin.',
+                    icon: ShieldCheck
+                },
+                {
+                    title: 'Background Auto-Upgrades',
+                    desc: 'Your application now silently listens for remote updates. When critical patches are published, your screen will give you a 5-second heads-up and automatically refresh without losing your work.',
+                    icon: Zap
+                }
+            ]
+        },
+        {
             version: 'v2.7',
             date: '6 April 2026',
             title: 'Branch System & Security',

@@ -206,6 +206,15 @@ const ManageBranches = () => {
                         >
                             <div style={{ marginBottom: '0.25rem' }}>{branch.name}</div>
                             {branch.location && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>📍 {branch.location}</div>}
+                            <div style={{ marginTop: '0.4rem' }}>
+                                <span style={{
+                                    fontSize: '0.7rem', fontWeight: 600, padding: '0.15rem 0.4rem', borderRadius: '4px',
+                                    backgroundColor: branch.appVersion ? '#dcfce7' : '#f1f5f9',
+                                    color: branch.appVersion ? '#166534' : '#64748b'
+                                }}>
+                                    {branch.appVersion ? `v${branch.appVersion}` : 'Unknown'}
+                                </span>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -248,6 +257,17 @@ const ManageBranches = () => {
                                 <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                                     {selectedBranch.location && <span>📍 {selectedBranch.location}</span>}
                                     {selectedBranch.contactNumber && <span>📞 {selectedBranch.contactNumber}</span>}
+                                </div>
+                                <div style={{ marginTop: '0.75rem' }}>
+                                    <span style={{
+                                        fontSize: '0.8rem', fontWeight: 600, padding: '0.2rem 0.6rem', borderRadius: '6px',
+                                        backgroundColor: selectedBranch.appVersion ? '#dcfce7' : '#f1f5f9',
+                                        color: selectedBranch.appVersion ? '#166534' : '#64748b',
+                                        border: '1px solid',
+                                        borderColor: selectedBranch.appVersion ? '#bbf7d0' : '#e2e8f0'
+                                    }}>
+                                        App Version: {selectedBranch.appVersion ? `v${selectedBranch.appVersion}` : 'Unknown / Outdated'}
+                                    </span>
                                 </div>
                             </div>
                             <Button variant="primary" icon={UserPlus} onClick={() => setIsAssignModalOpen(true)} aria-label="Assign pharmacist">

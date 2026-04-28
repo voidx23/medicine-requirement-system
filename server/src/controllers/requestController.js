@@ -335,3 +335,33 @@ export const forwardItems = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// @desc    Get all medicine IDs currently sitting in a pending request for a branch
+// @route   GET /api/requests/my-pending-medicines
+// @access  Private (Pharmacist)
+export const getMyPendingMedicines = async (req, res) => {
+    try {
+        // Find all requests from this pharmacy that are strictly pending
+        const pendingRequests = await PharmacistRequest.find({
+            pharmacistId: req.user._id,
+            status: 'pending'
+        }).select('items createdAt');
+
+        const pendingMap = {};
+
+        // Build the dictionary mapping medicine to its request date
+        pendingRequests.forEach(request => {
+            request.items.forEach(item => {
+                // To track both standard medicines and custom names reliably
+                const key = item.medicineId ? item.medicineId.toString() : item.name.trim().toLowerCase();
+                if (!pendingMap[key]) {
+                    pendingMap[key] = request.createdAt;
+                }
+            });
+        });
+
+        res.json(pendingMap);
+    } catch (error) {
+         res.status(500).json({ message: error.message });
+    }
+};

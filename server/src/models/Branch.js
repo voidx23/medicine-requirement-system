@@ -13,7 +13,8 @@ const branchSchema = new mongoose.Schema({
         required: true
     },
     location: { type: String },
-    contactNumber: { type: String }
+    contactNumber: { type: String },
+    appVersion: { type: Number, default: null }
 }, {
     timestamps: true
 });
