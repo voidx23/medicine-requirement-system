@@ -9,6 +9,7 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
     const [uploading, setUploading] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
+    const [logs, setLogs] = useState([]);
     
     // Progress State
     const [progress, setProgress] = useState({
@@ -89,13 +90,16 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
                 if (msg.toLowerCase().includes('duplicate') || msg.toLowerCase().includes('exists')) {
                     summary.skipped++;
                     summary.errors.push(`Skipped: ${itemName} (Already exists in database)`);
+                    setLogs(prev => [...prev, `⚠️ Skipped: ${itemName} (Exists)`]);
                 } else {
                     summary.errors.push(`${itemName}: ${msg}`);
+                    setLogs(prev => [...prev, `❌ Failed: ${itemName} (${msg})`]);
                 }
+                return false; // indicate failure/skip
             }
         };
 
-        const BATCH_SIZE = 5;
+        const BATCH_SIZE = 2;
         let completed = 0;
 
         for (let i = 0; i < jsonData.length; i += BATCH_SIZE) {
@@ -106,11 +110,19 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
             setProgress({
                 current: completed,
                 total: jsonData.length,
-                currentItem: `Batch ${Math.floor(i/BATCH_SIZE) + 1} (${currentItemName}...)`,
+                currentItem: `Processing: ${currentItemName}...`,
                 percent: Math.round((completed / jsonData.length) * 100)
             });
 
-            await Promise.all(batch.map((row, batchIndex) => processItem(row, i + batchIndex)));
+            const results = await Promise.all(batch.map((row, batchIndex) => processItem(row, i + batchIndex)));
+            
+            // Log successes
+            batch.forEach((row, idx) => {
+                const itemName = getCellValue(row, ['Name', 'Medicine Name', 'Product']) || `Row ${i + idx + 1}`;
+                if (results[idx] !== false) {
+                    setLogs(prev => [...prev, `✅ Added: ${itemName}`]);
+                }
+            });
             
             completed += batch.length;
             
@@ -132,6 +144,7 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
         setUploading(true);
         setError(null);
         setResult(null);
+        setLogs([]);
         setProgress({ current: 0, total: 0, currentItem: 'Initializing...', percent: 0 });
 
         const reader = new FileReader();
@@ -191,6 +204,7 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
         setFile(null);
         setResult(null);
         setError(null);
+        setLogs([]);
         setProgress({ current: 0, total: 0, currentItem: '', percent: 0 });
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
@@ -300,12 +314,31 @@ const ImportModal = ({ isOpen, onClose, onImportSuccess, type, templateInfo }) =
                                                 transition: 'width 0.2s ease-out'
                                             }} />
                                         </div>
-                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                            Adding: <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>{progress.currentItem}</span>
-                                        </p>
-                                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                                            {progress.current} of {progress.total} items
-                                        </p>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                            <span>{progress.currentItem}</span>
+                                            <span>{progress.current} / {progress.total}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Live Console */}
+                                    <div style={{ 
+                                        width: '100%', 
+                                        height: '100px', 
+                                        background: '#1e293b', 
+                                        color: '#38bdf8', 
+                                        borderRadius: '6px', 
+                                        padding: '0.5rem', 
+                                        overflowY: 'auto',
+                                        fontSize: '0.75rem',
+                                        textAlign: 'left',
+                                        fontFamily: 'monospace',
+                                        display: 'flex',
+                                        flexDirection: 'column'
+                                    }}>
+                                        <div style={{ color: '#94a3b8', marginBottom: '4px' }}>System Activity Console...</div>
+                                        {[...logs].reverse().map((log, idx) => (
+                                            <div key={idx} style={{ padding: '2px 0' }}>{log}</div>
+                                        ))}
                                     </div>
                                 </div>
                             ) : file ? (
