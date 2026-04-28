@@ -58,7 +58,7 @@ const PharmacistNewRequest = () => {
 
     const fetchPendingServerItems = async () => {
         try {
-            const { data } = await api.get('/requests/my-pending-medicines');
+            const { data } = await api.get('/requests/my-pending-medicines?t=' + Date.now());
             setPendingServerItems(data);
         } catch (error) {
             console.error('Failed to load pending medicines', error);
@@ -220,7 +220,7 @@ const PharmacistNewRequest = () => {
                 localStorage.removeItem(STORAGE_KEY);
             }
             fetchStats(); // Refresh count
-            fetchPendingServerItems(); // Update pending items to prevent immediate duplicates
+            await fetchPendingServerItems(); // Update pending items to prevent immediate duplicates
             
             alert(`Request Submitted Successfully! Signed by: ${staffName}`);
         } catch (error) {
