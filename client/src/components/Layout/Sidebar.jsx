@@ -361,6 +361,11 @@ const Sidebar = () => {
             </button>
         <div style={{ padding: '1rem', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
             © 2025 voidx23
+            <div style={{ marginTop: '0.75rem' }}>
+                <span style={{ background: '#f1f5f9', color: '#64748b', padding: '0.2rem 0.6rem', borderRadius: '12px', fontWeight: 600 }}>
+                    {localStorage.getItem('appVersion') || 'v1.0.0'}
+                </span>
+            </div>
         </div>
       </div>
     </aside>

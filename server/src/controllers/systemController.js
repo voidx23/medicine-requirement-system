@@ -68,9 +68,9 @@ export const getSystemVersion = async (req, res) => {
     try {
         let config = await SystemConfig.findOne();
         if (!config) {
-            config = await SystemConfig.create({ clientVersion: 1 });
+            config = await SystemConfig.create({ clientVersion: 1, versionString: 'v1.0.0' });
         }
-        res.json({ clientVersion: config.clientVersion });
+        res.json({ clientVersion: config.clientVersion, versionString: config.versionString });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -78,13 +78,33 @@ export const getSystemVersion = async (req, res) => {
 
 export const forceRefreshClients = async (req, res) => {
     try {
+        const { updateType } = req.body;
         let config = await SystemConfig.findOne();
         if (!config) {
-            config = await SystemConfig.create({ clientVersion: 1 });
+            config = await SystemConfig.create({ clientVersion: 1, versionString: 'v1.0.0' });
         }
+        
+        if (updateType) {
+            // Parse existing version e.g. "v1.0.0" -> [1, 0, 0]
+            let parts = (config.versionString || 'v1.0.0').replace('v', '').split('.').map(Number);
+            if (parts.length !== 3 || parts.some(isNaN)) parts = [1, 0, 0];
+            
+            if (updateType === 'major') {
+                parts[0] += 1;
+                parts[1] = 0;
+                parts[2] = 0;
+            } else if (updateType === 'minor') {
+                parts[1] += 1;
+                parts[2] = 0;
+            } else if (updateType === 'patch') {
+                parts[2] += 1;
+            }
+            config.versionString = `v${parts.join('.')}`;
+        }
+        
         config.clientVersion += 1;
         await config.save();
-        res.json({ message: 'Clients forced to refresh', clientVersion: config.clientVersion });
+        res.json({ message: 'Clients forced to refresh', clientVersion: config.clientVersion, versionString: config.versionString });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -94,9 +114,9 @@ import Branch from '../models/Branch.js';
 
 export const updateTelemetry = async (req, res) => {
     try {
-        const { clientVersion } = req.body;
-        if (req.user && req.user.role === 'branch' && clientVersion) {
-            await Branch.findByIdAndUpdate(req.user._id, { appVersion: clientVersion });
+        const { versionString } = req.body;
+        if (req.user && req.user.role === 'branch' && versionString) {
+            await Branch.findByIdAndUpdate(req.user._id, { appVersion: versionString });
         }
         res.json({ message: 'Telemetry logged' });
     } catch (error) {
