@@ -16,6 +16,14 @@ const medicineSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    costPrice: {
+        type: Number,
+        default: 0
+    },
+    sellingPrice: {
+        type: Number,
+        default: 0
+    },
     isActive: {
         type: Boolean,
         default: true

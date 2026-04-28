@@ -18,7 +18,7 @@ const MedicineList = ({ medicines, onEdit, onDelete, canEdit }) => {
           <div>
              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.25rem' }}>{medicine.name}</h3>
              <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                   <strong>Supplier:</strong> 
                   <span style={{ 
                       padding: '0.2rem 0.6rem', 
@@ -31,6 +31,13 @@ const MedicineList = ({ medicines, onEdit, onDelete, canEdit }) => {
                       {medicine.supplierId?.name || 'Unknown'}
                   </span>
                 </span>
+                
+                {(medicine.costPrice > 0 || medicine.sellingPrice > 0) && (
+                   <span style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem' }}>
+                      {medicine.costPrice > 0 && <span><strong>Cost:</strong> AED {medicine.costPrice.toFixed(2)}</span>}
+                      {medicine.sellingPrice > 0 && <span style={{ color: 'var(--success)', fontWeight: 500 }}><strong>Sell:</strong> AED {medicine.sellingPrice.toFixed(2)}</span>}
+                   </span>
+                )}
              </div>
           </div>
 

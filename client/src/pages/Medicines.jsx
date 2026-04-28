@@ -10,6 +10,7 @@ import Button from '../components/UI/Button';
 import Input from '../components/UI/Input';
 import Modal from '../components/UI/Modal';
 import ImportModal from '../components/UI/ImportModal';
+import ImportPricingModal from '../components/UI/ImportPricingModal';
 import { TableRowSkeleton } from '../components/UI/Skeleton';
 
 const Medicines = () => {
@@ -26,6 +27,7 @@ const Medicines = () => {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState(null);
 
   // 1. Fetch Global Total (Independent of Search)
@@ -122,9 +124,14 @@ const Medicines = () => {
         </div>
         <div style={{ display: 'flex', gap: '1rem' }}>
           {canImport && (
-            <Button onClick={() => setIsImportModalOpen(true)} variant="outline" icon={FileSpreadsheet}>
-              Import from Excel
-            </Button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <Button onClick={() => setIsImportModalOpen(true)} variant="outline" icon={FileSpreadsheet}>
+                Import from Excel
+                </Button>
+                <Button onClick={() => setIsPricingModalOpen(true)} variant="outline" style={{ borderColor: '#f59e0b', color: '#f59e0b' }}>
+                Update Pricing
+                </Button>
+            </div>
           )}
           {canEdit && (
             <Button onClick={handleAdd} icon={Plus}>
@@ -201,6 +208,14 @@ const Medicines = () => {
         }}
         type="medicines"
         templateInfo="Excel Columns: 'Product', 'Barcode', 'Supplier'. (Old format 'Medicine Name' also supported)."
+      />
+
+      <ImportPricingModal
+        isOpen={isPricingModalOpen}
+        onClose={() => setIsPricingModalOpen(false)}
+        onImportSuccess={() => {
+            fetchMedicines();
+        }}
       />
     </div>
   );

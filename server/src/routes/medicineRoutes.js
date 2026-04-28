@@ -1,5 +1,5 @@
 import express from 'express';
-import { getMedicines, addMedicine, updateMedicine, deleteMedicine } from '../controllers/medicineController.js';
+import { getMedicines, addMedicine, updateMedicine, deleteMedicine, bulkUpdatePricing } from '../controllers/medicineController.js';
 import { protect, requirePermission } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -7,6 +7,9 @@ const router = express.Router();
 router.route('/')
     .get(protect, getMedicines)
     .post(protect, requirePermission('edit_medicines'), addMedicine);
+
+router.route('/bulk-pricing')
+    .put(protect, requirePermission('edit_medicines'), bulkUpdatePricing);
 
 router.route('/:id')
     .put(protect, requirePermission('edit_medicines'), updateMedicine)

@@ -61,7 +61,7 @@ export const getMedicines = async (req, res) => {
 // @route   POST /api/medicines
 export const addMedicine = async (req, res) => {
     try {
-        let { name, supplierId, barcode, supplierName } = req.body;
+        let { name, supplierId, barcode, supplierName, costPrice, sellingPrice } = req.body;
         name = String(name || '').trim();
         const barcodeVal = barcode !== undefined && barcode !== null ? String(barcode).trim() : '';
         
@@ -100,7 +100,9 @@ export const addMedicine = async (req, res) => {
         const medicine = await Medicine.create({
             name,
             supplierId,
-            barcode: barcodeVal
+            barcode: barcodeVal,
+            costPrice: Number(costPrice) || 0,
+            sellingPrice: Number(sellingPrice) || 0
         });
 
         // Fetch again to populate supplier name immediately for frontend
@@ -116,7 +118,7 @@ export const addMedicine = async (req, res) => {
 // @route   PUT /api/medicines/:id
 export const updateMedicine = async (req, res) => {
     try {
-            const { name, barcode, supplierId } = req.body;
+            const { name, barcode, supplierId, costPrice, sellingPrice } = req.body;
             const medicine = await Medicine.findById(req.params.id);
     
             if (medicine) {
@@ -150,6 +152,8 @@ export const updateMedicine = async (req, res) => {
                 if (supplierId) {
                     medicine.supplierId = supplierId;
                 }
+                if (costPrice !== undefined) medicine.costPrice = Number(costPrice) || 0;
+                if (sellingPrice !== undefined) medicine.sellingPrice = Number(sellingPrice) || 0;
             
             const updatedMedicine = await medicine.save();
             const fullMedicine = await Medicine.findById(updatedMedicine._id).populate('supplierId', 'name');
@@ -175,6 +179,77 @@ export const deleteMedicine = async (req, res) => {
         } else {
             res.status(404).json({ message: 'Medicine not found' });
         }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Bulk update pricing
+// @route   PUT /api/medicines/bulk-pricing
+// @access  Private (Admin)
+export const bulkUpdatePricing = async (req, res) => {
+    try {
+        const { items } = req.body;
+        if (!items || !Array.isArray(items)) {
+            return res.status(400).json({ message: 'Invalid data format' });
+        }
+
+        const summary = { updated: 0, skipped: 0, errors: [] };
+
+        for (const item of items) {
+            try {
+                let medicine = null;
+
+                // 1. Try by exact Barcode match first
+                if (item.barcode) {
+                    medicine = await Medicine.findOne({ barcode: String(item.barcode).trim() });
+                }
+
+                // 2. Fallback to exact Name match (case-insensitive) if no barcode match found
+                if (!medicine && item.name) {
+                    medicine = await Medicine.findOne({ 
+                        name: { $regex: new RegExp(`^${escapeRegex(String(item.name).trim())}$`, 'i') }
+                    });
+                }
+
+                if (!medicine) {
+                    summary.errors.push(`Item not found: ${item.name || item.barcode}`);
+                    summary.skipped++;
+                    continue;
+                }
+
+                // Update prices
+                let isModified = false;
+                if (item.costPrice !== undefined) {
+                    const cp = parseFloat(item.costPrice);
+                    if (!isNaN(cp) && medicine.costPrice !== cp) {
+                        medicine.costPrice = cp;
+                        isModified = true;
+                    }
+                }
+                
+                if (item.sellingPrice !== undefined) {
+                    const sp = parseFloat(item.sellingPrice);
+                    if (!isNaN(sp) && medicine.sellingPrice !== sp) {
+                        medicine.sellingPrice = sp;
+                        isModified = true;
+                    }
+                }
+
+                if (isModified) {
+                    await medicine.save();
+                    summary.updated++;
+                } else {
+                    summary.skipped++;
+                }
+
+            } catch (err) {
+                summary.errors.push(`Error updating ${item.name || item.barcode}: ${err.message}`);
+                summary.skipped++;
+            }
+        }
+
+        res.json({ message: 'Bulk pricing update completed', summary });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

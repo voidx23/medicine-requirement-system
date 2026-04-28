@@ -7,7 +7,9 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
   const [formData, setFormData] = useState({
     name: '',
     barcode: '',
-    supplierId: ''
+    supplierId: '',
+    costPrice: '',
+    sellingPrice: ''
   });
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -32,7 +34,9 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
       setFormData({
         name: initialData.name || '',
         barcode: initialData.barcode || '',
-        supplierId: initialData.supplierId?._id || initialData.supplierId || ''
+        supplierId: initialData.supplierId?._id || initialData.supplierId || '',
+        costPrice: initialData.costPrice || '',
+        sellingPrice: initialData.sellingPrice || ''
       });
     }
   }, [initialData]);
@@ -83,6 +87,29 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
         onChange={handleChange}
         placeholder="Scan or type barcode"
       />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <Input
+            id="costPrice"
+            type="number"
+            step="0.01"
+            min="0"
+            label="Cost Price (AED)"
+            value={formData.costPrice}
+            onChange={handleChange}
+            placeholder="0.00"
+          />
+          <Input
+            id="sellingPrice"
+            type="number"
+            step="0.01"
+            min="0"
+            label="Selling Price (AED)"
+            value={formData.sellingPrice}
+            onChange={handleChange}
+            placeholder="0.00"
+          />
+      </div>
       
       <div className="flex flex-col gap-1 mb-4">
         <label 
