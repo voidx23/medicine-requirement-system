@@ -343,26 +343,38 @@ export const getMyPendingMedicines = async (req, res) => {
     try {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
 
-        // Find requests that are either currently pending OR were created today
-        const pendingRequests = await PharmacistRequest.find({
+        // Find requests that are either currently pending OR were created in the last 2 calendar days (yesterday & today)
+        const recentRequests = await PharmacistRequest.find({
             pharmacistId: req.user._id,
             $or: [
                 { status: 'pending' },
-                { createdAt: { $gte: today } }
+                { createdAt: { $gte: yesterday } }
             ]
-        }).select('items createdAt');
+        }).select('items createdAt status');
 
         const pendingMap = {};
 
-        // Build the dictionary mapping medicine to its request date
-        pendingRequests.forEach(request => {
+        // Build the dictionary mapping medicine to its request date and block type
+        recentRequests.forEach(request => {
+            const isHardBlock = request.status === 'pending';
+            
             request.items.forEach(item => {
                 // To track both standard medicines and custom names reliably
                 const key = item.medicineId ? item.medicineId.toString() : item.name.trim().toLowerCase();
-                if (!pendingMap[key]) {
-                    pendingMap[key] = request.createdAt;
+                
+                // If it's already recorded as a hard block, don't downgrade it to a soft block
+                if (pendingMap[key] && pendingMap[key].type === 'hard') {
+                    return;
                 }
+                
+                pendingMap[key] = {
+                    date: request.createdAt,
+                    type: isHardBlock ? 'hard' : 'soft'
+                };
             });
         });
 
