@@ -19,9 +19,12 @@ import PharmacistNewRequest from './pages/PharmacistNewRequest';
 import PharmacistHistory from './pages/PharmacistHistory';
 import PharmacistWhatsNew from './pages/PharmacistWhatsNew';
 import PharmacyTasks from './pages/PharmacyTasks';
+import BranchExpiryReturns from './pages/BranchExpiryReturns';
 import SetupDevice from './pages/SetupDevice';
 import PharmacistLayout from './components/Layout/PharmacistLayout';
 import AdminTasks from './pages/AdminTasks';
+import StoreExpiryVerification from './pages/StoreExpiryVerification';
+import SupplierExpiryReport from './pages/SupplierExpiryReport';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -168,6 +171,8 @@ const App = () => {
                         <Route path="suppliers" element={<Suppliers />} />
                         <Route path="medicines" element={<Medicines />} />
                         <Route path="history" element={<History />} />
+                        <Route path="expiry-verification" element={<StoreExpiryVerification />} />
+                        <Route path="reports/supplier-expiry" element={<SupplierExpiryReport />} />
                         <Route path="reports" element={<Reports />} />
                         <Route path="reports/audit" element={<MedicineAudit />} />
 
@@ -188,6 +193,7 @@ const App = () => {
                     <Route path="tasks" element={<PharmacyTasks />} />
                     <Route path="new" element={<PharmacistNewRequest />} />
                     <Route path="history" element={<PharmacistHistory />} />
+                    <Route path="expiry" element={<BranchExpiryReturns />} />
                     <Route path="updates" element={<PharmacistWhatsNew />} />
                 </Route>
                 
