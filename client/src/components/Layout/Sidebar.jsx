@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, UserCircle } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
+import NotificationBell from '../UI/NotificationBell';
 import { useContext, useState, useEffect, useRef } from 'react';
 import AuthContext from '../../context/AuthContext';
 import api from '../../services/api';
@@ -98,7 +99,8 @@ const Sidebar = () => {
       label: 'Store Administration',
       superAdminOnly: true,
       subLinks: [
-        { to: '/store-staff', label: 'Store Staff' }
+        { to: '/store-staff', label: 'Store Staff' },
+        { to: '/expiry-verification', label: 'Expiry Returns' }
       ]
     },
     { to: '/history', icon: History, label: 'Req History', reqPerm: 'history' },
@@ -109,7 +111,8 @@ const Sidebar = () => {
       reqPerm: 'reports',
       subLinks: [
         { to: '/reports', label: 'Requirement Report' },
-        { to: '/reports/audit', label: 'Medicine Audit' }
+        { to: '/reports/audit', label: 'Medicine Audit' },
+        { to: '/reports/supplier-expiry', label: 'Supplier Expiry Ledger' }
       ]
     },
     { to: '/feedback', icon: MessageSquare, label: 'Feedback', superAdminOnly: true },
@@ -154,15 +157,17 @@ const Sidebar = () => {
           color: 'var(--primary)',
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'space-between',
           gap: '0.5rem'
         }}>
            <Frame
-      style={{
-        width: '150px',
-        height: '150px',
-        fill: 'var(--primary)' // works if SVG uses fill="currentColor"
-      }}
-    />
+              style={{
+                width: '130px',
+                height: '130px',
+                fill: 'var(--primary)'
+              }}
+            />
+            <NotificationBell />
         </div>
       </div>
 
