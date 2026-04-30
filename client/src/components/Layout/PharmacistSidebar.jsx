@@ -1,7 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { PlusCircle, History, LogOut, Sparkles, ListTodo, BellRing, UserCircle, PackageX } from 'lucide-react';
+import { PlusCircle, History, LogOut, Sparkles, ListTodo, BellRing, UserCircle } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
-import NotificationBell from '../UI/NotificationBell';
 import { useContext, useEffect, useState, useRef } from 'react';
 import AuthContext from '../../context/AuthContext';
 import taskService from '../../services/taskService';
@@ -79,7 +78,6 @@ const PharmacistSidebar = () => {
     { to: '/pharmacist-dashboard/new', icon: PlusCircle, label: 'New Request' },
     { to: '/pharmacist-dashboard/tasks', icon: ListTodo, label: 'Task Inbox', badge: pendingTasksCount },
     { to: '/pharmacist-dashboard/history', icon: History, label: 'Req History' },
-    { to: '/pharmacist-dashboard/expiry', icon: PackageX, label: 'Expiry Returns' },
     { to: '/pharmacist-dashboard/updates', icon: Sparkles, label: "What's New" },
   ];
 
@@ -106,17 +104,15 @@ const PharmacistSidebar = () => {
           color: 'var(--primary)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
           gap: '0.5rem'
         }}>
            <Frame
               style={{
-                width: '130px',
-                height: '130px',
+                width: '150px',
+                height: '150px',
                 fill: 'var(--primary)'
               }}
             />
-            <NotificationBell />
         </div>
       </div>
 
