@@ -6,6 +6,7 @@ import QuantityModal from '../components/UI/QuantityModal';
 import StaffVerificationModal from '../components/UI/StaffVerificationModal';
 import CustomItemModal from '../components/UI/CustomItemModal';
 import DigitalClock from '../components/UI/DigitalClock';
+import NotificationBell from '../components/UI/NotificationBell';
 import { useNotification } from '../context/NotificationContext';
 import AuthContext from '../context/AuthContext';
 
@@ -433,7 +434,8 @@ const PharmacistNewRequest = () => {
                         </div>
                     </div>
 
-                    <div className="desktop-only">
+                    <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <NotificationBell />
                         <DigitalClock />
                     </div>
                 </div>
