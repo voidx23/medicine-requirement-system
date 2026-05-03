@@ -111,12 +111,11 @@ const PharmacistSidebar = () => {
         }}>
            <Frame
               style={{
-                width: '130px',
-                height: '130px',
+                width: '150px',
+                height: '150px',
                 fill: 'var(--primary)'
               }}
             />
-            <NotificationBell />
         </div>
       </div>
 
