@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { PlusCircle, History, LogOut, Sparkles, ListTodo, BellRing, UserCircle } from 'lucide-react';
+import { PlusCircle, History, LogOut, Sparkles, ListTodo, BellRing, UserCircle, PackageX } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
 import { useContext, useEffect, useState, useRef } from 'react';
 import AuthContext from '../../context/AuthContext';
@@ -77,6 +77,8 @@ const PharmacistSidebar = () => {
   const links = [
     { to: '/pharmacist-dashboard/new', icon: PlusCircle, label: 'New Request' },
     { to: '/pharmacist-dashboard/tasks', icon: ListTodo, label: 'Task Inbox', badge: pendingTasksCount },
+    { to: '/pharmacist-dashboard/expiry', icon: PackageX, label: 'Expiry Returns' },
+    { to: '/pharmacist-dashboard/notifications', icon: BellRing, label: 'Notifications' },
     { to: '/pharmacist-dashboard/history', icon: History, label: 'Req History' },
     { to: '/pharmacist-dashboard/updates', icon: Sparkles, label: "What's New" },
   ];
