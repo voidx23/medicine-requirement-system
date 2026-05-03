@@ -78,8 +78,8 @@ const PharmacistSidebar = () => {
   const links = [
     { to: '/pharmacist-dashboard/new', icon: PlusCircle, label: 'New Request' },
     { to: '/pharmacist-dashboard/tasks', icon: ListTodo, label: 'Task Inbox', badge: pendingTasksCount },
-    { to: '/pharmacist-dashboard/history', icon: History, label: 'Req History' },
     { to: '/pharmacist-dashboard/expiry', icon: PackageX, label: 'Expiry Returns' },
+    { to: '/pharmacist-dashboard/history', icon: History, label: 'Req History' },
     { to: '/pharmacist-dashboard/updates', icon: Sparkles, label: "What's New" },
   ];
 
@@ -109,13 +109,14 @@ const PharmacistSidebar = () => {
           justifyContent: 'space-between',
           gap: '0.5rem'
         }}>
-           <Frame
+            <Frame
               style={{
-                width: '150px',
-                height: '150px',
+                width: '130px',
+                height: '130px',
                 fill: 'var(--primary)'
               }}
             />
+            <NotificationBell />
         </div>
       </div>
 
