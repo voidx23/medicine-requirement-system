@@ -10,8 +10,15 @@ export const AuthProvider = ({ children }) => {
     });
     const [loading] = useState(false);
 
-    const login = async (username, password) => {
+    const login = async (username, password, onBeforeSuccess) => {
         const { data } = await api.post('/auth/login', { username, password });
+        
+        // Allow components to block the login after API success but before state update
+        if (onBeforeSuccess) {
+            const shouldAbort = await onBeforeSuccess(data);
+            if (shouldAbort) return data;
+        }
+
         localStorage.setItem('userInfo', JSON.stringify(data));
         setUser(data);
         return data;
