@@ -177,9 +177,9 @@ const PharmacistHistory = () => {
 
     const getStatusColor = (status) => {
         switch(status) {
-            case 'completed': return { bg: '#dcfce7', text: '#166534' }; // Green
+            case 'completed': return { bg: '#dcfce7', text: '#15803d' }; // Green
             case 'partially_fulfilled': return { bg: '#f3e8ff', text: '#6b21a8' }; // Purple
-            case 'approved': return { bg: '#dbeafe', text: '#1e40af' }; // Blue
+            case 'unfulfilled': return { bg: '#fef2f2', text: '#dc2626' }; // Red
             case 'rejected': return { bg: '#fee2e2', text: '#991b1b' }; // Red
             default: return { bg: '#fef3c7', text: '#d97706' }; // Pending (Yellow)
         }
@@ -284,12 +284,7 @@ const PharmacistHistory = () => {
                                             {req.items.length} Items Requested
                                         </div>
                                     </div>
-                                    <span style={{ 
-                                        padding: '0.35rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600,
-                                        background: getStatusColor(req.status).bg,
-                                        color: getStatusColor(req.status).text,
-                                        border: `1px solid ${getStatusColor(req.status).text}20`
-                                    }}>
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: getStatusColor(req.status).text, background: getStatusColor(req.status).bg, padding: '0.2rem 0.6rem', borderRadius: '12px' }}>
                                         {req.status === 'partially_fulfilled' ? 'PARTIAL' : req.status.toUpperCase()}
                                     </span>
                                 </div>
@@ -372,7 +367,7 @@ const PharmacistHistory = () => {
 
                         {/* Re-order Button Logic */}
                         {!selectedRequest.forwardingProcessed && 
-                         (selectedRequest.status === 'partially_fulfilled' || selectedRequest.status === 'completed') &&
+                         (selectedRequest.status === 'partially_fulfilled' || selectedRequest.status === 'completed' || selectedRequest.status === 'unfulfilled') &&
                          selectedRequest.items.some(i => i.status !== 'packed' && i.status !== 'forwarded') && (
                             <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
                                 <button 

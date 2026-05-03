@@ -9,7 +9,8 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
     barcode: '',
     supplierId: '',
     costPrice: '',
-    sellingPrice: ''
+    sellingPrice: '',
+    unitsPerBox: ''
   });
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -36,7 +37,8 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
         barcode: initialData.barcode || '',
         supplierId: initialData.supplierId?._id || initialData.supplierId || '',
         costPrice: initialData.costPrice || '',
-        sellingPrice: initialData.sellingPrice || ''
+        sellingPrice: initialData.sellingPrice || '',
+        unitsPerBox: initialData.unitsPerBox || ''
       });
     }
   }, [initialData]);
@@ -80,13 +82,24 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
         required
       />
 
-      <Input
-        id="barcode"
-        label="Barcode (Optional)"
-        value={formData.barcode}
-        onChange={handleChange}
-        placeholder="Scan or type barcode"
-      />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <Input
+            id="barcode"
+            label="Barcode (Optional)"
+            value={formData.barcode}
+            onChange={handleChange}
+            placeholder="Scan or type barcode"
+        />
+        <Input
+            id="unitsPerBox"
+            type="number"
+            min="1"
+            label="Units Per Box"
+            value={formData.unitsPerBox}
+            onChange={handleChange}
+            placeholder="e.g. 10"
+        />
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <Input

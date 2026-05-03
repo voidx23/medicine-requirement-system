@@ -1,4 +1,4 @@
-import { Edit2, Trash2, ScanBarcode } from 'lucide-react';
+import { Edit2, Trash2, ScanBarcode, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const MedicineList = ({ medicines, onEdit, onDelete, canEdit }) => {
   if (!medicines || medicines.length === 0) {
@@ -32,12 +32,24 @@ const MedicineList = ({ medicines, onEdit, onDelete, canEdit }) => {
                   </span>
                 </span>
                 
-                {(medicine.costPrice > 0 || medicine.sellingPrice > 0) && (
-                   <span style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem' }}>
-                      {medicine.costPrice > 0 && <span><strong>Cost:</strong> OMR {medicine.costPrice.toFixed(2)}</span>}
-                      {medicine.sellingPrice > 0 && <span style={{ color: 'var(--success)', fontWeight: 500 }}><strong>Sell:</strong> OMR {medicine.sellingPrice.toFixed(2)}</span>}
-                   </span>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem' }}>
+                    {(medicine.costPrice > 0 || medicine.sellingPrice > 0) && (
+                       <span style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem' }}>
+                          {medicine.costPrice > 0 && <span><strong>Cost:</strong> OMR {medicine.costPrice.toFixed(2)}</span>}
+                          {medicine.sellingPrice > 0 && <span style={{ color: 'var(--success)', fontWeight: 500 }}><strong>Sell:</strong> OMR {medicine.sellingPrice.toFixed(2)}</span>}
+                       </span>
+                    )}
+
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: '0.4rem', 
+                        fontSize: '0.8rem', padding: '0.2rem 0.6rem', borderRadius: '12px',
+                        background: medicine.unitVerified ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        color: medicine.unitVerified ? 'var(--success)' : 'var(--danger)'
+                    }}>
+                        {medicine.unitVerified ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                        <strong>Unit:</strong> {medicine.unitsPerBox || 1} {medicine.unitVerified ? '(Verified)' : '(Unverified)'}
+                    </div>
+                </div>
              </div>
           </div>
 

@@ -19,7 +19,7 @@ export const getMedicines = async (req, res) => {
 
         const skip = (page - 1) * limit;
 
-        const { search, supplierId} = req.query;
+        const { search, supplierId, filterType } = req.query;
 
         const keyword = search
             ? {
@@ -33,6 +33,19 @@ export const getMedicines = async (req, res) => {
 
         if(supplierId) {
             query.supplierId = supplierId;
+        }
+
+        if (filterType === 'unverified_units') {
+            query.unitVerified = { $ne: true };
+        } else if (filterType === 'missing_prices') {
+            query.$or = [
+                { costPrice: { $exists: false } }, 
+                { costPrice: null }, 
+                { costPrice: 0 }, 
+                { sellingPrice: { $exists: false } }, 
+                { sellingPrice: null }, 
+                { sellingPrice: 0 }
+            ];
         }
 
         // 1. Get total count for pagination metadata
@@ -118,7 +131,7 @@ export const addMedicine = async (req, res) => {
 // @route   PUT /api/medicines/:id
 export const updateMedicine = async (req, res) => {
     try {
-            const { name, barcode, supplierId, costPrice, sellingPrice } = req.body;
+            const { name, barcode, supplierId, costPrice, sellingPrice, unitsPerBox } = req.body;
             const medicine = await Medicine.findById(req.params.id);
     
             if (medicine) {
@@ -154,6 +167,10 @@ export const updateMedicine = async (req, res) => {
                 }
                 if (costPrice !== undefined) medicine.costPrice = Number(costPrice) || 0;
                 if (sellingPrice !== undefined) medicine.sellingPrice = Number(sellingPrice) || 0;
+                if (unitsPerBox !== undefined) {
+                    medicine.unitsPerBox = Number(unitsPerBox) || 1;
+                    medicine.unitVerified = true;
+                }
             
             const updatedMedicine = await medicine.save();
             const fullMedicine = await Medicine.findById(updatedMedicine._id).populate('supplierId', 'name');

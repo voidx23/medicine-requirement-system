@@ -42,12 +42,11 @@ const PharmacistNewRequest = () => {
     
     // Search State
     const [query, setQuery] = useState('');
-
     const [allMedicines, setAllMedicines] = useState([]); // Master list
     const [results, setResults] = useState([]);
-    
     const [isOpen, setIsOpen] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
+    const [displayLimit, setDisplayLimit] = useState(20); // Infinite scroll limit
     const wrapperRef = useRef(null);
     const searchInputRef = useRef(null);
     // Quantity Modal State
@@ -111,13 +110,22 @@ const PharmacistNewRequest = () => {
             // Filter Results (Name or Barcode)
             const filtered = allMedicines.filter(med => 
                 med.name.toLowerCase().includes(lowerQuery) || (med.barcode && med.barcode.includes(lowerQuery))
-            ).slice(0, 10); 
+            ); 
             
             setResults(filtered);
+            setDisplayLimit(20); // Reset limit on new search
             setIsOpen(true);
         } else {
             setResults([]);
             setIsOpen(false);
+        }
+    };
+
+    // Dropdown Scroll Handler
+    const handleDropdownScroll = (e) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.target;
+        if (scrollHeight - scrollTop <= clientHeight + 50) {
+            setDisplayLimit(prev => prev + 20);
         }
     };
 
@@ -387,12 +395,16 @@ const PharmacistNewRequest = () => {
 
                             {/* Search Results Dropdown */}
                             {isOpen && (
-                                <div className="glass-panel" style={{
-                                    position: 'absolute', top: '110%', left: 0, right: 0, maxHeight: '300px', overflowY: 'auto', zIndex: 50,
-                                    padding: '0.5rem', background: 'rgba(255, 255, 255, 0.95)'
-                                }}>
+                                <div 
+                                    className="glass-panel" 
+                                    onScroll={handleDropdownScroll}
+                                    style={{
+                                        position: 'absolute', top: '110%', left: 0, right: 0, maxHeight: '300px', overflowY: 'auto', zIndex: 50,
+                                        padding: '0.5rem', background: 'rgba(255, 255, 255, 0.95)'
+                                    }}
+                                >
                                     {results.length > 0 ? (
-                                        results.map((medicine, index) => (
+                                        results.slice(0, displayLimit).map((medicine, index) => (
                                             <button
                                                 key={medicine._id}
                                                 onClick={() => initiateAdd(medicine)}
@@ -404,7 +416,12 @@ const PharmacistNewRequest = () => {
                                                 }}
                                                 onMouseOver={() => setHighlightedIndex(index)}
                                             >
-                                                <span style={{ fontWeight: 500 }}>{medicine.name}</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <span style={{ fontWeight: 500 }}>{medicine.name}</span>
+                                                    <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontWeight: 600 }}>
+                                                        Unit: {medicine.unitsPerBox === 1 ? 'NOS' : medicine.unitsPerBox || 1}
+                                                    </span>
+                                                </div>
                                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{medicine.supplierId?.name}</span>
                                             </button>
                                         ))
@@ -461,7 +478,16 @@ const PharmacistNewRequest = () => {
                                     {requestItems.map((item, index) => (
                                         <tr key={item._id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                                             <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{index + 1}</td>
-                                            <td style={{ padding: '1rem', fontWeight: 500 }}>{item.name}</td>
+                                            <td style={{ padding: '1rem', fontWeight: 500 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    {item.name}
+                                                    {!item.isCustom && (
+                                                        <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontWeight: 600 }}>
+                                                            Unit: {item.unitsPerBox === 1 ? 'NOS' : item.unitsPerBox || 1}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
                                             <td style={{ padding: '1rem' }}>
                                                 {item.isCustom ? (
                                                     <span style={{ 

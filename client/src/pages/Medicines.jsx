@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Plus, Search, FileSpreadsheet } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
@@ -11,11 +11,13 @@ import Input from '../components/UI/Input';
 import Modal from '../components/UI/Modal';
 import ImportModal from '../components/UI/ImportModal';
 import ImportPricingModal from '../components/UI/ImportPricingModal';
+import UpdateUnitsModal from '../components/UI/UpdateUnitsModal';
 import { TableRowSkeleton } from '../components/UI/Skeleton';
 
 const Medicines = () => {
   const { user } = useContext(AuthContext);
   const canEdit = user?.isSuperAdmin || user?.permissions?.includes('edit_medicines');
+
   const canImport = user?.isSuperAdmin || user?.permissions?.includes('import_excel');
   const { showConfirm, showToast } = useNotification();
   const [medicines, setMedicines] = useState([]); // Displayed list
@@ -24,10 +26,14 @@ const Medicines = () => {
   const [dbTotalCount, setDbTotalCount] = useState(0); // GLOBAL Total in DB
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  const [isUnitsModalOpen, setIsUnitsModalOpen] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState(null);
 
   // 1. Fetch Global Total (Independent of Search)
@@ -46,14 +52,27 @@ const Medicines = () => {
   }, []);
 
   // Server-Side Search/Pagination
-  const fetchMedicines = useCallback(async (searchTerm = '') => {
+  const fetchMedicines = useCallback(async (searchTerm = '', currentFilter = 'all', currentPage = 1) => {
     setLoading(true);
     try {
-        const response = await api.get(`/medicines?limit=50&search=${encodeURIComponent(searchTerm)}`);
+        let url = `/medicines?limit=50&page=${currentPage}&search=${encodeURIComponent(searchTerm)}`;
+        if (currentFilter !== 'all') {
+            url += `&filterType=${currentFilter}`;
+        }
+        const response = await api.get(url);
         const data = response.data.medicines || [];
-        setMedicines(data);
-        setAllMedicines(data); 
+        
+        if (currentPage === 1) {
+            setMedicines(data);
+            setAllMedicines(data);
+        } else {
+            setMedicines(prev => [...prev, ...data]);
+            setAllMedicines(prev => [...prev, ...data]);
+        }
+        
         setFilteredCount(response.data.totalCount || 0);
+        // If we received fewer items than requested, we've reached the end
+        setHasMore(data.length === 50);
     } catch (error) {
       console.error('Failed to fetch medicines:', error);
       showToast('Failed to fetch medicines', 'error');
@@ -65,11 +84,31 @@ const Medicines = () => {
   // Debounce Search Effect
   useEffect(() => {
     const timer = setTimeout(() => {
-        fetchMedicines(search);
+        setPage(1); // Reset to page 1 on new search
+        fetchMedicines(search, filterType, 1);
     }, 500); 
 
     return () => clearTimeout(timer);
-  }, [search, fetchMedicines]);
+  }, [search, filterType, fetchMedicines]);
+
+  // Load More Effect
+  useEffect(() => {
+    if (page > 1) {
+        fetchMedicines(search, filterType, page);
+    }
+  }, [page, search, filterType, fetchMedicines]);
+
+  const observer = useRef();
+  const lastElementRef = useCallback(node => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prevPage => prevPage + 1);
+      }
+    });
+    if (node) observer.current.observe(node);
+  }, [loading, hasMore]);
 
   const handleAdd = () => {
     setSelectedMedicine(null);
@@ -98,7 +137,8 @@ const Medicines = () => {
 
   const handleSuccess = () => {
     setIsModalOpen(false);
-    fetchMedicines(); // Reload list
+    setPage(1);
+    fetchMedicines(search, filterType, 1); // Reload list
     fetchDbTotal(); // Reload Global stats
     showToast(selectedMedicine ? 'Medicine updated' : 'Medicine added', 'success');
   };
@@ -131,6 +171,9 @@ const Medicines = () => {
                 <Button onClick={() => setIsPricingModalOpen(true)} variant="outline" style={{ borderColor: '#f59e0b', color: '#f59e0b' }}>
                 Update Pricing
                 </Button>
+                <Button onClick={() => setIsUnitsModalOpen(true)} variant="outline" style={{ borderColor: '#10b981', color: '#10b981' }}>
+                Bulk Update Units
+                </Button>
             </div>
           )}
           {canEdit && (
@@ -141,8 +184,8 @@ const Medicines = () => {
         </div>
       </div>
 
-      <div style={{ marginBottom: '2rem', maxWidth: '400px' }}>
-         <div style={{ position: 'relative' }}>
+      <div style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+         <div style={{ position: 'relative', flex: 1, minWidth: '250px', maxWidth: '400px' }}>
             <Search size={20} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input 
               type="text" 
@@ -158,6 +201,23 @@ const Medicines = () => {
               }}
             />
          </div>
+         <select 
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+            style={{
+                padding: '0.75rem',
+                border: '1px solid #cbd5e1',
+                borderRadius: '8px',
+                outline: 'none',
+                background: 'white',
+                color: 'var(--text-main)',
+                minWidth: '200px'
+            }}
+         >
+            <option value="all">All Medicines</option>
+            <option value="unverified_units">Unverified Units</option>
+            <option value="missing_prices">Missing Prices</option>
+         </select>
       </div>
 
       <MedicineList 
@@ -188,6 +248,17 @@ const Medicines = () => {
         </div>
       )}
 
+      {/* Invisible element to trigger intersection observer for pagination */}
+      {hasMore && medicines.length > 0 && (
+        <div ref={lastElementRef} style={{ height: '20px', margin: '1rem 0' }} />
+      )}
+      
+      {loading && page > 1 && (
+        <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--primary)' }}>
+            Loading more...
+        </div>
+      )}
+
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -204,18 +275,22 @@ const Medicines = () => {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         onImportSuccess={() => {
-            fetchMedicines();
+            setPage(1);
+            fetchMedicines(search, filterType, 1);
         }}
         type="medicines"
         templateInfo="Excel Columns: 'Product', 'Barcode', 'Supplier'. (Old format 'Medicine Name' also supported)."
       />
 
-      <ImportPricingModal
-        isOpen={isPricingModalOpen}
-        onClose={() => setIsPricingModalOpen(false)}
-        onImportSuccess={() => {
-            fetchMedicines();
-        }}
+      <ImportPricingModal 
+        isOpen={isPricingModalOpen} 
+        onClose={() => setIsPricingModalOpen(false)} 
+        onImportSuccess={() => { setPage(1); fetchMedicines(search, filterType, 1); fetchDbTotal(); }}
+      />
+      <UpdateUnitsModal
+        isOpen={isUnitsModalOpen}
+        onClose={() => setIsUnitsModalOpen(false)}
+        onImportSuccess={() => { setPage(1); fetchMedicines(search, filterType, 1); fetchDbTotal(); }}
       />
     </div>
   );

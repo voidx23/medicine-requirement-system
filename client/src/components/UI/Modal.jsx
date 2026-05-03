@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
 
-const Modal = ({ isOpen, onClose, title, children }) => {
+const Modal = ({ isOpen, onClose, title, children, maxWidth = '500px' }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -37,7 +37,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
         className="glass-panel"
         style={{
           width: '90%',
-          maxWidth: '500px',
+          maxWidth: maxWidth,
           maxHeight: '90vh',
           overflowY: 'auto',
           backgroundColor: '#fff', // Solid background for legibility

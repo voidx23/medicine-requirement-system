@@ -102,9 +102,9 @@ const MedicineAudit = () => {
     const getStatusColor = (status) => {
         switch (status) {
             case 'pending': return 'var(--warning)';
-            case 'approved': return 'var(--info)';
-            case 'partially_fulfilled': return 'var(--primary)';
             case 'completed': return 'var(--success)';
+            case 'partially_fulfilled': return 'var(--primary)';
+            case 'unfulfilled': return 'var(--danger)';
             case 'rejected': return 'var(--danger)';
             default: return 'var(--text-muted)';
         }
@@ -112,6 +112,7 @@ const MedicineAudit = () => {
 
     const getStatusText = (status) => {
         if (status === 'partially_fulfilled') return 'Partially Fulfilled';
+        if (status === 'unfulfilled') return 'Unfulfilled';
         return status.charAt(0).toUpperCase() + status.slice(1);
     };
 

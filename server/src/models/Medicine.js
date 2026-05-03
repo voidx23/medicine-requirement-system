@@ -24,6 +24,14 @@ const medicineSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    unitsPerBox: {
+        type: Number,
+        default: 1
+    },
+    unitVerified: {
+        type: Boolean,
+        default: false
+    },
     isActive: {
         type: Boolean,
         default: true

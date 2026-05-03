@@ -4,31 +4,53 @@ const expiryItemSchema = new mongoose.Schema({
     medicineId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Medicine',
-        required: true
+        required: false,
+        default: null
+    },
+    customName: {
+        type: String,
+        default: ''
     },
     qtySent: {
         type: Number,
         required: true,
         min: 1
     },
+    qtySentLoose: {
+        type: Number,
+        default: 0
+    },
     qtyReceived: {
         type: Number,
-        default: null // Null means store hasn't verified it yet
+        default: null
+    },
+    qtyReceivedLoose: {
+        type: Number,
+        default: null
     },
     costPriceAtReturn: {
         type: Number,
-        default: 0 // Snapshot taken when verified
+        default: 0
     },
     isNonReturnable: {
         type: Boolean,
-        default: false // Store can mark as true (disposed)
+        default: false
+    },
+    handoverStatus: {
+        type: String,
+        enum: ['Pending', 'HandedOver'],
+        default: 'Pending'
+    },
+    handedOverAt: {
+        type: Date,
+        default: null
     }
 });
 
 const expiryReturnSchema = new mongoose.Schema({
     branchId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Staff',
+        ref: 'Branch',
         required: true
     },
     month: {

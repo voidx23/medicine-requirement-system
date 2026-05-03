@@ -190,12 +190,12 @@ export const updateItemStatus = async (req, res) => {
         const totalItems = allItems.length;
         const packedItems = allItems.filter(i => i.status === 'packed').length;
 
-        if (packedItems === 0) {
-            request.status = 'approved'; // Or pending, but presumably if we are packing it's approved
-        } else if (packedItems === totalItems) {
+        if (packedItems === totalItems) {
             request.status = 'completed';
-        } else {
+        } else if (packedItems > 0) {
             request.status = 'partially_fulfilled';
+        } else {
+            request.status = 'unfulfilled';
         }
         
         await request.save();
@@ -236,8 +236,7 @@ export const fulfillRequest = async (req, res) => {
         } else if (packedItems > 0) {
             request.status = 'partially_fulfilled';
         } else {
-            // Fallback if they uncheck everything (though unlikely in this flow)
-            request.status = 'approved'; 
+            request.status = 'unfulfilled'; 
         }
 
         const updatedRequest = await request.save();

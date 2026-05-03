@@ -16,6 +16,7 @@ const ALL_MODULES = [
     { id: 'import_excel', label: 'Import Excel (Medicines)' },
     { id: 'suppliers', label: 'View Suppliers' },
     { id: 'edit_suppliers', label: 'Edit Suppliers' },
+    { id: 'expiry_returns', label: 'Expiry Returns' },
 ];
 
 const ManageStoreStaff = () => {
