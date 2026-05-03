@@ -434,8 +434,7 @@ const PharmacistNewRequest = () => {
                         </div>
                     </div>
 
-                    <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <NotificationBell />
+                    <div className="desktop-only">
                         <DigitalClock />
                     </div>
                 </div>
