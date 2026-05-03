@@ -60,12 +60,12 @@ const SetupDevice = () => {
                             border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                         }}>
                             <div>
-                                <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{b.username.toUpperCase()}</div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{b.email || 'Branch Account'}</div>
+                                <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{b.name?.toUpperCase() || 'UNKNOWN BRANCH'}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Branch Account</div>
                             </div>
                             
                             <a 
-                                href={getMagicLink(b.username)}
+                                href={getMagicLink(b.name || '')}
                                 className="magic-link-btn"
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -77,13 +77,13 @@ const SetupDevice = () => {
                                 title="Drag me to Desktop!"
                                 onClick={(e) => e.preventDefault()} // Prevent clicking, encourage dragging
                                 onDragStart={(e) => {
-                                    e.dataTransfer.setData("text/uri-list", getMagicLink(b.username));
-                                    e.dataTransfer.setData("text/plain", getMagicLink(b.username));
+                                    e.dataTransfer.setData("text/uri-list", getMagicLink(b.name || ''));
+                                    e.dataTransfer.setData("text/plain", getMagicLink(b.name || ''));
                                 }}
                                 draggable="true"
                             > 
                                 <Paperclip size={16} />
-                                {b.username} Login
+                                {b.name} Login
                             </a>
                         </div>
                     ))}
