@@ -229,6 +229,15 @@ const DevUpdates = () => {
                                 <h3 style={{ margin: '0 0 0.25rem 0', color: '#ef4444' }}>Major Update</h3>
                                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Massive redesigns or breaking changes. (e.g. 1.0.0 → 2.0.0)</p>
                             </div>
+                            <div 
+                                onClick={() => handleForceRefresh('none')}
+                                style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', background: '#f8fafc' }}
+                                onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
+                                onMouseOut={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                            >
+                                <h3 style={{ margin: '0 0 0.25rem 0', color: 'var(--text-main)' }}>Maintenance Refresh (No Version Change)</h3>
+                                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>Force clients to reload without bumping the version number.</p>
+                            </div>
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
