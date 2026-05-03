@@ -99,8 +99,6 @@ const Sidebar = () => {
       superAdminOnly: true,
       subLinks: [
         { to: '/store-staff', label: 'Store Staff' }
-<<<<<<< HEAD
-=======
       ]
     },
     { 
@@ -112,7 +110,6 @@ const Sidebar = () => {
         { to: '/expiry-verification', label: 'Expiry Verification' },
         { to: '/handover', label: 'Handover Prep' },
         { to: '/reports/supplier-expiry', label: 'Supplier Ledger' }
->>>>>>> dev
       ]
     },
     { to: '/history', icon: History, label: 'Req History', reqPerm: 'history' },
@@ -172,21 +169,12 @@ const Sidebar = () => {
           gap: '0.5rem'
         }}>
            <Frame
-<<<<<<< HEAD
-      style={{
-        width: '150px',
-        height: '150px',
-        fill: 'var(--primary)' // works if SVG uses fill="currentColor"
-      }}
-    />
-=======
               style={{
                 width: '150px',
                 height: '150px',
                 fill: 'var(--primary)'
               }}
             />
->>>>>>> dev
         </div>
       </div>
 

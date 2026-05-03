@@ -19,11 +19,6 @@ import PharmacistNewRequest from './pages/PharmacistNewRequest';
 import PharmacistHistory from './pages/PharmacistHistory';
 import PharmacistWhatsNew from './pages/PharmacistWhatsNew';
 import PharmacyTasks from './pages/PharmacyTasks';
-<<<<<<< HEAD
-import SetupDevice from './pages/SetupDevice';
-import PharmacistLayout from './components/Layout/PharmacistLayout';
-import AdminTasks from './pages/AdminTasks';
-=======
 import BranchExpiryReturns from './pages/BranchExpiryReturns';
 import PharmacistNotifications from './pages/PharmacistNotifications';
 import SetupDevice from './pages/SetupDevice';
@@ -32,7 +27,6 @@ import AdminTasks from './pages/AdminTasks';
 import StoreExpiryVerification from './pages/StoreExpiryVerification';
 import HandoverPreparation from './pages/HandoverPreparation';
 import SupplierExpiryReport from './pages/SupplierExpiryReport';
->>>>>>> dev
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -179,12 +173,9 @@ const App = () => {
                         <Route path="suppliers" element={<Suppliers />} />
                         <Route path="medicines" element={<Medicines />} />
                         <Route path="history" element={<History />} />
-<<<<<<< HEAD
-=======
                         <Route path="expiry-verification" element={<StoreExpiryVerification />} />
                         <Route path="handover" element={<HandoverPreparation />} />
                         <Route path="reports/supplier-expiry" element={<SupplierExpiryReport />} />
->>>>>>> dev
                         <Route path="reports" element={<Reports />} />
                         <Route path="reports/audit" element={<MedicineAudit />} />
 
@@ -205,11 +196,8 @@ const App = () => {
                     <Route path="tasks" element={<PharmacyTasks />} />
                     <Route path="new" element={<PharmacistNewRequest />} />
                     <Route path="history" element={<PharmacistHistory />} />
-<<<<<<< HEAD
-=======
                     <Route path="expiry" element={<BranchExpiryReturns />} />
                     <Route path="notifications" element={<PharmacistNotifications />} />
->>>>>>> dev
                     <Route path="updates" element={<PharmacistWhatsNew />} />
                 </Route>
                 
