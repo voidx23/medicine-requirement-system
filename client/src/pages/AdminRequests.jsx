@@ -81,7 +81,7 @@ const AdminRequests = () => {
     const fetchHistory = async () => {
         setHistoryLoading(true);
         try {
-            const query = new URLSearchParams({ status: 'completed,rejected,approved,partially_fulfilled' });
+            const query = new URLSearchParams({ status: 'completed,rejected,approved,partially_fulfilled,unfulfilled' });
             if (historyFilter.branchId !== 'all') query.append('branchId', historyFilter.branchId);
             if (historyFilter.startDate) query.append('startDate', historyFilter.startDate);
             if (historyFilter.endDate) query.append('endDate', historyFilter.endDate);
@@ -435,9 +435,10 @@ const AdminRequests = () => {
                                             <div style={{ 
                                                 width: '4px', height: '40px', borderRadius: '2px', 
                                                 background: req.status === 'pending' ? '#f59e0b' : 
-                                                            (req.status === 'approved' ? '#f59e0b' : // Treat approved as pending for packing
+                                                            (req.status === 'approved' ? '#f59e0b' : 
                                                             (req.status === 'partially_fulfilled' ? '#8b5cf6' : 
-                                                            (req.status === 'completed' ? '#22c55e' : '#ef4444')))
+                                                            (req.status === 'unfulfilled' ? '#dc2626' : 
+                                                            (req.status === 'completed' ? '#22c55e' : '#ef4444'))))
                                             }}></div>
                                             
                                             <div>
@@ -453,6 +454,7 @@ const AdminRequests = () => {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                                             {(req.status === 'pending' || req.status === 'approved') && <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#d97706', background: '#fef3c7', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>PENDING ACTION</span>}
                                             {req.status === 'partially_fulfilled' && <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#7c3aed', background: '#ede9fe', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>FULFILLED PARTIALLY</span>}
+                                            {req.status === 'unfulfilled' && <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#dc2626', background: '#fef2f2', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>UNFULFILLED</span>}
                                             {req.status === 'completed' && <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>COMPLETED</span>}
                                             {req.status === 'rejected' && <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#991b1b', background: '#fee2e2', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>REJECTED</span>}
                                             {expandedId === req._id ? <ChevronUp size={20} color="var(--text-muted)"/> : <ChevronDown size={20} color="var(--text-muted)"/>}

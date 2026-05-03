@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { Download, FileText, Loader2 } from 'lucide-react';
+import { Download, FileText, Loader2, PackageX } from 'lucide-react';
 import api from '../services/api';
+import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../context/NotificationContext';
 import AddItem from '../components/Dashboard/AddItem';
 import RequirementList from '../components/Dashboard/RequirementList';
@@ -12,10 +13,12 @@ import { DashboardRowSkeleton } from '../components/UI/Skeleton';
 
 const Dashboard = () => {
   const { showConfirm, showToast } = useNotification();
+  const navigate = useNavigate();
   const [list, setList] = useState({ items: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [pendingExpiryCount, setPendingExpiryCount] = useState(0);
 
   const fetchTodayList = async () => {
     try {
@@ -41,6 +44,12 @@ const Dashboard = () => {
     }, 5000);
 
     return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    api.get('/expiry/pending-count')
+      .then(res => setPendingExpiryCount(res.data.count))
+      .catch(() => {});
   }, []);
 
   // Auto-scroll to bottom when items added
@@ -161,7 +170,27 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* List Section */}
+      {/* Pending expiry widget */}
+      {pendingExpiryCount > 0 && (
+        <div
+          onClick={() => navigate('/expiry-verification')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.75rem',
+            padding: '0.75rem 1.25rem', borderRadius: '10px',
+            background: '#fff7ed', border: '1px solid #fed7aa',
+            color: '#c2410c', cursor: 'pointer', marginBottom: '1rem',
+            transition: 'background 0.2s'
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = '#ffedd5'}
+          onMouseLeave={e => e.currentTarget.style.background = '#fff7ed'}
+        >
+          <PackageX size={20} />
+          <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+            {pendingExpiryCount} branch{pendingExpiryCount > 1 ? 'es have' : ' has'} unverified expiry boxes
+          </span>
+          <span style={{ marginLeft: 'auto', fontSize: '0.8rem', opacity: 0.7 }}>View →</span>
+        </div>
+      )}
       <div style={{ paddingBottom: '1rem', marginTop: '1rem' }}>
         {loading ? (
             <div style={{ paddingTop: '0.5rem' }}>

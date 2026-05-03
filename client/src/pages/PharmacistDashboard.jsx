@@ -22,6 +22,7 @@ const PharmacistDashboard = () => {
         switch(status) {
             case 'completed': return { bg: '#dcfce7', text: '#166534' }; // Green
             case 'partially_fulfilled': return { bg: '#f3e8ff', text: '#6b21a8' }; // Purple
+            case 'unfulfilled': return { bg: '#fef2f2', text: '#dc2626' }; // Red
             case 'approved': return { bg: '#dbeafe', text: '#1e40af' }; // Blue
             case 'rejected': return { bg: '#fee2e2', text: '#991b1b' }; // Red
             default: return { bg: '#fef3c7', text: '#d97706' }; // Pending (Yellow)
@@ -229,13 +230,7 @@ const PharmacistDashboard = () => {
                                 <span style={{ fontWeight: 'bold', color: 'var(--text-secondary)' }}>
                                     {new Date(req.createdAt).toLocaleDateString()}
                                 </span>
-                                <span style={{ 
-                                    padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.8rem',
-                                    background: getStatusColor(req.status).bg,
-                                    color: getStatusColor(req.status).text,
-                                    border: `1px solid ${getStatusColor(req.status).text}20`,
-                                    fontWeight: 600
-                                }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: getStatusColor(req.status).text, background: getStatusColor(req.status).bg, padding: '0.2rem 0.6rem', borderRadius: '12px' }}>
                                     {req.status === 'partially_fulfilled' ? 'PARTIAL' : req.status.toUpperCase()}
                                 </span>
                             </div>

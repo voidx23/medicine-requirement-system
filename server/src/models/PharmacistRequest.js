@@ -36,7 +36,7 @@ const requestSchema = mongoose.Schema({
     }],
     status: {
         type: String,
-        enum: ['pending', 'approved', 'rejected', 'partially_fulfilled', 'completed'],
+        enum: ['pending', 'approved', 'rejected', 'partially_fulfilled', 'completed', 'unfulfilled'],
         default: 'pending'
     },
     adminNotes: {

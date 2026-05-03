@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, UserCircle } from 'lucide-react';
+import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, UserCircle, PackageX, ArrowRightLeft } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
 import { useContext, useState, useEffect, useRef } from 'react';
 import AuthContext from '../../context/AuthContext';
@@ -99,6 +99,20 @@ const Sidebar = () => {
       superAdminOnly: true,
       subLinks: [
         { to: '/store-staff', label: 'Store Staff' }
+<<<<<<< HEAD
+=======
+      ]
+    },
+    { 
+      id: 'expiry-management',
+      icon: PackageX,
+      label: 'Expiry Management',
+      reqPerm: 'expiry_returns',
+      subLinks: [
+        { to: '/expiry-verification', label: 'Expiry Verification' },
+        { to: '/handover', label: 'Handover Prep' },
+        { to: '/reports/supplier-expiry', label: 'Supplier Ledger' }
+>>>>>>> dev
       ]
     },
     { to: '/history', icon: History, label: 'Req History', reqPerm: 'history' },
@@ -130,6 +144,7 @@ const Sidebar = () => {
   const [isReportsOpen, setIsReportsOpen] = useState(false);
   const [isNetworkOpen, setIsNetworkOpen] = useState(false);
   const [isStoreAdminOpen, setIsStoreAdminOpen] = useState(false);
+  const [isExpiryOpen, setIsExpiryOpen] = useState(false);
 
   return (
     <aside style={{
@@ -157,12 +172,21 @@ const Sidebar = () => {
           gap: '0.5rem'
         }}>
            <Frame
+<<<<<<< HEAD
       style={{
         width: '150px',
         height: '150px',
         fill: 'var(--primary)' // works if SVG uses fill="currentColor"
       }}
     />
+=======
+              style={{
+                width: '150px',
+                height: '150px',
+                fill: 'var(--primary)'
+              }}
+            />
+>>>>>>> dev
         </div>
       </div>
 
@@ -173,11 +197,13 @@ const Sidebar = () => {
             if (link.id === 'reports-menu') isOpen = isReportsOpen;
             else if (link.id === 'pharmacy-network') isOpen = isNetworkOpen;
             else if (link.id === 'store-administration') isOpen = isStoreAdminOpen;
+            else if (link.id === 'expiry-management') isOpen = isExpiryOpen;
 
             const toggleOpen = () => {
                 if (link.id === 'reports-menu') setIsReportsOpen(!isReportsOpen);
                 else if (link.id === 'pharmacy-network') setIsNetworkOpen(!isNetworkOpen);
                 else if (link.id === 'store-administration') setIsStoreAdminOpen(!isStoreAdminOpen);
+                else if (link.id === 'expiry-management') setIsExpiryOpen(!isExpiryOpen);
             };
 
             return (
