@@ -64,16 +64,14 @@ const Login = () => {
         }
 
         try {
-            const data = await login(username, password);
-             // Verify post-login
-             if (!lockedBranch && data.role === 'branch') {
-                 // Branches shouldn't login to unlocked devices
-                 // To force them to use the sticky link
-                 localStorage.removeItem('userInfo'); // Immediate logout logic since login already set it
-                 setError('Security Restriction: Pharmacists must use the Secure Desktop Shortcut to setup this device first.');
-                 setIsLoading(false);
-                 return;
-             }
+            await login(username, password, async (data) => {
+                 if (!lockedBranch && data.role === 'branch') {
+                     setError('Security Restriction: Pharmacists must use the Secure Desktop Shortcut to setup this device first.');
+                     setIsLoading(false);
+                     return true; // Abort login
+                 }
+                 return false; // Proceed
+            });
              // Navigation happens in useEffect automatically
         } catch (err) {
             setError('Invalid credentials');
