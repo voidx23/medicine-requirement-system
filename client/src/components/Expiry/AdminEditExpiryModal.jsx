@@ -177,7 +177,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
 
     return (
         <>
-        <Modal isOpen={isOpen} onClose={onClose} title={`Edit Expiry Report: ${expiryList?.branchId?.name}`} maxWidth="600px">
+        <Modal isOpen={isOpen} onClose={onClose} title={`Edit Expiry Report: ${expiryList?.branchId?.name}`} maxWidth="750px">
             <form onSubmit={handleSaveClick} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 
                 {error && (

@@ -72,8 +72,8 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
     if (!expiryList) return null;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={`Verify Box: ${expiryList.branchId?.name}`}>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: '600px' }}>
+        <Modal isOpen={isOpen} onClose={onClose} title={`Verify Box: ${expiryList.branchId?.name}`} maxWidth="750px">
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
                 
                 <div style={{ background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 90px', gap: '1rem', padding: '0.75rem 1rem', background: '#f1f5f9', fontWeight: 600, fontSize: '0.85rem', color: '#475569' }}>

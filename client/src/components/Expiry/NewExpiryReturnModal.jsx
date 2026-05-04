@@ -205,7 +205,7 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
 
     return (
         <>
-        <Modal isOpen={isOpen} onClose={onClose} title="New Expiry Return List" maxWidth="560px">
+        <Modal isOpen={isOpen} onClose={onClose} title="New Expiry Return List" maxWidth="750px">
             <form onSubmit={handleSubmitClick} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
                 {/* Draft restored banner */}
