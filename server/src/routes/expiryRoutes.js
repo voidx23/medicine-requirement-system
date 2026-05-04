@@ -10,7 +10,8 @@ import {
     getPendingHandoverItems,
     processHandover,
     deleteExpiryReturn,
-    updateExpiryReturn
+    updateExpiryReturn,
+    deleteSupplierLedger
 } from '../controllers/expiryController.js';
 import { protect, requirePermission } from '../middleware/authMiddleware.js';
 
@@ -34,5 +35,6 @@ router.route('/handover').post(protect, requirePermission('expiry_returns'), pro
 // Supplier Ledger Routes
 router.route('/ledgers').get(protect, requirePermission('expiry_returns'), getSupplierLedgers);
 router.route('/ledgers/:id/compensate').post(protect, requirePermission('expiry_returns'), logCompensation);
+router.route('/ledgers/:id').delete(protect, requirePermission('expiry_returns'), deleteSupplierLedger);
 
 export default router;

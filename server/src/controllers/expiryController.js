@@ -408,3 +408,25 @@ export const deleteExpiryReturn = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// @desc    Delete a supplier ledger entry
+// @route   DELETE /api/expiry/ledgers/:id
+// @access  Private (Admin)
+export const deleteSupplierLedger = async (req, res) => {
+    try {
+        const { password } = req.body;
+        const ledger = await SupplierExpiryLedger.findById(req.params.id);
+
+        if (!ledger) return res.status(404).json({ message: 'Ledger not found' });
+
+        const adminUser = await User.findById(req.user._id);
+        if (!password || !(await adminUser.matchPassword(password))) {
+            return res.status(401).json({ message: 'Invalid Admin Password' });
+        }
+
+        await ledger.deleteOne();
+        res.json({ message: 'Ledger deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

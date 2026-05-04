@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Truck, DollarSign, Download, FileSpreadsheet } from 'lucide-react';
+import { Truck, DollarSign, Download, FileSpreadsheet, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import Button from '../components/UI/Button';
+import PasswordConfirmModal from '../components/UI/PasswordConfirmModal';
 import LogCompensationModal from '../components/Expiry/LogCompensationModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -69,6 +70,7 @@ const SupplierExpiryReport = () => {
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [selectedMonths, setSelectedMonths] = useState([]);
     const [selectedLedger, setSelectedLedger] = useState(null);
+    const [actionModal, setActionModal] = useState({ isOpen: false, ledgerId: null });
 
     useEffect(() => {
         api.get('/suppliers').then(res => setSuppliers(res.data)).catch(console.error);
@@ -90,6 +92,20 @@ const SupplierExpiryReport = () => {
     };
 
     useEffect(() => { fetchLedgers(); }, [selectedSupplier, selectedYear, selectedMonths]);
+
+    const handleDeleteClick = (id) => {
+        setActionModal({ isOpen: true, ledgerId: id });
+    };
+
+    const handleConfirmDelete = async (password) => {
+        try {
+            await api.delete(`/expiry/ledgers/${actionModal.ledgerId}`, { data: { password } });
+            setActionModal({ isOpen: false, ledgerId: null });
+            fetchLedgers();
+        } catch (error) {
+            throw error; // Let modal show the error
+        }
+    };
 
     const toggleMonth = (m) => setSelectedMonths(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
 
@@ -221,6 +237,18 @@ const SupplierExpiryReport = () => {
                                         style={{ padding: '0.5rem 0.65rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                                         <Download size={15} />
                                     </button>
+                                    <button onClick={() => handleDeleteClick(ledger._id)}
+                                        title="Delete Ledger Entry"
+                                        style={{ 
+                                            padding: '0.5rem 0.65rem', borderRadius: '8px', border: '1px solid #fee2e2', 
+                                            background: '#fef2f2', color: '#ef4444', cursor: 'pointer', 
+                                            display: 'flex', alignItems: 'center', transition: 'all 0.2s' 
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'}
+                                        onMouseLeave={e => e.currentTarget.style.background = '#fef2f2'}
+                                    >
+                                        <Trash2 size={15} />
+                                    </button>
                                 </div>
                             </div>
                         );
@@ -236,6 +264,16 @@ const SupplierExpiryReport = () => {
                     onSuccess={() => { setSelectedLedger(null); fetchLedgers(); }}
                 />
             )}
+
+            <PasswordConfirmModal
+                isOpen={actionModal.isOpen}
+                onClose={() => setActionModal({ isOpen: false, ledgerId: null })}
+                onConfirm={handleConfirmDelete}
+                title="Confirm Ledger Deletion"
+                message="This action is permanent and will remove this ledger entry and all logged compensations for this month. Please enter your admin password to confirm."
+                confirmText="Delete Ledger"
+                variant="danger"
+            />
         </div>
     );
 };
