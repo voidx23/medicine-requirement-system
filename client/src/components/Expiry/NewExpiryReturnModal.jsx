@@ -226,25 +226,33 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
         if (!medicine) return;
 
         const id = medicine.isCustom ? `custom_${medicine.name.toLowerCase()}` : medicine._id;
+        const unitsPerBox = medicine.unitsPerBox || 1;
+
+        // Normalize the input details first
+        const totalLoose = (details.qtySent * unitsPerBox) + details.qtySentLoose;
+        const normQtySent = Math.floor(totalLoose / unitsPerBox);
+        const normQtySentLoose = totalLoose % unitsPerBox;
 
         setItems(prev => {
             // Check if already exists with SAME BATCH
             const existingIdx = prev.findIndex(i => i.medicineId === id && i.batchNumber === details.batchNumber);
             if (existingIdx !== -1) {
                 const newItems = [...prev];
-                newItems[existingIdx].qtySent += details.qtySent;
-                newItems[existingIdx].qtySentLoose += details.qtySentLoose;
+                const combinedTotalLoose = ((newItems[existingIdx].qtySent + normQtySent) * unitsPerBox) + (newItems[existingIdx].qtySentLoose + normQtySentLoose);
+                
+                newItems[existingIdx].qtySent = Math.floor(combinedTotalLoose / unitsPerBox);
+                newItems[existingIdx].qtySentLoose = combinedTotalLoose % unitsPerBox;
                 return newItems;
             }
             return [...prev, {
                 medicineId: id,
                 name: medicine.name,
                 barcode: medicine.barcode || '',
-                qtySent: details.qtySent,
-                qtySentLoose: details.qtySentLoose,
+                qtySent: normQtySent,
+                qtySentLoose: normQtySentLoose,
                 batchNumber: details.batchNumber,
                 isCustom: !!medicine.isCustom,
-                unitsPerBox: medicine.unitsPerBox || 1
+                unitsPerBox: unitsPerBox
             }];
         });
         
