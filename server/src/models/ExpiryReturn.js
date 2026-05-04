@@ -44,6 +44,10 @@ const expiryItemSchema = new mongoose.Schema({
     handedOverAt: {
         type: Date,
         default: null
+    },
+    batchNumber: {
+        type: String,
+        default: ''
     }
 });
 

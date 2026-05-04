@@ -84,7 +84,10 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
                             }}>
                                 <div>
                                     <div style={{ fontWeight: 500, color: 'var(--text-main)', fontSize: '0.9rem' }}>{item.medicineId?.name || item.customName || 'Unknown'}</div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{item.medicineId?.barcode}</div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem' }}>
+                                        <span>{item.medicineId?.barcode}</span>
+                                        {item.batchNumber && <span style={{ color: 'var(--primary)', fontWeight: 600 }}>Batch: {item.batchNumber}</span>}
+                                    </div>
                                 </div>
                                 <div style={{ textAlign: 'center', fontWeight: 600, display: 'flex', justifyContent: 'center', gap: '4px' }}>
                                     <span title="Boxes">{item.qtySent}</span>

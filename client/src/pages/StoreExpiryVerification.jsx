@@ -153,6 +153,7 @@ const ReturnCard = ({ ret, onVerify, onDelete, onEdit }) => {
                                         <div style={{ fontWeight: 500, color: 'var(--text-main)' }}>
                                             {item.medicineId?.name || item.customName || 'Unknown'}
                                             {item.customName && <span style={{ fontSize: '0.65rem', background: '#fde68a', color: '#92400e', padding: '1px 4px', borderRadius: '3px', marginLeft: '5px' }}>CUSTOM</span>}
+                                            {item.batchNumber && <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '2px' }}>Batch: {item.batchNumber}</div>}
                                         </div>
                                         <div style={{ textAlign: 'center', display: 'flex', justifyContent: 'center', gap: '4px' }}>
                                             <span>{item.qtySent}</span>

@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Modal from '../UI/Modal';
-import Button from '../UI/Button';
+import Button from '../components/UI/Button';
 import StaffVerificationModal from '../UI/StaffVerificationModal';
 import api from '../../services/api';
-import { Search, Plus, Trash2, Scan, ScanLine } from 'lucide-react';
+import { Search, Plus, Trash2, Scan, ScanLine, Edit2 } from 'lucide-react';
 
 const MONTHS = [
     "January", "February", "March", "April", "May", "June",
@@ -11,6 +11,74 @@ const MONTHS = [
 ];
 
 const DRAFT_KEY = (userId) => `expiry_draft_${userId}`;
+
+// --- SUB-MODAL FOR ITEM QUANTITY & BATCH ---
+const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
+    const [qty, setQty] = useState(1);
+    const [loose, setLoose] = useState(0);
+    const [batch, setBatch] = useState('');
+    const inputRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setQty(1);
+            setLoose(0);
+            setBatch('');
+            setTimeout(() => inputRef.current?.focus(), 50);
+        }
+    }, [isOpen]);
+
+    if (!medicine) return null;
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onAdd({
+            qtySent: parseInt(qty) || 0,
+            qtySentLoose: parseInt(loose) || 0,
+            batchNumber: batch.trim()
+        });
+        onClose();
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={`Add ${medicine.name}`} maxWidth="400px">
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="input-group">
+                        <label>Quantity (Boxes)</label>
+                        <input 
+                            ref={inputRef}
+                            type="number" min="0" value={qty} 
+                            onChange={e => setQty(e.target.value)}
+                            style={{ padding: '0.65rem', borderRadius: '8px', border: '1px solid var(--border)', width: '100%' }}
+                        />
+                    </div>
+                    <div className="input-group">
+                        <label>Loose Units</label>
+                        <input 
+                            type="number" min="0" value={loose} 
+                            onChange={e => setLoose(e.target.value)}
+                            style={{ padding: '0.65rem', borderRadius: '8px', border: '1px solid var(--border)', width: '100%' }}
+                        />
+                    </div>
+                </div>
+                <div className="input-group">
+                    <label>Batch Number</label>
+                    <input 
+                        type="text" value={batch} 
+                        onChange={e => setBatch(e.target.value)}
+                        placeholder="e.g. B12345"
+                        style={{ padding: '0.65rem', borderRadius: '8px', border: '1px solid var(--border)', width: '100%' }}
+                    />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                    <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+                    <Button type="submit">Add to List</Button>
+                </div>
+            </form>
+        </Modal>
+    );
+};
 
 const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], userId }) => {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
@@ -21,6 +89,9 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+    // Item details modal
+    const [itemModal, setItemModal] = useState({ isOpen: false, medicine: null });
 
     // Scan mode
     const [scanMode, setScanMode] = useState(false);
@@ -33,6 +104,7 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
 
     const searchInputRef = useRef(null);
     const highlightedRef = useRef(null);
+    const itemsEndRef = useRef(null);
 
     // ── Draft restore on open ──
     useEffect(() => {
@@ -56,6 +128,13 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
         const key = DRAFT_KEY(userId || 'guest');
         localStorage.setItem(key, JSON.stringify({ month, year, items }));
     }, [month, year, items, isOpen, userId]);
+
+    // ── Auto scroll to bottom when items added ──
+    useEffect(() => {
+        if (items.length > 0) {
+            itemsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [items.length]);
 
     // ── Scroll highlighted suggestion into view ──
     useEffect(() => {
@@ -87,7 +166,7 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                 scanBufferRef.current = '';
                 if (barcode) {
                     const match = allMedicines.find(m => m.barcode === barcode);
-                    if (match) addItem(match);
+                    if (match) openItemModal(match);
                 }
                 return;
             }
@@ -109,65 +188,85 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
         else if (e.key === 'ArrowUp') { e.preventDefault(); setHighlightedIndex(i => Math.max(i - 1, 0)); }
         else if (e.key === 'Enter') {
             e.preventDefault();
-            if (highlightedIndex >= 0 && highlightedIndex < searchResults.length) addItem(searchResults[highlightedIndex]);
-            else if (highlightedIndex === searchResults.length) addCustomItem();
+            if (highlightedIndex >= 0 && highlightedIndex < searchResults.length) openItemModal(searchResults[highlightedIndex]);
+            else if (highlightedIndex === searchResults.length) openItemModal({ name: searchTerm.trim(), isCustom: true });
         }
         else if (e.key === 'Escape') { setSearchResults([]); setHighlightedIndex(-1); }
     };
 
-    const addItem = useCallback((medicine) => {
-        setItems(prev =>
-            prev.some(i => i.medicineId === medicine._id)
-                ? prev.map(i => i.medicineId === medicine._id ? { ...i, qtySent: i.qtySent + 1 } : i)
-                : [...prev, { medicineId: medicine._id, name: medicine.name, barcode: medicine.barcode, qtySent: 1, qtySentLoose: 0, unitsPerBox: medicine.unitsPerBox || 1 }]
-        );
+    const openItemModal = (medicine) => {
+        setItemModal({ isOpen: true, medicine });
         setSearchTerm('');
         setSearchResults([]);
         setHighlightedIndex(-1);
-        searchInputRef.current?.focus();
-    }, []);
+    };
 
-    const addCustomItem = () => {
-        const name = searchTerm.trim();
-        if (!name) return;
-        const customKey = `custom_${name.toLowerCase()}`;
-        setItems(prev =>
-            prev.some(i => i.medicineId === customKey)
-                ? prev.map(i => i.medicineId === customKey ? { ...i, qtySent: i.qtySent + 1 } : i)
-                : [...prev, { medicineId: customKey, name, barcode: '', qtySent: 1, qtySentLoose: 0, isCustom: true, unitsPerBox: 1 }]
-        );
-        setSearchTerm('');
-        setSearchResults([]);
-        setHighlightedIndex(-1);
+    const addItemToList = (details) => {
+        const medicine = itemModal.medicine;
+        if (!medicine) return;
+
+        const id = medicine.isCustom ? `custom_${medicine.name.toLowerCase()}` : medicine._id;
+
+        setItems(prev => {
+            // Check if already exists with SAME BATCH
+            const existingIdx = prev.findIndex(i => i.medicineId === id && i.batchNumber === details.batchNumber);
+            if (existingIdx !== -1) {
+                const newItems = [...prev];
+                newItems[existingIdx].qtySent += details.qtySent;
+                newItems[existingIdx].qtySentLoose += details.qtySentLoose;
+                return newItems;
+            }
+            return [...prev, {
+                medicineId: id,
+                name: medicine.name,
+                barcode: medicine.barcode || '',
+                qtySent: details.qtySent,
+                qtySentLoose: details.qtySentLoose,
+                batchNumber: details.batchNumber,
+                isCustom: !!medicine.isCustom,
+                unitsPerBox: medicine.unitsPerBox || 1
+            }];
+        });
+        
         searchInputRef.current?.focus();
     };
 
-    const updateQty = (id, newQty) => {
+    const updateQty = (idx, newQty) => {
         const qty = parseInt(newQty);
         if (isNaN(qty) || qty < 0) return;
-        setItems(items.map(i => i.medicineId === id ? { ...i, qtySent: qty } : i));
+        const newItems = [...items];
+        newItems[idx].qtySent = qty;
+        setItems(newItems);
     };
 
-    const updateQtyLoose = (id, newQty) => {
+    const updateQtyLoose = (idx, newQty) => {
         const qty = parseInt(newQty);
         if (isNaN(qty) || qty < 0) return;
-        setItems(items.map(i => i.medicineId === id ? { ...i, qtySentLoose: qty } : i));
+        const newItems = [...items];
+        newItems[idx].qtySentLoose = qty;
+        setItems(newItems);
     };
 
-    const normalizeQty = (id) => {
-        setItems(prev => prev.map(i => {
-            if (i.medicineId !== id) return i;
-            const unitsPerBox = i.unitsPerBox || 1;
-            const totalLoose = (i.qtySent * unitsPerBox) + (i.qtySentLoose || 0);
+    const updateBatch = (idx, newBatch) => {
+        const newItems = [...items];
+        newItems[idx].batchNumber = newBatch;
+        setItems(newItems);
+    };
+
+    const normalizeQty = (idx) => {
+        setItems(prev => prev.map((item, i) => {
+            if (i !== idx) return item;
+            const unitsPerBox = item.unitsPerBox || 1;
+            const totalLoose = (item.qtySent * unitsPerBox) + (item.qtySentLoose || 0);
             return {
-                ...i,
+                ...item,
                 qtySent: Math.floor(totalLoose / unitsPerBox),
                 qtySentLoose: totalLoose % unitsPerBox
             };
         }));
     };
 
-    const removeItem = (id) => setItems(items.filter(i => i.medicineId !== id));
+    const removeItem = (idx) => setItems(items.filter((_, i) => i !== idx));
 
     const handleSubmitClick = (e) => {
         e.preventDefault();
@@ -186,7 +285,8 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                     medicineId: i.isCustom ? undefined : i.medicineId,
                     customName: i.isCustom ? i.name : undefined,
                     qtySent: i.qtySent,
-                    qtySentLoose: i.qtySentLoose || 0
+                    qtySentLoose: i.qtySentLoose || 0,
+                    batchNumber: i.batchNumber
                 })),
                 status: 'Submitted',
                 verifiedBy: verifiedName
@@ -279,7 +379,7 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                                     {searchResults.map((med, idx) => (
                                         <div key={med._id}
                                             ref={idx === highlightedIndex ? highlightedRef : null}
-                                            onClick={() => addItem(med)}
+                                            onClick={() => openItemModal(med)}
                                             style={{ padding: '0.45rem 0.75rem', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: idx === highlightedIndex ? 'var(--primary-light)' : 'transparent' }}
                                             onMouseEnter={() => setHighlightedIndex(idx)}
                                             onMouseLeave={() => setHighlightedIndex(-1)}
@@ -301,7 +401,7 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                                     {/* Manual add */}
                                     <div
                                         ref={searchResults.length === highlightedIndex ? highlightedRef : null}
-                                        onClick={addCustomItem}
+                                        onClick={() => openItemModal({ name: searchTerm.trim(), isCustom: true })}
                                         style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: searchResults.length === highlightedIndex ? 'var(--primary-light)' : '#fefce8', borderTop: searchResults.length > 0 ? '1px solid #e2e8f0' : 'none', borderRadius: searchResults.length === 0 ? '8px' : '0 0 8px 8px' }}
                                         onMouseEnter={() => setHighlightedIndex(searchResults.length)}
                                         onMouseLeave={() => setHighlightedIndex(-1)}
@@ -328,33 +428,31 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                             </div>
                         ) : (
                             <div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0 }}>
-                                    <div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div />
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0, zIndex: 10 }}>
+                                    <div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div style={{ textAlign: 'center' }}>Batch</div><div />
                                 </div>
                                 {items.map((item, idx) => (
-                                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 36px', gap: '0.5rem', padding: '0.4rem 0.75rem', alignItems: 'center', borderBottom: idx !== items.length - 1 ? '1px solid #f1f5f9' : 'none', background: item.isCustom ? '#fffbeb' : 'transparent' }}>
+                                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.4rem 0.75rem', alignItems: 'center', borderBottom: idx !== items.length - 1 ? '1px solid #f1f5f9' : 'none', background: item.isCustom ? '#fffbeb' : 'transparent' }}>
                                         <div style={{ overflow: 'hidden' }}>
                                             <div style={{ fontWeight: 500, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                 {item.isCustom && <span style={{ fontSize: '0.65rem', background: '#fde68a', color: '#92400e', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>CUSTOM</span>}
                                                 {item.name}
-                                                {!item.isCustom && (
-                                                    <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '1px 5px', borderRadius: '4px', border: '1px solid #e2e8f0', flexShrink: 0 }}>
-                                                        U: {item.unitsPerBox === 1 ? 'NOS' : item.unitsPerBox || 1}
-                                                    </span>
-                                                )}
                                             </div>
                                             {item.barcode && <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{item.barcode}</div>}
                                         </div>
-                                        <input type="number" min="0" value={item.qtySent} onChange={e => updateQty(item.medicineId, e.target.value)} onBlur={() => normalizeQty(item.medicineId)}
+                                        <input type="number" min="0" value={item.qtySent} onChange={e => updateQty(idx, e.target.value)} onBlur={() => normalizeQty(idx)}
                                             style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
-                                        <input type="number" min="0" value={item.qtySentLoose || 0} onChange={e => updateQtyLoose(item.medicineId, e.target.value)} onBlur={() => normalizeQty(item.medicineId)}
+                                        <input type="number" min="0" value={item.qtySentLoose || 0} onChange={e => updateQtyLoose(idx, e.target.value)} onBlur={() => normalizeQty(idx)}
                                             style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
-                                        <button type="button" onClick={() => removeItem(item.medicineId)}
+                                        <input type="text" placeholder="Batch" value={item.batchNumber || ''} onChange={e => updateBatch(idx, e.target.value)}
+                                            style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
+                                        <button type="button" onClick={() => removeItem(idx)}
                                             style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                             <Trash2 size={14} />
                                         </button>
                                     </div>
                                 ))}
+                                <div ref={itemsEndRef} />
                             </div>
                         )}
                     </div>
@@ -368,6 +466,13 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                 </div>
             </form>
         </Modal>
+
+        <ItemDetailsModal 
+            isOpen={itemModal.isOpen} 
+            onClose={() => setItemModal({ isOpen: false, medicine: null })}
+            onAdd={addItemToList}
+            medicine={itemModal.medicine}
+        />
 
         <StaffVerificationModal
             isOpen={verifyModalOpen}

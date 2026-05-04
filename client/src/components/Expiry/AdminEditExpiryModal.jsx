@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Modal from '../UI/Modal';
-import Button from '../UI/Button';
+import Button from '../components/UI/Button';
 import PasswordConfirmModal from '../UI/PasswordConfirmModal';
 import api from '../../services/api';
 import { Search, Plus, Trash2, Scan, ScanLine, Edit3 } from 'lucide-react';
@@ -41,6 +41,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                 barcode: i.medicineId?.barcode || '',
                 qtySent: i.qtySent,
                 qtySentLoose: i.qtySentLoose || 0,
+                batchNumber: i.batchNumber || '',
                 isCustom: !!i.customName,
                 unitsPerBox: i.medicineId?.unitsPerBox || 1
             })));
@@ -108,7 +109,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
         setItems(prev =>
             prev.some(i => i.medicineId === medicine._id)
                 ? prev.map(i => i.medicineId === medicine._id ? { ...i, qtySent: i.qtySent + 1 } : i)
-                : [...prev, { medicineId: medicine._id, name: medicine.name, barcode: medicine.barcode, qtySent: 1, qtySentLoose: 0, unitsPerBox: medicine.unitsPerBox || 1 }]
+                : [...prev, { medicineId: medicine._id, name: medicine.name, barcode: medicine.barcode, qtySent: 1, qtySentLoose: 0, batchNumber: '', unitsPerBox: medicine.unitsPerBox || 1 }]
         );
         setSearchTerm('');
         setSearchResults([]);
@@ -123,7 +124,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
         setItems(prev =>
             prev.some(i => i.medicineId === customKey)
                 ? prev.map(i => i.medicineId === customKey ? { ...i, qtySent: i.qtySent + 1 } : i)
-                : [...prev, { medicineId: customKey, name, barcode: '', qtySent: 1, qtySentLoose: 0, isCustom: true, unitsPerBox: 1 }]
+                : [...prev, { medicineId: customKey, name, barcode: '', qtySent: 1, qtySentLoose: 0, batchNumber: '', isCustom: true, unitsPerBox: 1 }]
         );
         setSearchTerm('');
         setSearchResults([]);
@@ -141,6 +142,10 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
         const qty = parseInt(newQty);
         if (isNaN(qty) || qty < 0) return;
         setItems(items.map(i => i.medicineId === id ? { ...i, qtySentLoose: qty } : i));
+    };
+
+    const updateBatch = (id, newBatch) => {
+        setItems(items.map(i => i.medicineId === id ? { ...i, batchNumber: newBatch } : i));
     };
 
     const removeItem = (id) => setItems(items.filter(i => i.medicineId !== id));
@@ -162,7 +167,8 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                     medicineId: i.isCustom ? undefined : i.medicineId,
                     customName: i.isCustom ? i.name : undefined,
                     qtySent: i.qtySent,
-                    qtySentLoose: i.qtySentLoose || 0
+                    qtySentLoose: i.qtySentLoose || 0,
+                    batchNumber: i.batchNumber
                 })),
                 password
             });
@@ -252,15 +258,17 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                 </div>
 
                 <div style={{ background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', height: '240px', overflowY: 'auto' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0 }}>
-                        <div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0, zIndex: 10 }}>
+                        <div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div style={{ textAlign: 'center' }}>Batch</div><div />
                     </div>
                     {items.map((item, idx) => (
-                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 36px', gap: '0.5rem', padding: '0.4rem 0.75rem', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
+                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.4rem 0.75rem', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
                             <div style={{ fontSize: '0.82rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
                             <input type="number" min="0" value={item.qtySent} onChange={e => updateQty(item.medicineId, e.target.value)}
                                 style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
                             <input type="number" min="0" value={item.qtySentLoose} onChange={e => updateQtyLoose(item.medicineId, e.target.value)}
+                                style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
+                            <input type="text" placeholder="Batch" value={item.batchNumber} onChange={e => updateBatch(item.medicineId, e.target.value)}
                                 style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
                             <button type="button" onClick={() => removeItem(item.medicineId)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
                                 <Trash2 size={14} />
