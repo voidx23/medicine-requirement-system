@@ -199,6 +199,7 @@ const StoreExpiryVerification = () => {
     const [editingReturn, setEditingReturn] = useState(null);
     const [allMedicines, setAllMedicines] = useState([]);
     const [filter, setFilter] = useState('all'); // 'all' | 'Submitted' | 'Verified'
+    const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc'
     const [actionModal, setActionModal] = useState({ isOpen: false, requestId: null });
 
     const fetchReturns = async () => {
@@ -236,7 +237,13 @@ const StoreExpiryVerification = () => {
 
     const pending = returns.filter(r => r.status === 'Submitted');
     const verified = returns.filter(r => r.status === 'Verified');
-    const filtered = filter === 'all' ? returns : returns.filter(r => r.status === filter);
+    
+    const filtered = (filter === 'all' ? returns : returns.filter(r => r.status === filter))
+        .sort((a, b) => {
+            const dateA = (a.year * 100) + a.month;
+            const dateB = (b.year * 100) + b.month;
+            return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+        });
 
     return (
         <div>
@@ -281,6 +288,20 @@ const StoreExpiryVerification = () => {
                             {f === 'all' ? 'All' : f}
                         </button>
                     ))}
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>Sort Date:</span>
+                        <select 
+                            value={sortOrder} 
+                            onChange={(e) => setSortOrder(e.target.value)}
+                            style={{ 
+                                padding: '0.4rem 0.75rem', borderRadius: '8px', border: '1px solid var(--glass-border)',
+                                fontSize: '0.82rem', background: '#fff', cursor: 'pointer', outline: 'none'
+                            }}
+                        >
+                            <option value="desc">Newest First</option>
+                            <option value="asc">Oldest First</option>
+                        </select>
+                    </div>
                 </div>
             )}
 
