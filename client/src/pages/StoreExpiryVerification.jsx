@@ -199,6 +199,8 @@ const StoreExpiryVerification = () => {
     const [editingReturn, setEditingReturn] = useState(null);
     const [allMedicines, setAllMedicines] = useState([]);
     const [filter, setFilter] = useState('all'); // 'all' | 'Submitted' | 'Verified'
+    const [filterMonth, setFilterMonth] = useState('');
+    const [filterYear, setFilterYear] = useState('');
     const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc'
     const [actionModal, setActionModal] = useState({ isOpen: false, requestId: null });
 
@@ -239,6 +241,11 @@ const StoreExpiryVerification = () => {
     const verified = returns.filter(r => r.status === 'Verified');
     
     const filtered = (filter === 'all' ? returns : returns.filter(r => r.status === filter))
+        .filter(r => {
+            const mMatch = filterMonth === '' || r.month === parseInt(filterMonth);
+            const yMatch = filterYear === '' || r.year === parseInt(filterYear);
+            return mMatch && yMatch;
+        })
         .sort((a, b) => {
             const dateA = (a.year * 100) + a.month;
             const dateB = (b.year * 100) + b.month;
@@ -288,6 +295,23 @@ const StoreExpiryVerification = () => {
                             {f === 'all' ? 'All' : f}
                         </button>
                     ))}
+                    <div style={{ marginLeft: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <select 
+                            value={filterMonth} 
+                            onChange={(e) => setFilterMonth(e.target.value)}
+                            style={{ padding: '0.4rem 0.5rem', borderRadius: '8px', border: '1px solid var(--glass-border)', fontSize: '0.82rem', background: '#fff' }}
+                        >
+                            <option value="">All Months</option>
+                            {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                        </select>
+                        <input 
+                            type="number" 
+                            placeholder="Year"
+                            value={filterYear}
+                            onChange={(e) => setFilterYear(e.target.value)}
+                            style={{ padding: '0.4rem 0.5rem', borderRadius: '8px', border: '1px solid var(--glass-border)', fontSize: '0.82rem', width: '80px' }}
+                        />
+                    </div>
                     <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>Sort Date:</span>
                         <select 
