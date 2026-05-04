@@ -430,3 +430,25 @@ export const deleteSupplierLedger = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// @desc    Mark an item as non-returnable (disposed)
+// @route   PUT /api/expiry/:id/items/:itemId/dispose
+// @access  Private (Admin)
+export const markItemAsNonReturnable = async (req, res) => {
+    try {
+        const { id, itemId } = req.params;
+        const expiryList = await ExpiryReturn.findById(id);
+
+        if (!expiryList) return res.status(404).json({ message: 'List not found' });
+        
+        const item = expiryList.items.id(itemId);
+        if (!item) return res.status(404).json({ message: 'Item not found' });
+
+        item.isNonReturnable = true;
+        await expiryList.save();
+
+        res.json({ message: 'Item marked as non-returnable' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

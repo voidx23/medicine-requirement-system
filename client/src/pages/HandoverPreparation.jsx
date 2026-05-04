@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Truck, Package, ChevronDown, ChevronUp, CheckSquare, Square, AlertCircle } from 'lucide-react';
+import { Truck, Package, ChevronDown, ChevronUp, CheckSquare, Square, AlertCircle, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import Button from '../components/UI/Button';
 import { useNotification } from '../context/NotificationContext';
@@ -89,6 +89,19 @@ const HandoverPreparation = () => {
         }
     };
 
+    const handleDispose = async (expiryReturnId, itemId, medicineName) => {
+        const confirmed = await showConfirm(`Are you sure you want to mark ${medicineName} as Non-Returnable? It will be removed from this list.`);
+        if (!confirmed) return;
+
+        try {
+            await api.put(`/expiry/${expiryReturnId}/items/${itemId}/dispose`);
+            showToast(`${medicineName} marked as non-returnable.`, 'success');
+            fetchPending();
+        } catch (err) {
+            showToast(err.response?.data?.message || 'Failed to dispose item', 'error');
+        }
+    };
+
     if (loading) return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>Loading handover items...</div>;
 
     return (
@@ -157,11 +170,12 @@ const HandoverPreparation = () => {
                                                 {allChecked ? <CheckSquare size={16} /> : <Square size={16} />}
                                             </button>
                                                 <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>SELECT ALL</span>
-                                            <div style={{ marginLeft: 'auto', display: 'grid', gridTemplateColumns: '120px 80px 80px 80px', gap: '0.5rem', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textAlign: 'center' }}>
+                                            <div style={{ marginLeft: 'auto', display: 'grid', gridTemplateColumns: '120px 80px 80px 80px 40px', gap: '0.5rem', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textAlign: 'center' }}>
                                                 <div style={{ textAlign: 'left' }}>Branch · Month</div>
                                                 <div>Qty (Bx/L)</div>
                                                 <div>Cost (Box)</div>
                                                 <div>Value</div>
+                                                <div>Action</div>
                                             </div>
                                         </div>
 
@@ -191,7 +205,7 @@ const HandoverPreparation = () => {
                                                             </div>
                                                             {item.medicineBarcode && <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{item.medicineBarcode}</div>}
                                                         </div>
-                                                        <div style={{ display: 'grid', gridTemplateColumns: '120px 80px 80px 80px', gap: '0.5rem', fontSize: '0.82rem', textAlign: 'center', flexShrink: 0 }}>
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '120px 80px 80px 80px 40px', gap: '0.5rem', fontSize: '0.82rem', textAlign: 'center', flexShrink: 0, alignItems: 'center' }}>
                                                             <div style={{ textAlign: 'left', fontSize: '0.75rem', color: '#64748b' }}>
                                                                 {item.branchName}<br />
                                                                 <span style={{ color: '#94a3b8' }}>{MONTHS[item.month - 1]} {item.year}</span>
@@ -199,6 +213,20 @@ const HandoverPreparation = () => {
                                                             <div style={{ fontWeight: 500 }}>{item.qtyReceived} / {item.qtyReceivedLoose}</div>
                                                             <div style={{ color: '#64748b' }}>{fmt(item.costPriceAtReturn)}</div>
                                                             <div style={{ fontWeight: 600, color: 'var(--primary)' }}>{fmt(item.value)}</div>
+                                                            <button 
+                                                                onClick={(e) => { e.stopPropagation(); handleDispose(item.expiryReturnId, item.itemId, item.medicineName); }}
+                                                                title="Mark as Non-Returnable"
+                                                                style={{ 
+                                                                    background: '#fee2e2', color: '#ef4444', border: 'none', 
+                                                                    borderRadius: '6px', width: '32px', height: '32px', 
+                                                                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                    transition: 'all 0.1s'
+                                                                }}
+                                                                onMouseEnter={e => e.currentTarget.style.background = '#fecaca'}
+                                                                onMouseLeave={e => e.currentTarget.style.background = '#fee2e2'}
+                                                            >
+                                                                <Trash2 size={15} />
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 );

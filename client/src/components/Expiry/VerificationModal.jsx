@@ -13,8 +13,7 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
             setItems(expiryList.items.map(item => ({
                 ...item,
                 qtyReceived: item.qtyReceived !== null ? item.qtyReceived : item.qtySent,
-                qtyReceivedLoose: item.qtyReceivedLoose !== null ? item.qtyReceivedLoose : (item.qtySentLoose || 0),
-                isNonReturnable: item.isNonReturnable || false
+                qtyReceivedLoose: item.qtyReceivedLoose !== null ? item.qtyReceivedLoose : (item.qtySentLoose || 0)
             })));
             setStoreNote(expiryList.storeNote || '');
         }
@@ -36,12 +35,6 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
         setItems(newItems);
     };
 
-    const toggleDispose = (idx) => {
-        const newItems = [...items];
-        newItems[idx].isNonReturnable = !newItems[idx].isNonReturnable;
-        setItems(newItems);
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
@@ -54,8 +47,7 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
                     qtySent: i.qtySent,
                     qtySentLoose: i.qtySentLoose || 0,
                     qtyReceived: i.qtyReceived,
-                    qtyReceivedLoose: i.qtyReceivedLoose || 0,
-                    isNonReturnable: i.isNonReturnable
+                    qtyReceivedLoose: i.qtyReceivedLoose || 0
                 }))
             };
             
@@ -76,17 +68,16 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
                 
                 <div style={{ background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px 90px', gap: '1rem', padding: '0.75rem 1rem', background: '#f1f5f9', fontWeight: 600, fontSize: '0.85rem', color: '#475569' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px', gap: '1rem', padding: '0.75rem 1rem', background: '#f1f5f9', fontWeight: 600, fontSize: '0.85rem', color: '#475569' }}>
                         <div>Medicine</div>
                         <div style={{ textAlign: 'center' }}>Sent (Bx/L)</div>
                         <div style={{ textAlign: 'center' }}>Rcv (Bx/L)</div>
-                        <div style={{ textAlign: 'center' }}>Disposed?</div>
                     </div>
                     
                     <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
                         {items.map((item, idx) => (
                             <div key={idx} style={{ 
-                                display: 'grid', gridTemplateColumns: '1fr 100px 100px 90px', gap: '1rem', 
+                                display: 'grid', gridTemplateColumns: '1fr 100px 100px', gap: '1rem', 
                                 padding: '0.75rem 1rem', alignItems: 'center', 
                                 borderBottom: idx !== items.length - 1 ? '1px solid #e2e8f0' : 'none',
                                 background: (item.qtyReceived !== item.qtySent || item.qtyReceivedLoose !== item.qtySentLoose) ? 'rgba(239, 68, 68, 0.05)' : 'transparent'
@@ -118,17 +109,6 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
                                         title="Loose"
                                         style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 600, color: item.qtyReceivedLoose !== item.qtySentLoose ? '#dc2626' : 'inherit' }}
                                     />
-                                </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                                        <input 
-                                            type="checkbox" 
-                                            checked={item.isNonReturnable}
-                                            onChange={() => toggleDispose(idx)}
-                                            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                                        />
-                                    </label>
                                 </div>
                             </div>
                         ))}

@@ -11,7 +11,8 @@ import {
     processHandover,
     deleteExpiryReturn,
     updateExpiryReturn,
-    deleteSupplierLedger
+    deleteSupplierLedger,
+    markItemAsNonReturnable
 } from '../controllers/expiryController.js';
 import { protect, requirePermission } from '../middleware/authMiddleware.js';
 
@@ -25,6 +26,7 @@ router.route('/my-returns').get(protect, getMyExpiryReturns);
 router.route('/all').get(protect, requirePermission('expiry_returns'), getAllExpiryReturns);
 router.route('/pending-count').get(protect, getPendingExpiryCount);
 router.route('/:id/verify').put(protect, requirePermission('expiry_returns'), verifyExpiryReturn);
+router.route('/:id/items/:itemId/dispose').put(protect, requirePermission('expiry_returns'), markItemAsNonReturnable);
 router.route('/:id').delete(protect, requirePermission('expiry_returns'), deleteExpiryReturn);
 router.route('/:id').put(protect, requirePermission('expiry_returns'), updateExpiryReturn);
 
