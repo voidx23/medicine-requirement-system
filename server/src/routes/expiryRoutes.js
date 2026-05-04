@@ -20,17 +20,17 @@ router.route('/').post(protect, createExpiryReturn);
 router.route('/my-returns').get(protect, getMyExpiryReturns);
 
 // Admin / Store Routes
-router.route('/all').get(protect, requirePermission('view_tasks'), getAllExpiryReturns);
+router.route('/all').get(protect, requirePermission('expiry_returns'), getAllExpiryReturns);
 router.route('/pending-count').get(protect, getPendingExpiryCount);
-router.route('/:id/verify').put(protect, requirePermission('edit_tasks'), verifyExpiryReturn);
-router.route('/:id').delete(protect, requirePermission('edit_tasks'), deleteExpiryReturn);
+router.route('/:id/verify').put(protect, requirePermission('expiry_returns'), verifyExpiryReturn);
+router.route('/:id').delete(protect, requirePermission('expiry_returns'), deleteExpiryReturn);
 
 // Handover Routes
-router.route('/handover-pending').get(protect, requirePermission('view_tasks'), getPendingHandoverItems);
-router.route('/handover').post(protect, requirePermission('edit_tasks'), processHandover);
+router.route('/handover-pending').get(protect, requirePermission('expiry_returns'), getPendingHandoverItems);
+router.route('/handover').post(protect, requirePermission('expiry_returns'), processHandover);
 
 // Supplier Ledger Routes
-router.route('/ledgers').get(protect, requirePermission('view_tasks'), getSupplierLedgers);
-router.route('/ledgers/:id/compensate').post(protect, requirePermission('edit_tasks'), logCompensation);
+router.route('/ledgers').get(protect, requirePermission('expiry_returns'), getSupplierLedgers);
+router.route('/ledgers/:id/compensate').post(protect, requirePermission('expiry_returns'), logCompensation);
 
 export default router;
