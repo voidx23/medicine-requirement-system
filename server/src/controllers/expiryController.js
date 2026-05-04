@@ -150,6 +150,28 @@ export const verifyExpiryReturn = async (req, res) => {
     }
 };
 
+// @desc    Update an Expiry Return (e.g. by Admin to fix branch mistakes)
+// @route   PUT /api/expiry/:id
+// @access  Private (Admin)
+export const updateExpiryReturn = async (req, res) => {
+    try {
+        const { month, year, items } = req.body;
+        const expiryList = await ExpiryReturn.findById(req.params.id);
+
+        if (!expiryList) return res.status(404).json({ message: 'List not found' });
+        if (expiryList.status === 'Verified') return res.status(400).json({ message: 'Cannot edit a verified list' });
+
+        if (month) expiryList.month = parseInt(month);
+        if (year) expiryList.year = parseInt(year);
+        if (items) expiryList.items = items;
+
+        await expiryList.save();
+        res.json(expiryList);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 
 // --- HANDOVER ROUTES ---
 

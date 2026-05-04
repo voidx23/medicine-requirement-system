@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { PackageSearch, Calendar, CheckCircle, Clock, ChevronDown, ChevronUp, Building2, Trash2 } from 'lucide-react';
+import { PackageSearch, Calendar, CheckCircle, Clock, ChevronDown, ChevronUp, Building2, Trash2, Edit2 } from 'lucide-react';
 import api from '../services/api';
 import Button from '../components/UI/Button';
 import VerificationModal from '../components/Expiry/VerificationModal';
+import AdminEditExpiryModal from '../components/Expiry/AdminEditExpiryModal';
 import PasswordConfirmModal from '../components/UI/PasswordConfirmModal';
 import { useNotification } from '../context/NotificationContext';
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-const ReturnCard = ({ ret, onVerify, onDelete }) => {
+const ReturnCard = ({ ret, onVerify, onDelete, onEdit }) => {
     // Pending cards start expanded; verified cards start collapsed
     const [expanded, setExpanded] = useState(ret.status === 'Submitted');
 
@@ -76,6 +77,23 @@ const ReturnCard = ({ ret, onVerify, onDelete }) => {
                         <Button onClick={e => { e.stopPropagation(); onVerify(ret); }} style={{ fontSize: '0.82rem', padding: '0.4rem 0.9rem' }}>
                             Verify
                         </Button>
+                    )}
+                    {ret.status === 'Submitted' && (
+                        <button
+                            onClick={e => { e.stopPropagation(); onEdit(ret); }}
+                            title="Edit Items"
+                            style={{
+                                background: '#f1f5f9', color: '#64748b',
+                                border: 'none', borderRadius: '8px',
+                                width: '32px', height: '32px', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                transition: 'all 0.15s'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#e2e8f0'}
+                            onMouseLeave={e => e.currentTarget.style.background = '#f1f5f9'}
+                        >
+                            <Edit2 size={16} />
+                        </button>
                     )}
                     {ret.status === 'Submitted' && (
                         <button
@@ -168,14 +186,20 @@ const StoreExpiryVerification = () => {
     const [returns, setReturns] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedReturn, setSelectedReturn] = useState(null);
+    const [editingReturn, setEditingReturn] = useState(null);
+    const [allMedicines, setAllMedicines] = useState([]);
     const [filter, setFilter] = useState('all'); // 'all' | 'Submitted' | 'Verified'
     const [actionModal, setActionModal] = useState({ isOpen: false, requestId: null });
 
     const fetchReturns = async () => {
         try {
             setLoading(true);
-            const res = await api.get('/expiry/all');
+            const [res, medRes] = await Promise.all([
+                api.get('/expiry/all'),
+                api.get('/medicines?limit=all')
+            ]);
             setReturns(res.data);
+            setAllMedicines(medRes.data.medicines || []);
         } catch (error) {
             console.error('Error fetching expiry returns:', error);
         } finally {
@@ -262,9 +286,29 @@ const StoreExpiryVerification = () => {
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {filtered.map(ret => (
-                        <ReturnCard key={ret._id} ret={ret} onVerify={setSelectedReturn} onDelete={handleDeleteClick} />
+                        <ReturnCard 
+                            key={ret._id} 
+                            ret={ret} 
+                            onVerify={setSelectedReturn} 
+                            onDelete={handleDeleteClick}
+                            onEdit={setEditingReturn}
+                        />
                     ))}
                 </div>
+            )}
+
+            {editingReturn && (
+                <AdminEditExpiryModal
+                    isOpen={!!editingReturn}
+                    onClose={() => setEditingReturn(null)}
+                    expiryList={editingReturn}
+                    allMedicines={allMedicines}
+                    onSuccess={() => {
+                        setEditingReturn(null);
+                        showToast('Expiry list updated successfully', 'success');
+                        fetchReturns();
+                    }}
+                />
             )}
 
             {selectedReturn && (

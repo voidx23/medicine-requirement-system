@@ -9,7 +9,8 @@ import {
     getPendingExpiryCount,
     getPendingHandoverItems,
     processHandover,
-    deleteExpiryReturn
+    deleteExpiryReturn,
+    updateExpiryReturn
 } from '../controllers/expiryController.js';
 import { protect, requirePermission } from '../middleware/authMiddleware.js';
 
@@ -24,6 +25,7 @@ router.route('/all').get(protect, requirePermission('expiry_returns'), getAllExp
 router.route('/pending-count').get(protect, getPendingExpiryCount);
 router.route('/:id/verify').put(protect, requirePermission('expiry_returns'), verifyExpiryReturn);
 router.route('/:id').delete(protect, requirePermission('expiry_returns'), deleteExpiryReturn);
+router.route('/:id').put(protect, requirePermission('expiry_returns'), updateExpiryReturn);
 
 // Handover Routes
 router.route('/handover-pending').get(protect, requirePermission('expiry_returns'), getPendingHandoverItems);
