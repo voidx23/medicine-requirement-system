@@ -155,11 +155,17 @@ export const verifyExpiryReturn = async (req, res) => {
 // @access  Private (Admin)
 export const updateExpiryReturn = async (req, res) => {
     try {
-        const { month, year, items } = req.body;
+        const { month, year, items, password } = req.body;
         const expiryList = await ExpiryReturn.findById(req.params.id);
 
         if (!expiryList) return res.status(404).json({ message: 'List not found' });
         if (expiryList.status === 'Verified') return res.status(400).json({ message: 'Cannot edit a verified list' });
+
+        // Password verification
+        const adminUser = await User.findById(req.user._id);
+        if (!password || !(await adminUser.matchPassword(password))) {
+            return res.status(401).json({ message: 'Invalid Admin Password' });
+        }
 
         if (month) expiryList.month = parseInt(month);
         if (year) expiryList.year = parseInt(year);

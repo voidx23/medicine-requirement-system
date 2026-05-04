@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Modal from '../UI/Modal';
 import Button from '../UI/Button';
+import PasswordConfirmModal from '../UI/PasswordConfirmModal';
 import api from '../../services/api';
 import { Search, Plus, Trash2, Scan, ScanLine, Edit3 } from 'lucide-react';
 
@@ -25,6 +26,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
 
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
     const searchInputRef = useRef(null);
     const highlightedRef = useRef(null);
@@ -143,13 +145,16 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
 
     const removeItem = (id) => setItems(items.filter(i => i.medicineId !== id));
 
-    const handleSubmit = async (e) => {
+    const handleSaveClick = (e) => {
         e.preventDefault();
         if (items.length === 0) { setError('Please add at least one item.'); return; }
-        
+        setError(null);
+        setIsPasswordModalOpen(true);
+    };
+
+    const doSubmit = async (password) => {
         try {
             setSubmitting(true);
-            setError(null);
             await api.put(`/expiry/${expiryList._id}`, {
                 month: parseInt(month),
                 year: parseInt(year),
@@ -158,19 +163,22 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                     customName: i.isCustom ? i.name : undefined,
                     qtySent: i.qtySent,
                     qtySentLoose: i.qtySentLoose || 0
-                }))
+                })),
+                password
             });
+            setIsPasswordModalOpen(false);
             onSuccess();
         } catch (err) {
-            setError(err.response?.data?.message || err.message);
+            throw err;
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
+        <>
         <Modal isOpen={isOpen} onClose={onClose} title={`Edit Expiry Report: ${expiryList?.branchId?.name}`} maxWidth="600px">
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <form onSubmit={handleSaveClick} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 
                 {error && (
                     <div style={{ padding: '0.75rem', background: 'var(--danger-light)', color: 'var(--danger)', borderRadius: '8px', fontSize: '0.88rem' }}>
@@ -269,6 +277,16 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                 </div>
             </form>
         </Modal>
+
+        <PasswordConfirmModal
+            isOpen={isPasswordModalOpen}
+            onClose={() => setIsPasswordModalOpen(false)}
+            onConfirm={doSubmit}
+            title="Confirm Edit"
+            message="Please enter your admin password to save these changes to the expiry report."
+            confirmText="Save Changes"
+        />
+        </>
     );
 };
 
