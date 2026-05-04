@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import AuthContext from '../../context/AuthContext';
 import PharmacistSidebar from './PharmacistSidebar';
-import NotificationBell from '../UI/NotificationBell';
 
 const PharmacistLayout = ({ children }) => {
     return (
@@ -18,17 +17,7 @@ const PharmacistLayout = ({ children }) => {
                 position: 'relative'
             }}>
                 {/* Global Pharmacy Header Elements */}
-                <div style={{ 
-                    position: 'absolute', 
-                    top: '1.5rem', 
-                    right: '2rem', 
-                    zIndex: 1001,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem'
-                }}>
-                    <NotificationBell />
-                </div>
+
 
                 {children}
             </main>
