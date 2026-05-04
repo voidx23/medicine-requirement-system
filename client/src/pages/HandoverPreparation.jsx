@@ -15,11 +15,12 @@ const HandoverPreparation = () => {
     const [selected, setSelected] = useState({});
     const [expanded, setExpanded] = useState({});
     const [processing, setProcessing] = useState(null); // supplierId being processed
+    const [showDisposed, setShowDisposed] = useState(false);
 
     const fetchPending = async () => {
         try {
             setLoading(true);
-            const res = await api.get('/expiry/handover-pending');
+            const res = await api.get(`/expiry/handover-pending?includeDisposed=${showDisposed}`);
             setSupplierGroups(res.data);
 
             // Default: all items selected, all cards expanded
@@ -40,7 +41,7 @@ const HandoverPreparation = () => {
         }
     };
 
-    useEffect(() => { fetchPending(); }, []);
+    useEffect(() => { fetchPending(); }, [showDisposed]);
 
     const toggleItem = (supplierId, itemId) => {
         setSelected(prev => {
@@ -116,11 +117,42 @@ const HandoverPreparation = () => {
                 </p>
             </div>
 
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                <button 
+                    onClick={() => setShowDisposed(false)}
+                    style={{
+                        padding: '0.5rem 1.25rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 600,
+                        border: !showDisposed ? '1px solid var(--primary)' : '1px solid var(--glass-border)',
+                        background: !showDisposed ? 'var(--primary-light)' : '#fff',
+                        color: !showDisposed ? 'var(--primary)' : 'var(--text-muted)',
+                        cursor: 'pointer', transition: 'all 0.15s'
+                    }}
+                >
+                    Pending Handover
+                </button>
+                <button 
+                    onClick={() => setShowDisposed(true)}
+                    style={{
+                        padding: '0.5rem 1.25rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: 600,
+                        border: showDisposed ? '1px solid #ef4444' : '1px solid var(--glass-border)',
+                        background: showDisposed ? '#fee2e2' : '#fff',
+                        color: showDisposed ? '#ef4444' : 'var(--text-muted)',
+                        cursor: 'pointer', transition: 'all 0.15s'
+                    }}
+                >
+                    Disposed Items
+                </button>
+            </div>
+
             {supplierGroups.length === 0 ? (
                 <div className="glass-panel" style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                     <Truck size={52} style={{ margin: '0 auto 1rem', opacity: 0.3 }} />
-                    <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>No Items Pending Handover</h3>
-                    <p style={{ margin: 0, fontSize: '0.9rem' }}>All verified items have been handed over to suppliers.</p>
+                    <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+                        {showDisposed ? 'No Disposed Items Found' : 'No Items Pending Handover'}
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                        {showDisposed ? 'You haven\'t marked any items as non-returnable yet.' : 'All verified items have been handed over to suppliers.'}
+                    </p>
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -175,7 +207,7 @@ const HandoverPreparation = () => {
                                                 <div>Qty (Bx/L)</div>
                                                 <div>Cost (Box)</div>
                                                 <div>Value</div>
-                                                <div>Action</div>
+                                                <div>{showDisposed ? 'Status' : 'Action'}</div>
                                             </div>
                                         </div>
 
@@ -213,20 +245,30 @@ const HandoverPreparation = () => {
                                                             <div style={{ fontWeight: 500 }}>{item.qtyReceived} / {item.qtyReceivedLoose}</div>
                                                             <div style={{ color: '#64748b' }}>{fmt(item.costPriceAtReturn)}</div>
                                                             <div style={{ fontWeight: 600, color: 'var(--primary)' }}>{fmt(item.value)}</div>
-                                                            <button 
-                                                                onClick={(e) => { e.stopPropagation(); handleDispose(item.expiryReturnId, item.itemId, item.medicineName); }}
-                                                                title="Mark as Non-Returnable"
-                                                                style={{ 
-                                                                    background: '#fee2e2', color: '#ef4444', border: 'none', 
-                                                                    borderRadius: '6px', width: '32px', height: '32px', 
-                                                                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                    transition: 'all 0.1s'
-                                                                }}
-                                                                onMouseEnter={e => e.currentTarget.style.background = '#fecaca'}
-                                                                onMouseLeave={e => e.currentTarget.style.background = '#fee2e2'}
-                                                            >
-                                                                <Trash2 size={15} />
-                                                            </button>
+                                                            {showDisposed ? (
+                                                                <div style={{ 
+                                                                    background: '#fee2e2', color: '#ef4444', 
+                                                                    padding: '0.15rem 0.5rem', borderRadius: '4px', 
+                                                                    fontSize: '0.7rem', fontWeight: 700 
+                                                                }}>
+                                                                    DISPOSED
+                                                                </div>
+                                                            ) : (
+                                                                <button 
+                                                                    onClick={(e) => { e.stopPropagation(); handleDispose(item.expiryReturnId, item.itemId, item.medicineName); }}
+                                                                    title="Mark as Non-Returnable"
+                                                                    style={{ 
+                                                                        background: '#fee2e2', color: '#ef4444', border: 'none', 
+                                                                        borderRadius: '6px', width: '32px', height: '32px', 
+                                                                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                        transition: 'all 0.1s'
+                                                                    }}
+                                                                    onMouseEnter={e => e.currentTarget.style.background = '#fecaca'}
+                                                                    onMouseLeave={e => e.currentTarget.style.background = '#fee2e2'}
+                                                                >
+                                                                    <Trash2 size={15} />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 );

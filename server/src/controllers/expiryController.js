@@ -186,6 +186,7 @@ export const updateExpiryReturn = async (req, res) => {
 // @access  Private (Admin)
 export const getPendingHandoverItems = async (req, res) => {
     try {
+        const { includeDisposed } = req.query;
         // All verified returns that have at least one item pending handover
         const returns = await ExpiryReturn.find({ status: 'Verified' })
             .populate('branchId', 'name')
@@ -195,14 +196,20 @@ export const getPendingHandoverItems = async (req, res) => {
                 populate: { path: 'supplierId', select: 'name' }
             });
 
-        // Flatten to individual pending (non-disposed) items, group by supplier
+        // Flatten to individual pending items, group by supplier
         const supplierMap = {}; // { supplierId: { supplier, items[] } }
 
         for (const ret of returns) {
             for (const item of ret.items) {
-                // Skip: already handed over, disposed, or custom/no-supplier items
+                // Skip: already handed over or custom/no-supplier items
                 if (item.handoverStatus === 'HandedOver') continue;
-                if (item.isNonReturnable) continue;
+                
+                // Only skip non-returnable if not explicitly requested
+                if (item.isNonReturnable && includeDisposed !== 'true') continue;
+                
+                // If we ONLY want disposed, skip non-disposed
+                if (includeDisposed === 'true' && !item.isNonReturnable) continue;
+
                 if (!item.medicineId || !item.medicineId.supplierId) continue;
                 
                 const hasBoxes = item.qtyReceived !== null && item.qtyReceived > 0;

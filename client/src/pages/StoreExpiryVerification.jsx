@@ -167,8 +167,18 @@ const ReturnCard = ({ ret, onVerify, onDelete, onEdit }) => {
                                             <span style={{ color: '#94a3b8', fontWeight: 400 }}>/</span>
                                             <span>{item.qtyReceivedLoose !== null && item.qtyReceivedLoose !== undefined ? item.qtyReceivedLoose : '—'}</span>
                                         </div>
-                                        <div style={{ textAlign: 'center', color: item.isNonReturnable ? '#dc2626' : '#94a3b8' }}>
-                                            {item.isNonReturnable ? 'Yes' : 'No'}
+                                        <div style={{ textAlign: 'center' }}>
+                                            {item.isNonReturnable ? (
+                                                <span style={{ 
+                                                    background: '#fee2e2', color: '#dc2626', 
+                                                    padding: '0.15rem 0.5rem', borderRadius: '4px', 
+                                                    fontSize: '0.7rem', fontWeight: 700 
+                                                }}>
+                                                    DISPOSED
+                                                </span>
+                                            ) : (
+                                                <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>No</span>
+                                            )}
                                         </div>
                                     </div>
                                 );
