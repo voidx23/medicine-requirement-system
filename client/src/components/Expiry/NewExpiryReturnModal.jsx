@@ -17,14 +17,18 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
     const [qty, setQty] = useState(1);
     const [loose, setLoose] = useState(0);
     const [batch, setBatch] = useState('');
-    const inputRef = useRef(null);
+    
+    const qtyRef = useRef(null);
+    const looseRef = useRef(null);
+    const batchRef = useRef(null);
+    const submitRef = useRef(null);
 
     useEffect(() => {
         if (isOpen) {
             setQty(1);
             setLoose(0);
             setBatch('');
-            setTimeout(() => inputRef.current?.focus(), 50);
+            setTimeout(() => qtyRef.current?.focus(), 50);
         }
     }, [isOpen]);
 
@@ -40,6 +44,17 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
         onClose();
     };
 
+    const handleKeyDown = (e, nextRef) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            nextRef.current?.focus();
+            if (nextRef === submitRef) {
+                // Optional: actually submit if it's already on the button?
+                // But user just asked to MOVE to it.
+            }
+        }
+    };
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={`Add ${medicine.name}`} maxWidth="400px">
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -47,17 +62,20 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
                     <div className="input-group">
                         <label>Quantity (Boxes)</label>
                         <input 
-                            ref={inputRef}
+                            ref={qtyRef}
                             type="number" min="0" value={qty} 
                             onChange={e => setQty(e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, looseRef)}
                             style={{ padding: '0.65rem', borderRadius: '8px', border: '1px solid var(--border)', width: '100%' }}
                         />
                     </div>
                     <div className="input-group">
                         <label>Loose Units</label>
                         <input 
+                            ref={looseRef}
                             type="number" min="0" value={loose} 
                             onChange={e => setLoose(e.target.value)}
+                            onKeyDown={(e) => handleKeyDown(e, batchRef)}
                             style={{ padding: '0.65rem', borderRadius: '8px', border: '1px solid var(--border)', width: '100%' }}
                         />
                     </div>
@@ -65,15 +83,17 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
                 <div className="input-group">
                     <label>Batch Number</label>
                     <input 
+                        ref={batchRef}
                         type="text" value={batch} 
                         onChange={e => setBatch(e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, submitRef)}
                         placeholder="e.g. B12345"
                         style={{ padding: '0.65rem', borderRadius: '8px', border: '1px solid var(--border)', width: '100%' }}
                     />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
                     <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-                    <Button type="submit">Add to List</Button>
+                    <Button type="submit" ref={submitRef}>Add to List</Button>
                 </div>
             </form>
         </Modal>

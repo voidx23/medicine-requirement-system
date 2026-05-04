@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react';
+import { forwardRef } from 'react';
 
-const Button = ({ 
+const Button = forwardRef(({ 
   children, 
   variant = 'primary', 
   type = 'button', 
@@ -10,12 +11,13 @@ const Button = ({
   onClick,
   className = '',
   ...props 
-}) => {
+}, ref) => {
   const baseClass = 'btn';
   const variantClass = `btn-${variant}`;
   
   return (
     <button
+      ref={ref}
       type={type}
       className={`${baseClass} ${variantClass} ${className}`}
       disabled={disabled || isLoading}
@@ -31,6 +33,6 @@ const Button = ({
       {children}
     </button>
   );
-};
+});
 
 export default Button;
