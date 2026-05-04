@@ -14,7 +14,7 @@ const expiryItemSchema = new mongoose.Schema({
     qtySent: {
         type: Number,
         required: true,
-        min: 1
+        min: 0
     },
     qtySentLoose: {
         type: Number,
