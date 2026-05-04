@@ -11,7 +11,7 @@ import * as XLSX from 'xlsx';
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const MONTH_FULL = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-const formatCurrency = (val) => `OMR ${(val || 0).toFixed(2)}`;
+const formatCurrency = (val) => `OMR ${(val || 0).toFixed(3)}`;
 
 // ── Aging helpers ──
 const getDaysOld = (dateStr) => {
@@ -32,10 +32,10 @@ const buildExportRows = (ledgers) =>
         Supplier: l.supplierId?.name || 'Unknown',
         Month: MONTH_FULL[l.month - 1],
         Year: l.year,
-        'Value Handed Over (OMR)': (l.totalValueHandedOver || 0).toFixed(2),
-        'Value Compensated (OMR)': (l.totalValueCompensated || 0).toFixed(2),
-        'Pending Balance (OMR)': Math.max(0, (l.totalValueHandedOver || 0) - (l.totalValueCompensated || 0)).toFixed(2),
-        Status: (l.totalValueHandedOver - l.totalValueCompensated) <= 0.01 ? 'Resolved' : `Pending (${getDaysOld(l.createdAt)}d)`,
+        'Value Handed Over (OMR)': (l.totalValueHandedOver || 0).toFixed(3),
+        'Value Compensated (OMR)': (l.totalValueCompensated || 0).toFixed(3),
+        'Pending Balance (OMR)': Math.max(0, (l.totalValueHandedOver || 0) - (l.totalValueCompensated || 0)).toFixed(3),
+        Status: (l.totalValueHandedOver - l.totalValueCompensated) <= 0.001 ? 'Resolved' : `Pending (${getDaysOld(l.createdAt)}d)`,
     }));
 
 const exportToExcel = (rows, filename) => {
@@ -177,7 +177,7 @@ const SupplierExpiryReport = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.5rem' }}>
                     {ledgers.map((ledger) => {
                         const pendingValue = (ledger.totalValueHandedOver || 0) - (ledger.totalValueCompensated || 0);
-                        const isResolved = pendingValue <= 0.01;
+                        const isResolved = pendingValue <= 0.001;
                         const aging = getAgingStyle(ledger, isResolved);
                         const cardRow = buildExportRows([ledger]);
 

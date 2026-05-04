@@ -38,7 +38,7 @@ const LogCompensationModal = ({ isOpen, onClose, onSuccess, ledger }) => {
                 
                 <div style={{ background: 'var(--primary-light)', padding: '1rem', borderRadius: '8px', color: 'var(--primary)', fontWeight: 600, display: 'flex', justifyContent: 'space-between' }}>
                     <span>Pending Balance:</span>
-                    <span>OMR {pendingValue.toFixed(2)}</span>
+                    <span>OMR {pendingValue.toFixed(3)}</span>
                 </div>
 
                 <div className="input-group">
@@ -56,8 +56,8 @@ const LogCompensationModal = ({ isOpen, onClose, onSuccess, ledger }) => {
                 <Input 
                     label="Value Received (OMR)"
                     type="number"
-                    step="0.01"
-                    min="0.01"
+                    step="0.001"
+                    min="0.001"
                     max={pendingValue + 0.01}
                     value={value}
                     onChange={(e) => setValue(e.target.value)}

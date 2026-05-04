@@ -35,8 +35,8 @@ const MedicineList = ({ medicines, onEdit, onDelete, canEdit }) => {
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem' }}>
                     {(medicine.costPrice > 0 || medicine.sellingPrice > 0) && (
                        <span style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem' }}>
-                          {medicine.costPrice > 0 && <span><strong>Cost:</strong> OMR {medicine.costPrice.toFixed(2)}</span>}
-                          {medicine.sellingPrice > 0 && <span style={{ color: 'var(--success)', fontWeight: 500 }}><strong>Sell:</strong> OMR {medicine.sellingPrice.toFixed(2)}</span>}
+                          {medicine.costPrice > 0 && <span><strong>Cost:</strong> OMR {medicine.costPrice.toFixed(3)}</span>}
+                          {medicine.sellingPrice > 0 && <span style={{ color: 'var(--success)', fontWeight: 500 }}><strong>Sell:</strong> OMR {medicine.sellingPrice.toFixed(3)}</span>}
                        </span>
                     )}
 

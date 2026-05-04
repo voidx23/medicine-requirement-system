@@ -5,7 +5,7 @@ import Button from '../components/UI/Button';
 import { useNotification } from '../context/NotificationContext';
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const fmt = (v) => `OMR ${(v || 0).toFixed(2)}`;
+const fmt = (v) => `OMR ${(v || 0).toFixed(3)}`;
 
 const HandoverPreparation = () => {
     const { showToast, showConfirm } = useNotification();
