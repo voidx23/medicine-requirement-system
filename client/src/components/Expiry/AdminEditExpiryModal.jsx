@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Modal from '../UI/Modal';
-import Button from '../components/UI/Button';
+import Button from '../UI/Button';
 import PasswordConfirmModal from '../UI/PasswordConfirmModal';
 import api from '../../services/api';
 import { Search, Plus, Trash2, Scan, ScanLine, Edit3 } from 'lucide-react';
