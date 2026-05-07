@@ -21,6 +21,14 @@ const StaffVerificationModal = ({ isOpen, onClose, onVerified }) => {
         }
     }, [isOpen]);
 
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 640);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const loadStaff = async () => {
         try {
             const data = await staffService.getAll();
@@ -105,9 +113,9 @@ const StaffVerificationModal = ({ isOpen, onClose, onVerified }) => {
 
                 {error && <div style={{ color: '#ef4444', fontSize: '0.9rem', textAlign: 'center' }}>{error}</div>}
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                    <Button variant="secondary" onClick={onClose} type="button">Cancel</Button>
-                    <Button variant="primary" type="submit" disabled={loading || !selectedStaff}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', flexDirection: isMobile ? 'column-reverse' : 'row' }}>
+                    <Button variant="secondary" onClick={onClose} type="button" style={{ width: isMobile ? '100%' : 'auto' }}>Cancel</Button>
+                    <Button variant="primary" type="submit" disabled={loading || !selectedStaff} style={{ width: isMobile ? '100%' : 'auto' }}>
                         {loading ? 'Verifying...' : 'Sign & Submit'}
                     </Button>
                 </div>

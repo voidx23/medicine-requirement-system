@@ -23,6 +23,14 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
     const batchRef = useRef(null);
     const submitRef = useRef(null);
 
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 640);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     useEffect(() => {
         if (isOpen) {
             setQty(1);
@@ -48,10 +56,6 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
         if (e.key === 'Enter') {
             e.preventDefault();
             nextRef.current?.focus();
-            if (nextRef === submitRef) {
-                // Optional: actually submit if it's already on the button?
-                // But user just asked to MOVE to it.
-            }
         }
     };
 
@@ -91,9 +95,9 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
                         style={{ padding: '0.65rem', borderRadius: '8px', border: '1px solid var(--border)', width: '100%' }}
                     />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-                    <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-                    <Button type="submit" ref={submitRef}>Add to List</Button>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem', flexDirection: isMobile ? 'column-reverse' : 'row' }}>
+                    <Button type="button" variant="secondary" onClick={onClose} style={{ width: isMobile ? '100%' : 'auto' }}>Cancel</Button>
+                    <Button type="submit" ref={submitRef} style={{ width: isMobile ? '100%' : 'auto' }}>Add to List</Button>
                 </div>
             </form>
         </Modal>
@@ -122,9 +126,17 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
     const [error, setError] = useState(null);
     const [verifyModalOpen, setVerifyModalOpen] = useState(false);
 
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+
     const searchInputRef = useRef(null);
     const highlightedRef = useRef(null);
     const itemsEndRef = useRef(null);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 640);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // ── Draft restore on open ──
     useEffect(() => {
@@ -345,12 +357,8 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
 
                 {error && (
                     <div style={{ padding: '0.75rem', background: 'var(--danger-light)', color: 'var(--danger)', borderRadius: '8px', fontSize: '0.88rem' }}>
-                        {error}
-                    </div>
-                )}
-
-                {/* Month + Year */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                      {/* Month + Year */}
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                     <div className="input-group">
                         <label>Expiry Month</label>
                         <select value={month} onChange={e => setMonth(e.target.value)}
@@ -448,7 +456,7 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                     <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-main)' }}>
                         Added Items ({items.length})
                     </label>
-                    <div style={{ background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', height: '220px', overflowY: 'auto' }}>
+                    <div style={{ background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', height: isMobile ? '300px' : '220px', overflowY: 'auto' }}>
                         {items.length === 0 ? (
                             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.85rem', flexDirection: 'column', gap: '0.5rem' }}>
                                 <Search size={22} opacity={0.3} />
@@ -456,28 +464,51 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                             </div>
                         ) : (
                             <div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0, zIndex: 10 }}>
-                                    <div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div style={{ textAlign: 'center' }}>Batch</div><div />
-                                </div>
+                                {!isMobile && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0, zIndex: 10 }}>
+                                        <div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div style={{ textAlign: 'center' }}>Batch</div><div />
+                                    </div>
+                                )}
                                 {items.map((item, idx) => (
-                                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.4rem 0.75rem', alignItems: 'center', borderBottom: idx !== items.length - 1 ? '1px solid #f1f5f9' : 'none', background: item.isCustom ? '#fffbeb' : 'transparent' }}>
-                                        <div style={{ overflow: 'hidden' }}>
-                                            <div style={{ fontWeight: 500, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                {item.isCustom && <span style={{ fontSize: '0.65rem', background: '#fde68a', color: '#92400e', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>CUSTOM</span>}
-                                                {item.name}
+                                    <div key={idx} style={{ 
+                                        padding: '0.6rem 0.75rem', 
+                                        borderBottom: idx !== items.length - 1 ? '1px solid #f1f5f9' : 'none', 
+                                        background: item.isCustom ? '#fffbeb' : '#fff',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.5rem'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                                            <div style={{ overflow: 'hidden' }}>
+                                                <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-main)', marginBottom: '2px' }}>
+                                                    {item.isCustom && <span style={{ fontSize: '0.6rem', background: '#fde68a', color: '#92400e', padding: '1px 4px', borderRadius: '3px', marginRight: '4px' }}>CUSTOM</span>}
+                                                    {item.name}
+                                                </div>
+                                                {item.barcode && <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{item.barcode}</div>}
                                             </div>
-                                            {item.barcode && <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{item.barcode}</div>}
+                                            <button type="button" onClick={() => removeItem(idx)}
+                                                style={{ background: '#fee2e2', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '6px' }}>
+                                                <Trash2 size={14} />
+                                            </button>
                                         </div>
-                                        <input type="number" min="0" value={item.qtySent} onChange={e => updateQty(idx, e.target.value)} onBlur={() => normalizeQty(idx)}
-                                            style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
-                                        <input type="number" min="0" value={item.qtySentLoose || 0} onChange={e => updateQtyLoose(idx, e.target.value)} onBlur={() => normalizeQty(idx)}
-                                            style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
-                                        <input type="text" placeholder="Batch" value={item.batchNumber || ''} onChange={e => updateBatch(idx, e.target.value)}
-                                            style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
-                                        <button type="button" onClick={() => removeItem(idx)}
-                                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <Trash2 size={14} />
-                                        </button>
+                                        
+                                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '60px 60px 1fr', gap: '0.5rem', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '30px' }}>Box:</span>
+                                                <input type="number" min="0" value={item.qtySent} onChange={e => updateQty(idx, e.target.value)} onBlur={() => normalizeQty(idx)}
+                                                    style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '30px' }}>Lse:</span>
+                                                <input type="number" min="0" value={item.qtySentLoose || 0} onChange={e => updateQtyLoose(idx, e.target.value)} onBlur={() => normalizeQty(idx)}
+                                                    style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', gridColumn: isMobile ? 'span 2' : 'auto' }}>
+                                                <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '30px' }}>Batch:</span>
+                                                <input type="text" placeholder="Batch" value={item.batchNumber || ''} onChange={e => updateBatch(idx, e.target.value)}
+                                                    style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.82rem' }} />
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                                 <div ref={itemsEndRef} />
@@ -486,10 +517,10 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                    <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-                    <Button type="submit" disabled={submitting || items.length === 0}>
-                        {submitting ? 'Submitting...' : `Submit Expiry Box (${items.length} items)`}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', flexDirection: isMobile ? 'column-reverse' : 'row' }}>
+                    <Button type="button" variant="secondary" onClick={onClose} style={{ width: isMobile ? '100%' : 'auto' }}>Cancel</Button>
+                    <Button type="submit" disabled={submitting || items.length === 0} style={{ width: isMobile ? '100%' : 'auto' }}>
+                        {submitting ? 'Submitting...' : `Submit Expiry Box (${items.length})`}
                     </Button>
                 </div>
             </form>

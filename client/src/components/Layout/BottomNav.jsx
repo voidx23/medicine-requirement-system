@@ -4,15 +4,25 @@ import { useContext } from 'react';
 import AuthContext from '../../context/AuthContext';
 
 const BottomNav = () => {
-  const { logout } = useContext(AuthContext);
+  const { user, logout } = useContext(AuthContext);
 
-  const links = [
+  const adminLinks = [
     { to: '/', icon: LayoutDashboard, label: 'Dash' },
     { to: '/medicines', icon: Pill, label: 'Meds' },
     { to: '/suppliers', icon: Users, label: 'Sups' },
     { to: '/history', icon: History, label: 'Hist' },
     { to: '/updates', icon: GitBranch, label: 'Dev' }
   ];
+
+  const pharmacistLinks = [
+    { to: '/pharmacist-dashboard/new', icon: LayoutDashboard, label: 'New' },
+    { to: '/pharmacist-dashboard/tasks', icon: History, label: 'Tasks' },
+    { to: '/pharmacist-dashboard/expiry', icon: Pill, label: 'Expiry' },
+    { to: '/pharmacist-dashboard/history', icon: History, label: 'Hist' },
+    { to: '/pharmacist-dashboard/updates', icon: GitBranch, label: 'Dev' }
+  ];
+
+  const links = user?.role === 'pharmacist' ? pharmacistLinks : adminLinks;
 
   return (
     <nav className="glass-panel" style={{

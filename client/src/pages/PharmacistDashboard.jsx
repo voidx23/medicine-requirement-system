@@ -29,12 +29,22 @@ const PharmacistDashboard = () => {
         }
     };
 
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // Load history on mount
     const [initialized, setInitialized] = useState(false);
-    if (!initialized) {
-        fetchHistory();
-        setInitialized(true);
-    }
+    useEffect(() => {
+        if (!initialized) {
+            fetchHistory();
+            setInitialized(true);
+        }
+    }, [initialized]);
 
     // Search State
     const [query, setQuery] = useState('');
@@ -97,7 +107,7 @@ const PharmacistDashboard = () => {
                 <p style={{ color: 'var(--text-muted)' }}>Search for medicines and add them to your request list.</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '2rem', alignItems: 'start' }}>
                 
                 {/* Left: Search Panel */}
                 <div className="glass-panel" style={{ padding: '1.5rem' }}>
