@@ -318,7 +318,6 @@ const PharmacistNewRequest = () => {
         }
     };
 
-    return (
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
     useEffect(() => {
