@@ -18,95 +18,6 @@ const getStatusColor = (status) => {
     }
 };
 
-// ---- Month Detail Modal ----
-const MonthDetailModal = ({ ret, onClose }) => {
-    if (!ret) return null;
-    return (
-        <Modal isOpen={!!ret} onClose={onClose} title={`${MONTH_NAMES[ret.month - 1]} ${ret.year} — Expiry List`} maxWidth="720px">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                {/* Status + meta */}
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                    <span style={{
-                        background: `${getStatusColor(ret.status)}18`,
-                        color: getStatusColor(ret.status),
-                        padding: '0.35rem 1rem', borderRadius: '9999px', fontSize: '0.82rem', fontWeight: 700,
-                        display: 'flex', alignItems: 'center', gap: '0.4rem'
-                    }}>
-                        {ret.status === 'Verified' ? <CheckCircle size={14} /> : <Clock size={14} />}
-                        {ret.status}
-                    </span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem', alignSelf: 'center' }}>
-                        {ret.items.length} medicines listed
-                    </span>
-                </div>
-
-                {/* Store Note */}
-                {ret.storeNote && (
-                    <div style={{
-                        background: '#fef3c7', color: '#92400e',
-                        padding: '0.75rem 1rem', borderRadius: '8px', fontSize: '0.85rem',
-                        display: 'flex', gap: '0.5rem', alignItems: 'flex-start'
-                    }}>
-                        <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
-                        <div><strong>Store Note:</strong> {ret.storeNote}</div>
-                    </div>
-                )}
-
-                {/* Items Table */}
-                <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                    <div style={{
-                        display: 'grid', gridTemplateColumns: '1fr 100px 100px',
-                        padding: '0.65rem 1rem', background: '#f8fafc',
-                        fontWeight: 700, fontSize: '0.78rem', color: '#475569',
-                        borderBottom: '1px solid #e2e8f0'
-                    }}>
-                        <div>Medicine</div>
-                        <div style={{ textAlign: 'center' }}>Sent (Bx/L)</div>
-                        <div style={{ textAlign: 'center' }}>Verified (Bx/L)</div>
-                    </div>
-                    <div style={{ maxHeight: '380px', overflowY: 'auto' }}>
-                        {ret.items.map((item, idx) => {
-                            const mismatch = item.qtyReceived !== null && (item.qtyReceived !== item.qtySent || item.qtyReceivedLoose !== item.qtySentLoose);
-                            return (
-                                <div key={idx} style={{
-                                    display: 'grid', gridTemplateColumns: '1fr 100px 100px',
-                                    padding: '0.6rem 1rem', alignItems: 'center',
-                                    background: mismatch ? 'rgba(239,68,68,0.04)' : idx % 2 === 0 ? '#fff' : '#fafafa',
-                                    borderBottom: idx !== ret.items.length - 1 ? '1px solid #f1f5f9' : 'none'
-                                }}>
-                                    <div>
-                                        <div style={{ fontWeight: 500, fontSize: '0.88rem', color: 'var(--text-main)' }}>
-                                            {item.medicineId?.name || 'Unknown'}
-                                        </div>
-                                        {item.medicineId?.barcode && (
-                                            <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{item.medicineId.barcode}</div>
-                                        )}
-                                    </div>
-                                    <div style={{ textAlign: 'center', fontWeight: 600, fontSize: '0.88rem' }}>
-                                        {item.qtySent} {item.qtySentLoose > 0 && <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>/ {item.qtySentLoose}L</span>}
-                                    </div>
-                                    <div style={{
-                                        textAlign: 'center', fontWeight: 700, fontSize: '0.88rem',
-                                        color: item.qtyReceived === null ? '#94a3b8' : mismatch ? '#dc2626' : '#16a34a'
-                                    }}>
-                                        {item.qtyReceived !== null ? (
-                                            <>{item.qtyReceived} {item.qtyReceivedLoose > 0 && <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>/ {item.qtyReceivedLoose}L</span>}</>
-                                        ) : '—'}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                    <Button variant="secondary" onClick={onClose}>Close</Button>
-                </div>
-            </div>
-        </Modal>
-    );
-};
-
 // ---- Main Page ----
 const BranchExpiryReturns = () => {
     const [returns, setReturns] = useState([]);
@@ -117,6 +28,13 @@ const BranchExpiryReturns = () => {
 
     const currentYear = new Date().getFullYear();
     const [selectedYear, setSelectedYear] = useState(currentYear);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const fetchReturns = async () => {
         try {
@@ -149,18 +67,134 @@ const BranchExpiryReturns = () => {
         return m <= new Date().getMonth() + 1 || !!byMonth[m];
     });
 
+    // ---- Month Detail Modal ----
+    const MonthDetailModalResponsive = ({ ret, onClose }) => {
+        if (!ret) return null;
+        return (
+            <Modal isOpen={!!ret} onClose={onClose} title={`${MONTH_NAMES[ret.month - 1]} ${ret.year} — Expiry List`} maxWidth="720px">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    {/* Status + meta */}
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        <span style={{
+                            background: `${getStatusColor(ret.status)}18`,
+                            color: getStatusColor(ret.status),
+                            padding: '0.35rem 1rem', borderRadius: '9999px', fontSize: '0.82rem', fontWeight: 700,
+                            display: 'flex', alignItems: 'center', gap: '0.4rem'
+                        }}>
+                            {ret.status === 'Verified' ? <CheckCircle size={14} /> : <Clock size={14} />}
+                            {ret.status}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem', alignSelf: 'center' }}>
+                            {ret.items.length} medicines listed
+                        </span>
+                    </div>
+
+                    {/* Store Note */}
+                    {ret.storeNote && (
+                        <div style={{
+                            background: '#fef3c7', color: '#92400e',
+                            padding: '0.75rem 1rem', borderRadius: '8px', fontSize: '0.85rem',
+                            display: 'flex', gap: '0.5rem', alignItems: 'flex-start'
+                        }}>
+                            <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                            <div><strong>Store Note:</strong> {ret.storeNote}</div>
+                        </div>
+                    )}
+
+                    {/* Items List */}
+                    <div style={{ border: isMobile ? 'none' : '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                        {!isMobile && (
+                            <div style={{
+                                display: 'grid', gridTemplateColumns: '1fr 100px 100px',
+                                padding: '0.65rem 1rem', background: '#f8fafc',
+                                fontWeight: 700, fontSize: '0.78rem', color: '#475569',
+                                borderBottom: '1px solid #e2e8f0'
+                            }}>
+                                <div>Medicine</div>
+                                <div style={{ textAlign: 'center' }}>Sent (Bx/L)</div>
+                                <div style={{ textAlign: 'center' }}>Verified (Bx/L)</div>
+                            </div>
+                        )}
+                        <div style={{ maxHeight: '380px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: isMobile ? '0.75rem' : '0' }}>
+                            {ret.items.map((item, idx) => {
+                                const mismatch = item.qtyReceived !== null && (item.qtyReceived !== item.qtySent || item.qtyReceivedLoose !== item.qtySentLoose);
+                                if (isMobile) {
+                                    return (
+                                        <div key={idx} style={{
+                                            padding: '1rem', borderRadius: '10px',
+                                            background: mismatch ? '#fef2f2' : '#fff',
+                                            border: '1px solid',
+                                            borderColor: mismatch ? '#fecdd3' : '#e2e8f0',
+                                            display: 'flex', flexDirection: 'column', gap: '0.5rem'
+                                        }}>
+                                            <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                                                {item.medicineId?.name || 'Unknown'}
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                                                <span style={{ color: 'var(--text-muted)' }}>Sent:</span>
+                                                <span style={{ fontWeight: 600 }}>{item.qtySent} Bx / {item.qtySentLoose} L</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                                                <span style={{ color: 'var(--text-muted)' }}>Verified:</span>
+                                                <span style={{ fontWeight: 700, color: item.qtyReceived === null ? '#94a3b8' : mismatch ? '#dc2626' : '#16a34a' }}>
+                                                    {item.qtyReceived !== null ? `${item.qtyReceived} Bx / ${item.qtyReceivedLoose} L` : '—'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <div key={idx} style={{
+                                        display: 'grid', gridTemplateColumns: '1fr 100px 100px',
+                                        padding: '0.6rem 1rem', alignItems: 'center',
+                                        background: mismatch ? 'rgba(239,68,68,0.04)' : idx % 2 === 0 ? '#fff' : '#fafafa',
+                                        borderBottom: idx !== ret.items.length - 1 ? '1px solid #f1f5f9' : 'none'
+                                    }}>
+                                        <div>
+                                            <div style={{ fontWeight: 500, fontSize: '0.88rem', color: 'var(--text-main)' }}>
+                                                {item.medicineId?.name || 'Unknown'}
+                                            </div>
+                                            {item.medicineId?.barcode && (
+                                                <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{item.medicineId.barcode}</div>
+                                            )}
+                                        </div>
+                                        <div style={{ textAlign: 'center', fontWeight: 600, fontSize: '0.88rem' }}>
+                                            {item.qtySent} {item.qtySentLoose > 0 && <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>/ {item.qtySentLoose}L</span>}
+                                        </div>
+                                        <div style={{
+                                            textAlign: 'center', fontWeight: 700, fontSize: '0.88rem',
+                                            color: item.qtyReceived === null ? '#94a3b8' : mismatch ? '#dc2626' : '#16a34a'
+                                        }}>
+                                            {item.qtyReceived !== null ? (
+                                                <>{item.qtyReceived} {item.qtyReceivedLoose > 0 && <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>/ {item.qtyReceivedLoose}L</span>}</>
+                                            ) : '—'}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button variant="secondary" onClick={onClose} style={{ width: isMobile ? '100%' : 'auto' }}>Close</Button>
+                    </div>
+                </div>
+            </Modal>
+        );
+    };
+
     return (
         <div>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', marginBottom: '1.5rem', flexDirection: isMobile ? 'column' : 'row', gap: '1rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
+                    <h1 style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
                         Expiry Returns
                     </h1>
                     <p style={{ color: 'var(--text-muted)', margin: 0 }}>Your monthly expired medicine return lists.</p>
                 </div>
-                <Button onClick={() => setIsModalOpen(true)} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <Plus size={18} /> New Expiry List
+                <Button onClick={() => setIsModalOpen(true)} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', justifyContent: 'center' }}>
+                    <Plus size={18} /> New List
                 </Button>
             </div>
 
@@ -261,7 +295,7 @@ const BranchExpiryReturns = () => {
             )}
 
             {/* Month Detail Modal */}
-            <MonthDetailModal ret={selectedDetail} onClose={() => setSelectedDetail(null)} />
+            <MonthDetailModalResponsive ret={selectedDetail} onClose={() => setSelectedDetail(null)} />
 
             {/* New Expiry Modal */}
             <NewExpiryReturnModal

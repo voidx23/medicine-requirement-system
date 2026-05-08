@@ -31,6 +31,20 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    const normalize = useCallback(() => {
+        if (!medicine || !medicine.unitsPerBox || medicine.unitsPerBox <= 1) return;
+        const unitsPerBox = medicine.unitsPerBox;
+        const currentQty = parseInt(qty) || 0;
+        const currentLoose = parseInt(loose) || 0;
+        
+        if (currentLoose >= unitsPerBox) {
+            const extraBoxes = Math.floor(currentLoose / unitsPerBox);
+            const remainingLoose = currentLoose % unitsPerBox;
+            setQty(currentQty + extraBoxes);
+            setLoose(remainingLoose);
+        }
+    }, [qty, loose, medicine]);
+
     useEffect(() => {
         if (isOpen) {
             setQty(1);
@@ -44,10 +58,14 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        // Final normalization check
+        const unitsPerBox = medicine.unitsPerBox || 1;
+        const totalLoose = (parseInt(qty) || 0) * unitsPerBox + (parseInt(loose) || 0);
+        
         onAdd({
-            qtySent: parseInt(qty) || 0,
-            qtySentLoose: parseInt(loose) || 0,
-            batchNumber: batch.trim()
+            qtySent: Math.floor(totalLoose / unitsPerBox),
+            qtySentLoose: totalLoose % unitsPerBox,
+            batchNumber: batch.trim().toUpperCase()
         });
         onClose();
     };
@@ -55,7 +73,14 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
     const handleKeyDown = (e, nextRef) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            nextRef.current?.focus();
+            if (nextRef === 'submit') {
+                handleSubmit(e);
+            } else {
+                nextRef.current?.focus();
+                if (nextRef === looseRef) {
+                    // Optional: could normalize here too
+                }
+            }
         }
     };
 
@@ -79,7 +104,11 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
                             ref={looseRef}
                             type="number" min="0" value={loose} 
                             onChange={e => setLoose(e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(e, batchRef)}
+                            onBlur={normalize}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') normalize();
+                                handleKeyDown(e, batchRef);
+                            }}
                             style={{ padding: '0.65rem', borderRadius: '8px', border: '1px solid var(--border)', width: '100%' }}
                         />
                     </div>
@@ -90,7 +119,7 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
                         ref={batchRef}
                         type="text" value={batch} 
                         onChange={e => setBatch(e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, submitRef)}
+                        onKeyDown={(e) => handleKeyDown(e, 'submit')}
                         placeholder="e.g. B12345"
                         style={{ padding: '0.65rem', borderRadius: '8px', border: '1px solid var(--border)', width: '100%' }}
                     />
@@ -357,7 +386,11 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
 
                 {error && (
                     <div style={{ padding: '0.75rem', background: 'var(--danger-light)', color: 'var(--danger)', borderRadius: '8px', fontSize: '0.88rem' }}>
-                                      {/* Month + Year */}
+                        {error}
+                    </div>
+                )}
+
+                {/* Month + Year */}
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                     <div className="input-group">
                         <label>Expiry Month</label>

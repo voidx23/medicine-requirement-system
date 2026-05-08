@@ -6,7 +6,6 @@ import QuantityModal from '../components/UI/QuantityModal';
 import StaffVerificationModal from '../components/UI/StaffVerificationModal';
 import CustomItemModal from '../components/UI/CustomItemModal';
 import DigitalClock from '../components/UI/DigitalClock';
-import NotificationBell from '../components/UI/NotificationBell';
 import { useNotification } from '../context/NotificationContext';
 import AuthContext from '../context/AuthContext';
 
@@ -320,13 +319,22 @@ const PharmacistNewRequest = () => {
     };
 
     return (
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    return (
         <div>
             {/* Sticky Header Section */}
             <div className="sticky-header">
-                {/* Header Section (Matches Dashboard.jsx) */}
-                <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+                {/* Header Section */}
+                <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'flex-start', marginBottom: '2rem', flexDirection: isMobile ? 'column' : 'row', gap: '1rem' }}>
                     <div>
-                    <h1 className="header-title" style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <h1 className="header-title" style={{ fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                         Create New Request
                         <span style={{ 
                             fontSize: '0.9rem', fontWeight: 500, color: 'var(--primary)', 
@@ -336,9 +344,9 @@ const PharmacistNewRequest = () => {
                             {user?.username?.toUpperCase() || 'PHARMACY'}
                         </span>
                     </h1>
-                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', color: 'var(--text-muted)' }}>
+                    <div style={{ display: 'flex', gap: isMobile ? '0.5rem' : '1.5rem', alignItems: isMobile ? 'flex-start' : 'center', color: 'var(--text-muted)', flexDirection: isMobile ? 'column' : 'row' }}>
                             <p>{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                            <div style={{ width: '1px', height: '16px', background: 'rgba(0,0,0,0.1)' }}></div>
+                            {!isMobile && <div style={{ width: '1px', height: '16px', background: 'rgba(0,0,0,0.1)' }}></div>}
                             <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)', fontWeight: 500 }}>
                                 <span style={{ fontSize: '0.9rem', background: 'rgba(var(--primary-rgb), 0.1)', padding: '0.1rem 0.5rem', borderRadius: '4px' }}>
                                     {submittedToday}
@@ -348,7 +356,7 @@ const PharmacistNewRequest = () => {
                     </div>
                     </div>
                     
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: isMobile ? 'space-between' : 'flex-end' }}>
                         <div className="glass-panel" style={{ padding: '0.5rem 1rem', display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--primary)' }}>
                             <FileText size={18} />
                             <span style={{ fontWeight: 600 }}>{requestItems.length} Items</span>
@@ -358,32 +366,33 @@ const PharmacistNewRequest = () => {
                             onClick={handleSubmitRequest}
                             disabled={requestItems.length === 0}
                             icon={Send}
+                            style={{ flex: isMobile ? 1 : 'none' }}
                         >
-                            Submit Request
+                            Submit
                         </Button>
                     </div>
                 </div>
 
-                {/* Search Section (Matches AddItem.jsx - Pill Shape) */}
+                {/* Search Section */}
                 <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '2rem' }}>
-                    <div style={{ flex: 1, maxWidth: '500px' }}>
+                    <div style={{ flex: 1, maxWidth: isMobile ? '100%' : '500px' }}>
                         <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
                             <div 
                                 className="glass-panel"
                                 style={{ 
                                     display: 'flex', alignItems: 'center', padding: '0.5rem', paddingLeft: '1rem',
-                                    borderRadius: '50px' // Pill shape
+                                    borderRadius: '50px'
                                 }}
                             >
                                 <Search size={20} style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }} />
                                 <input
                                     ref={searchInputRef}
                                     type="text"
-                                    placeholder="Search name or scan barcode..."
+                                    placeholder="Search or scan barcode..."
                                     value={query}
                                     onChange={(e) => {
                                         handleSearch(e.target.value);
-                                        setHighlightedIndex(-1); // Reset highlight on type
+                                        setHighlightedIndex(-1);
                                     }}
                                     onFocus={() => { if (query.length > 0) setIsOpen(true); }}
                                     onKeyDown={handleKeyDown}
@@ -417,13 +426,15 @@ const PharmacistNewRequest = () => {
                                                 }}
                                                 onMouseOver={() => setHighlightedIndex(index)}
                                             >
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                    <span style={{ fontWeight: 500 }}>{medicine.name}</span>
-                                                    <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontWeight: 600 }}>
-                                                        Unit: {medicine.unitsPerBox === 1 ? 'NOS' : medicine.unitsPerBox || 1}
-                                                    </span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0 }}>
+                                                    <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{medicine.name}</span>
+                                                    {!isMobile && (
+                                                        <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontWeight: 600, flexShrink: 0 }}>
+                                                            Unit: {medicine.unitsPerBox === 1 ? 'NOS' : medicine.unitsPerBox || 1}
+                                                        </span>
+                                                    )}
                                                 </div>
-                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{medicine.supplierId?.name}</span>
+                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem', flexShrink: 0 }}>{medicine.supplierId?.name}</span>
                                             </button>
                                         ))
                                     ) : (
@@ -434,13 +445,14 @@ const PharmacistNewRequest = () => {
                         </div>
                     </div>
 
-                    <div className="desktop-only">
-                        <DigitalClock />
-                    </div>
+                    {!isMobile && (
+                        <div className="desktop-only">
+                            <DigitalClock />
+                        </div>
+                    )}
                 </div>
                 
-                {/* Not Found Link - Moved outside flex to keep it centered or aligned logic separate if needed, but keeping logic consistent */}
-                <div style={{ textAlign: 'center', marginTop: '-1rem', marginBottom: '2rem', maxWidth: '500px' }}>
+                <div style={{ textAlign: 'center', marginTop: '-1rem', marginBottom: '2rem', maxWidth: isMobile ? '100%' : '500px' }}>
                         <button 
                             onClick={() => setCustomModalOpen(true)}
                             style={{ 
@@ -464,78 +476,130 @@ const PharmacistNewRequest = () => {
                     </div>
                 ) : (
                     <>
-                        <div className="glass-panel" style={{ overflow: 'hidden' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                <thead style={{ background: 'rgba(255, 255, 255, 0.5)', borderBottom: '1px solid var(--glass-border)' }}>
-                                    <tr>
-                                        <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>#</th>
-                                        <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Medicine Name</th>
-                                        <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Supplier</th>
-                                        <th style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)' }}>Quantity</th>
-                                        <th style={{ padding: '1rem', textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)' }}>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {requestItems.map((item, index) => (
-                                        <tr key={item._id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                                            <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{index + 1}</td>
-                                            <td style={{ padding: '1rem', fontWeight: 500 }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        {isMobile ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {requestItems.map((item, index) => (
+                                    <div key={item._id} className="glass-panel" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                                                     {item.name}
                                                     {!item.isCustom && (
-                                                        <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontWeight: 600 }}>
+                                                        <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
                                                             Unit: {item.unitsPerBox === 1 ? 'NOS' : item.unitsPerBox || 1}
                                                         </span>
                                                     )}
                                                 </div>
-                                            </td>
-                                            <td style={{ padding: '1rem' }}>
-                                                {item.isCustom ? (
-                                                    <span style={{ 
-                                                        padding: '0.25rem 0.6rem', background: '#fef3c7', 
-                                                        color: '#d97706', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 500,
-                                                        border: '1px solid #fcd34d'
-                                                    }}>
-                                                        Manual Entry
-                                                    </span>
-                                                ) : (
-                                                    <span style={{ 
-                                                        padding: '0.25rem 0.6rem', background: 'var(--primary-light)', 
-                                                        color: 'var(--primary)', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 500
-                                                    }}>
-                                                        {item.supplierId?.name || 'Unknown'}
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                <div style={{ marginTop: '0.25rem' }}>
+                                                    {item.isCustom ? (
+                                                        <span style={{ fontSize: '0.75rem', color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: '12px' }}>Manual Entry</span>
+                                                    ) : (
+                                                        <span style={{ fontSize: '0.75rem', color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '12px' }}>{item.supplierId?.name || 'Unknown'}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => removeItem(item._id)}
+                                                style={{ background: 'transparent', border: 'none', color: '#ef4444', padding: '0.5rem' }}
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem' }}>
+                                            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Quantity:</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <button 
+                                                    onClick={() => updateQuantity(item._id, Math.max(1, item.quantity - 1))}
+                                                    style={{ width: '30px', height: '30px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff' }}
+                                                >-</button>
                                                 <input 
                                                     type="number" min="1" value={item.quantity}
                                                     onChange={(e) => updateQuantity(item._id, e.target.value)}
-                                                    style={{ 
-                                                        width: '60px', padding: '0.4rem', borderRadius: '6px', 
-                                                        border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold'
-                                                    }}
+                                                    style={{ width: '50px', border: 'none', textAlign: 'center', fontWeight: 'bold', background: 'transparent' }}
                                                 />
-                                            </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right' }}>
                                                 <button 
-                                                    onClick={() => removeItem(item._id)}
-                                                    style={{ 
-                                                        background: 'transparent', border: 'none', color: '#ef4444', 
-                                                        cursor: 'pointer', padding: '0.5rem', borderRadius: '50%', transition: 'background 0.2s'
-                                                    }}
-                                                    onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
-                                                    onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-                                                    title="Remove item"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </td>
+                                                    onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                                                    style={{ width: '30px', height: '30px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff' }}
+                                                >+</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="glass-panel" style={{ overflow: 'hidden' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead style={{ background: 'rgba(255, 255, 255, 0.5)', borderBottom: '1px solid var(--glass-border)' }}>
+                                        <tr>
+                                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>#</th>
+                                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Medicine Name</th>
+                                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Supplier</th>
+                                            <th style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)' }}>Quantity</th>
+                                            <th style={{ padding: '1rem', textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)' }}>Actions</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                        {requestItems.map((item, index) => (
+                                            <tr key={item._id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                                                <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{index + 1}</td>
+                                                <td style={{ padding: '1rem', fontWeight: 500 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        {item.name}
+                                                        {!item.isCustom && (
+                                                            <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontWeight: 600 }}>
+                                                                Unit: {item.unitsPerBox === 1 ? 'NOS' : item.unitsPerBox || 1}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '1rem' }}>
+                                                    {item.isCustom ? (
+                                                        <span style={{ 
+                                                            padding: '0.25rem 0.6rem', background: '#fef3c7', 
+                                                            color: '#d97706', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 500,
+                                                            border: '1px solid #fcd34d'
+                                                        }}>
+                                                            Manual Entry
+                                                        </span>
+                                                    ) : (
+                                                        <span style={{ 
+                                                            padding: '0.25rem 0.6rem', background: 'var(--primary-light)', 
+                                                            color: 'var(--primary)', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 500
+                                                        }}>
+                                                            {item.supplierId?.name || 'Unknown'}
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                                    <input 
+                                                        type="number" min="1" value={item.quantity}
+                                                        onChange={(e) => updateQuantity(item._id, e.target.value)}
+                                                        style={{ 
+                                                            width: '60px', padding: '0.4rem', borderRadius: '6px', 
+                                                            border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold'
+                                                        }}
+                                                    />
+                                                </td>
+                                                <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                    <button 
+                                                        onClick={() => removeItem(item._id)}
+                                                        style={{ 
+                                                            background: 'transparent', border: 'none', color: '#ef4444', 
+                                                            cursor: 'pointer', padding: '0.5rem', borderRadius: '50%', transition: 'background 0.2s'
+                                                        }}
+                                                        onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
+                                                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                                        title="Remove item"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                         <div ref={bottomRef} />
                     </>
                 )}

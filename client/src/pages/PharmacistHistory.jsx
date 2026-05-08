@@ -206,8 +206,17 @@ const PharmacistHistory = () => {
     }, []);
 
     return (
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    return (
         <div>
-            <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: '1rem' }}>
                 <div>
                     <h1 className="header-title">Requirement History</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Track status of your submitted requirements.</p>
@@ -227,19 +236,8 @@ const PharmacistHistory = () => {
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
                         color: 'var(--primary)',
                         fontWeight: 600,
-                        fontSize: '0.9rem'
-                    }}
-                    onMouseOver={(e) => { 
-                        if(!loading) {
-                            e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)';
-                        }
-                    }}
-                    onMouseOut={(e) => {
-                        if(!loading) {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)';
-                        }
+                        fontSize: '0.9rem',
+                        alignSelf: isMobile ? 'flex-end' : 'center'
                     }}
                 >
                     <RotateCw size={18} className={loading ? "spin-animation" : ""} />
@@ -259,32 +257,32 @@ const PharmacistHistory = () => {
                             className="glass-panel" 
                             onClick={() => setSelectedRequest(req)}
                             style={{ 
-                                padding: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center',
+                                padding: isMobile ? '1rem' : '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center',
                                 cursor: 'pointer', transition: 'all 0.2s ease'
                             }}
-                            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-                            onMouseOut={(e) => e.currentTarget.style.transform = 'none'}
                         >
                             {/* Number Badge */}
-                            <div style={{
-                                width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary-light)',
-                                color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontWeight: 'bold', fontSize: '0.9rem', flexShrink: 0
-                            }}>
-                                {myRequests.length - index}
-                            </div>
+                            {!isMobile && (
+                                <div style={{
+                                    width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary-light)',
+                                    color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontWeight: 'bold', fontSize: '0.9rem', flexShrink: 0
+                                }}>
+                                    {myRequests.length - index}
+                                </div>
+                            )}
 
                             <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div>
-                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'var(--text-secondary)' }}>
-                                            {new Date(req.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                        <div style={{ fontWeight: 'bold', fontSize: isMobile ? '1rem' : '1.1rem', color: 'var(--text-secondary)' }}>
+                                            {new Date(req.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                                         </div>
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                             {req.items.length} Items Requested
                                         </div>
                                     </div>
-                                    <span style={{ fontSize: '0.8rem', fontWeight: 600, color: getStatusColor(req.status).text, background: getStatusColor(req.status).bg, padding: '0.2rem 0.6rem', borderRadius: '12px' }}>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: getStatusColor(req.status).text, background: getStatusColor(req.status).bg, padding: '0.2rem 0.6rem', borderRadius: '12px' }}>
                                         {req.status === 'partially_fulfilled' ? 'PARTIAL' : req.status.toUpperCase()}
                                     </span>
                                 </div>
@@ -309,60 +307,87 @@ const PharmacistHistory = () => {
             <Modal
                 isOpen={!!selectedRequest}
                 onClose={() => setSelectedRequest(null)}
-                title={`Request Details - ${selectedRequest ? new Date(selectedRequest.createdAt).toLocaleDateString('en-GB') : ''}`}
+                title={isMobile ? 'Details' : `Request Details - ${selectedRequest ? new Date(selectedRequest.createdAt).toLocaleDateString('en-GB') : ''}`}
             >
                 {selectedRequest && (
                     <div>
                         <div style={{ maxHeight: '60vh', overflowY: 'auto', marginBottom: '1.5rem' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
-                                <thead style={{ background: '#f8fafc', position: 'sticky', top: 0 }}>
-                                    <tr>
-                                        <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0', width: '50px' }}>Sl.No</th>
-                                        <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Medicine</th>
-                                        <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #e2e8f0', width: '80px' }}>Qty</th>
-                                        <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #e2e8f0', width: '80px' }}>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                            {isMobile ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     {selectedRequest.items.map((item, idx) => (
-                                        <tr key={idx} style={{ 
-                                            borderBottom: '1px solid #f1f5f9', 
-                                            background: item.status === 'packed' ? 'rgba(34, 197, 94, 0.03)' : (item.status === 'forwarded' ? 'rgba(59, 130, 246, 0.03)' : '#fff1f2') 
+                                        <div key={idx} style={{ 
+                                            padding: '1rem', borderRadius: '10px', 
+                                            background: item.status === 'packed' ? '#f0fdf4' : (item.status === 'forwarded' ? '#eff6ff' : '#fff1f2'),
+                                            border: '1px solid',
+                                            borderColor: item.status === 'packed' ? '#dcfce7' : (item.status === 'forwarded' ? '#dbeafe' : '#fecdd3')
                                         }}>
-                                            <td style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>{idx + 1}</td>
-                                            <td style={{ padding: '0.75rem', color: 'var(--text-main)', textDecoration: item.status === 'packed' ? 'line-through' : 'none', opacity: item.status === 'packed' ? 0.6 : 1, fontWeight: item.status === 'packed' ? 400 : 500 }}>{item.name}</td>
-                                            <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 600 }}>{item.quantity}</td>
-                                            <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.95rem' }}>{item.name}</span>
+                                                <span style={{ fontWeight: 700, color: 'var(--primary)' }}>x{item.quantity}</span>
+                                            </div>
+                                            <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}>
                                                 {item.status === 'packed' ? (
-                                                     <div style={{ 
-                                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                                        color: '#15803d',
-                                                        background: '#dcfce7', width: '28px', height: '28px', borderRadius: '50%',
-                                                     }} title="Packed">
-                                                        <CheckCircle size={18} />
-                                                     </div>
+                                                    <><CheckCircle size={16} color="#15803d" /> <span style={{ color: '#15803d' }}>Packed</span></>
                                                 ) : item.status === 'forwarded' ? (
-                                                    <div style={{ 
-                                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                                        color: '#2563eb',
-                                                        background: '#dbeafe', width: '28px', height: '28px', borderRadius: '50%',
-                                                     }} title="Forwarded to new request">
-                                                        <CornerDownRight size={18} />
-                                                     </div>
+                                                    <><CornerDownRight size={16} color="#2563eb" /> <span style={{ color: '#2563eb' }}>Forwarded</span></>
                                                 ) : (
-                                                    <div style={{ 
-                                                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                                                        color: '#b91c1c',
-                                                        background: '#fee2e2', width: '28px', height: '28px', borderRadius: '50%',
-                                                     }} title="Pending / Out of Stock">
-                                                        <X size={18} />
-                                                     </div>
+                                                    <><X size={16} color="#b91c1c" /> <span style={{ color: '#b91c1c' }}>Not Packed</span></>
                                                 )}
-                                            </td>
-                                        </tr>
+                                            </div>
+                                        </div>
                                     ))}
-                                </tbody>
-                            </table>
+                                </div>
+                            ) : (
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+                                    <thead style={{ background: '#f8fafc', position: 'sticky', top: 0 }}>
+                                        <tr>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0', width: '50px' }}>Sl.No</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>Medicine</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #e2e8f0', width: '80px' }}>Qty</th>
+                                            <th style={{ padding: '0.75rem', textAlign: 'center', borderBottom: '2px solid #e2e8f0', width: '80px' }}>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {selectedRequest.items.map((item, idx) => (
+                                            <tr key={idx} style={{ 
+                                                borderBottom: '1px solid #f1f5f9', 
+                                                background: item.status === 'packed' ? 'rgba(34, 197, 94, 0.03)' : (item.status === 'forwarded' ? 'rgba(59, 130, 246, 0.03)' : '#fff1f2') 
+                                            }}>
+                                                <td style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>{idx + 1}</td>
+                                                <td style={{ padding: '0.75rem', color: 'var(--text-main)', textDecoration: item.status === 'packed' ? 'line-through' : 'none', opacity: item.status === 'packed' ? 0.6 : 1, fontWeight: item.status === 'packed' ? 400 : 500 }}>{item.name}</td>
+                                                <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 600 }}>{item.quantity}</td>
+                                                <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                                    {item.status === 'packed' ? (
+                                                         <div style={{ 
+                                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                            color: '#15803d',
+                                                            background: '#dcfce7', width: '28px', height: '28px', borderRadius: '50%',
+                                                         }} title="Packed">
+                                                            <CheckCircle size={18} />
+                                                         </div>
+                                                    ) : item.status === 'forwarded' ? (
+                                                        <div style={{ 
+                                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                            color: '#2563eb',
+                                                            background: '#dbeafe', width: '28px', height: '28px', borderRadius: '50%',
+                                                         }} title="Forwarded to new request">
+                                                            <CornerDownRight size={18} />
+                                                         </div>
+                                                    ) : (
+                                                        <div style={{ 
+                                                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                                                            color: '#b91c1c',
+                                                            background: '#fee2e2', width: '28px', height: '28px', borderRadius: '50%',
+                                                         }} title="Pending / Out of Stock">
+                                                            <X size={18} />
+                                                         </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
                         </div>
 
                         {/* Re-order Button Logic */}
@@ -377,7 +402,9 @@ const PharmacistHistory = () => {
                                         padding: '0.75rem 1.5rem', borderRadius: '10px',
                                         fontWeight: 600, cursor: 'pointer',
                                         display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                        boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)'
+                                        boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)',
+                                        width: isMobile ? '100%' : 'auto',
+                                        justifyContent: 'center'
                                     }}
                                 >
                                     <RotateCw size={18} />

@@ -106,7 +106,6 @@ const PharmacistSidebar = () => {
           color: 'var(--primary)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between',
           gap: '0.5rem'
         }}>
             <Frame
@@ -116,7 +115,6 @@ const PharmacistSidebar = () => {
                 fill: 'var(--primary)'
               }}
             />
-            <NotificationBell />
         </div>
       </div>
 

@@ -108,13 +108,23 @@ const PharmacyTasks = () => {
         });
     }
 
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const mainTabStyle = (tab) => ({
-        padding: '0.6rem 1.25rem', border: 'none', borderRadius: '10px', cursor: 'pointer',
-        fontWeight: 700, fontSize: '0.95rem', transition: 'all 0.2s',
+        padding: isMobile ? '0.5rem 0.75rem' : '0.6rem 1.25rem', border: 'none', borderRadius: '10px', cursor: 'pointer',
+        fontWeight: 700, fontSize: isMobile ? '0.85rem' : '0.95rem', transition: 'all 0.2s',
         background: activeMainTab === tab ? 'var(--primary)' : 'transparent',
         color: activeMainTab === tab ? 'white' : 'var(--text-muted)',
         display: 'flex', alignItems: 'center', gap: '0.5rem',
         boxShadow: activeMainTab === tab ? '0 4px 12px rgba(99, 102, 241, 0.2)' : 'none',
+        flex: isMobile ? 1 : 'none',
+        justifyContent: 'center'
     });
 
     const subTabStyle = (tab) => ({
@@ -124,18 +134,20 @@ const PharmacyTasks = () => {
         color: activeSubTab === tab ? 'var(--primary)' : 'var(--text-muted)',
         boxShadow: activeSubTab === tab ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
         display: 'flex', alignItems: 'center', gap: '0.4rem',
+        flex: isMobile ? 1 : 'none',
+        justifyContent: 'center'
     });
 
     return (
         <div style={{ paddingBottom: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', flexDirection: isMobile ? 'column' : 'row' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ backgroundColor: '#eff6ff', padding: '0.75rem', borderRadius: '0.5rem', color: '#3b82f6' }}>
                         <ListTodo size={24} />
                     </div>
                     <div>
-                        <h1 className="header-title" style={{ margin: 0, fontSize: '1.5rem' }}>Task Inbox</h1>
-                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem' }}>Action items assigned by the central store</p>
+                        <h1 className="header-title" style={{ margin: 0, fontSize: isMobile ? '1.25rem' : '1.5rem' }}>Task Inbox</h1>
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem' }}>Action items from central store</p>
                     </div>
                 </div>
 
@@ -143,7 +155,7 @@ const PharmacyTasks = () => {
                 <button
                     onClick={() => setIsTransferModalOpen(true)}
                     className="btn btn-primary"
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', justifyContent: 'center' }}
                 >
                     <ArrowRightLeft size={16} /> Request from Branch
                 </button>
@@ -152,33 +164,33 @@ const PharmacyTasks = () => {
             {/* Navigation Sections */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
                 {/* Main Level Tabs */}
-                <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.03)', padding: '0.4rem', borderRadius: '14px', width: 'fit-content' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.03)', padding: '0.4rem', borderRadius: '14px', width: isMobile ? '100%' : 'fit-content' }}>
                     <button onClick={() => setActiveMainTab('pending')} style={mainTabStyle('pending')}>
-                        <ListTodo size={18} /> Active Inbox
+                        <ListTodo size={18} /> Active
                     </button>
                     <button onClick={() => setActiveMainTab('history')} style={mainTabStyle('history')}>
-                        <HistoryIcon size={18} /> Task History
+                        <HistoryIcon size={18} /> History
                     </button>
                 </div>
 
                 {/* Sub Level Tabs & Search */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                    <div style={{ display: 'flex', background: 'var(--glass-bg)', padding: '0.25rem', borderRadius: '12px', border: '1px solid var(--glass-border)', width: 'fit-content' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', flexDirection: isMobile ? 'column' : 'row' }}>
+                    <div style={{ display: 'flex', background: 'var(--glass-bg)', padding: '0.25rem', borderRadius: '12px', border: '1px solid var(--glass-border)', width: isMobile ? '100%' : 'fit-content' }}>
                         <button onClick={() => setActiveSubTab('general')} style={subTabStyle('general')}>
-                            General Tasks
+                            General
                         </button>
                         <button onClick={() => setActiveSubTab('transfers')} style={subTabStyle('transfers')}>
-                            Medicine Transfers
+                            Transfers
                         </button>
                     </div>
 
                     {activeMainTab === 'history' && (
-                        <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
+                        <div style={{ position: 'relative', flex: 1, width: isMobile ? '100%' : 'auto', maxWidth: isMobile ? 'none' : '400px' }}>
                             <input 
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search by title, medicine, or notes..."
+                                placeholder="Search tasks..."
                                 style={{
                                     width: '100%', padding: '0.6rem 1rem', paddingLeft: '2.5rem',
                                     borderRadius: '10px', border: '1px solid var(--glass-border)',
