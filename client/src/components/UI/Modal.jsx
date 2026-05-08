@@ -36,14 +36,15 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = '500px' }) => {
       <div 
         className="glass-panel"
         style={{
-          width: '90%',
+          width: '95%',
           maxWidth: maxWidth,
-          maxHeight: '90vh',
+          maxHeight: '95vh',
           overflowY: 'auto',
-          backgroundColor: '#fff', // Solid background for legibility
-          padding: '1.5rem',
+          backgroundColor: '#fff', 
+          padding: '1.25rem', // Reduced padding for mobile
           position: 'relative',
-          animation: 'slideUp 0.3s ease-out'
+          animation: 'slideUp 0.3s ease-out',
+          boxSizing: 'border-box'
         }}
         onClick={e => e.stopPropagation()}
       >
