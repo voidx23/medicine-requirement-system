@@ -22,7 +22,7 @@ const BottomNav = () => {
     { to: '/pharmacist-dashboard/updates', icon: GitBranch, label: 'Dev' }
   ];
 
-  const links = user?.role === 'pharmacist' ? pharmacistLinks : adminLinks;
+  const links = (user?.role === 'pharmacist' || user?.role === 'branch') ? pharmacistLinks : adminLinks;
 
   return (
     <nav className="glass-panel" style={{

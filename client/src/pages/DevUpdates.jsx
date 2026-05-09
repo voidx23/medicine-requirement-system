@@ -89,8 +89,22 @@ const DevUpdates = () => {
     // Static Data (Fallback)
     const staticUpdates = [
         {
-            version: 'v1.6.0',
+            version: 'v1.7.0',
             timestamp: new Date().toISOString(),
+            title: 'Mobile Pharmacist Experience',
+            icon: Smartphone,
+            commits: [
+                'UI: Optimized "New Request" cards for high-density mobile viewing',
+                'Fix: Removed "Supplier" tags from pharmacy views for cleaner look',
+                'Layout: Implemented sticky mobile header with official logo branding',
+                'Fix: Corrected BottomNav role check to restrict Store-only items',
+                'UX: Fixed horizontal overflow on all modals for smaller screens',
+                'Refactor: Enabled full medicine name wrapping in search results'
+            ]
+        },
+        {
+            version: 'v1.6.0',
+            timestamp: '2024-05-08T12:00:00Z',
             title: 'Import & PDF Optimizations',
             icon: Zap,
             commits: [

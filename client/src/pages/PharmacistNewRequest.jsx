@@ -426,14 +426,13 @@ const PharmacistNewRequest = () => {
                                                 onMouseOver={() => setHighlightedIndex(index)}
                                             >
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0 }}>
-                                                    <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{medicine.name}</span>
+                                                    <span style={{ fontWeight: 500, fontSize: isMobile ? '0.85rem' : '1rem', lineHeight: '1.2' }}>{medicine.name}</span>
                                                     {!isMobile && (
                                                         <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontWeight: 600, flexShrink: 0 }}>
                                                             Unit: {medicine.unitsPerBox === 1 ? 'NOS' : medicine.unitsPerBox || 1}
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '0.5rem', flexShrink: 0 }}>{medicine.supplierId?.name}</span>
                                             </button>
                                         ))
                                     ) : (
@@ -476,50 +475,49 @@ const PharmacistNewRequest = () => {
                 ) : (
                     <>
                         {isMobile ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                                 {requestItems.map((item, index) => (
-                                    <div key={item._id} className="glass-panel" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <div key={item._id} style={{ 
+                                        padding: '0.75rem', 
+                                        display: 'flex', 
+                                        flexDirection: 'column', 
+                                        gap: '0.4rem',
+                                        borderBottom: index === requestItems.length - 1 ? 'none' : '1px solid #f1f5f9'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.85rem', lineHeight: '1.2' }}>
                                                     {item.name}
-                                                    {!item.isCustom && (
-                                                        <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
-                                                            Unit: {item.unitsPerBox === 1 ? 'NOS' : item.unitsPerBox || 1}
-                                                        </span>
-                                                    )}
                                                 </div>
-                                                <div style={{ marginTop: '0.25rem' }}>
-                                                    {item.isCustom ? (
-                                                        <span style={{ fontSize: '0.75rem', color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: '12px' }}>Manual Entry</span>
-                                                    ) : (
-                                                        <span style={{ fontSize: '0.75rem', color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '12px' }}>{item.supplierId?.name || 'Unknown'}</span>
-                                                    )}
-                                                </div>
+                                                {item.isCustom && (
+                                                    <span style={{ fontSize: '0.65rem', color: '#d97706', background: '#fef3c7', padding: '1px 6px', borderRadius: '4px' }}>Manual</span>
+                                                )}
+                                                {!item.isCustom && (
+                                                    <span style={{ fontSize: '0.65rem', color: '#64748b', background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px' }}>
+                                                        Unit: {item.unitsPerBox || 1}
+                                                    </span>
+                                                )}
                                             </div>
-                                            <button 
-                                                onClick={() => removeItem(item._id)}
-                                                style={{ background: 'transparent', border: 'none', color: '#ef4444', padding: '0.5rem' }}
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '0.75rem' }}>
-                                            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Quantity:</span>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                 <button 
                                                     onClick={() => updateQuantity(item._id, Math.max(1, item.quantity - 1))}
-                                                    style={{ width: '30px', height: '30px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff' }}
+                                                    style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '1rem' }}
                                                 >-</button>
                                                 <input 
                                                     type="number" min="1" value={item.quantity}
                                                     onChange={(e) => updateQuantity(item._id, e.target.value)}
-                                                    style={{ width: '50px', border: 'none', textAlign: 'center', fontWeight: 'bold', background: 'transparent' }}
+                                                    style={{ width: '40px', border: 'none', textAlign: 'center', fontWeight: 'bold', background: 'transparent', fontSize: '0.9rem' }}
                                                 />
                                                 <button 
                                                     onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                                                    style={{ width: '30px', height: '30px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff' }}
+                                                    style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '1rem' }}
                                                 >+</button>
+                                                <button 
+                                                    onClick={() => removeItem(item._id)}
+                                                    style={{ background: 'transparent', border: 'none', color: '#ef4444', marginLeft: '0.5rem' }}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -532,7 +530,6 @@ const PharmacistNewRequest = () => {
                                         <tr>
                                             <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>#</th>
                                             <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Medicine Name</th>
-                                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Supplier</th>
                                             <th style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: 'var(--text-muted)' }}>Quantity</th>
                                             <th style={{ padding: '1rem', textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)' }}>Actions</th>
                                         </tr>
@@ -551,24 +548,7 @@ const PharmacistNewRequest = () => {
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td style={{ padding: '1rem' }}>
-                                                    {item.isCustom ? (
-                                                        <span style={{ 
-                                                            padding: '0.25rem 0.6rem', background: '#fef3c7', 
-                                                            color: '#d97706', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 500,
-                                                            border: '1px solid #fcd34d'
-                                                        }}>
-                                                            Manual Entry
-                                                        </span>
-                                                    ) : (
-                                                        <span style={{ 
-                                                            padding: '0.25rem 0.6rem', background: 'var(--primary-light)', 
-                                                            color: 'var(--primary)', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 500
-                                                        }}>
-                                                            {item.supplierId?.name || 'Unknown'}
-                                                        </span>
-                                                    )}
-                                                </td>
+
                                                 <td style={{ padding: '1rem', textAlign: 'center' }}>
                                                     <input 
                                                         type="number" min="1" value={item.quantity}

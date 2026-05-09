@@ -1,14 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import PharmacistSidebar from './PharmacistSidebar';
 import BottomNav from './BottomNav';
 import { Menu, X } from 'lucide-react';
+import Frame from '../../assets/frame.svg?react';
 
 const PharmacistLayout = ({ children }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-secondary)', position: 'relative' }}>
+        <div style={{ display: 'flex', height: '100dvh', background: 'var(--bg-secondary)', position: 'relative', overflow: 'hidden' }}>
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
                 <div 
@@ -33,33 +41,38 @@ const PharmacistLayout = ({ children }) => {
                 <PharmacistSidebar />
             </div>
             
-            <main className="main-content" style={{ overflowY: 'auto', flex: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, height: '100%' }}>
                 {/* Mobile Header */}
                 <div className="mobile-only" style={{ 
-                    padding: '1rem', 
+                    padding: '0.5rem 1rem', 
                     background: '#fff', 
                     borderBottom: '1px solid var(--glass-border)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    position: 'sticky',
-                    top: 0,
+                    height: '60px',
+                    boxSizing: 'border-box',
+                    flexShrink: 0,
                     zIndex: 90
                 }}>
                     <button 
                         onClick={() => setIsSidebarOpen(true)}
-                        style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer' }}
+                        style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '0.5rem', marginLeft: '-0.5rem' }}
                     >
                         <Menu size={24} />
                     </button>
-                    <div style={{ fontWeight: 700, color: 'var(--primary)' }}>Medicine App</div>
+                    <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+                        <Frame style={{ height: '80px', width: 'auto', fill: 'var(--primary)' }} />
+                    </div>
                     <div style={{ width: 24 }} /> {/* Spacer */}
                 </div>
 
-                <div style={{ maxWidth: '1600px', margin: '0 auto', padding: '1.5rem' }}>
-                    {children || <Outlet />}
-                </div>
-            </main>
+                <main className="main-content" style={{ overflowY: 'auto', flex: 1, padding: 0 }}>
+                    <div style={{ maxWidth: '1600px', margin: '0 auto', padding: isMobile ? '1rem' : '1.5rem', paddingBottom: isMobile ? '6rem' : '1.5rem' }}>
+                        {children || <Outlet />}
+                    </div>
+                </main>
+            </div>
 
             <div className="mobile-only">
                 <BottomNav />
