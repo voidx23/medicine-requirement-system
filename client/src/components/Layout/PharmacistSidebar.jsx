@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { PlusCircle, History, LogOut, Sparkles, ListTodo, BellRing, UserCircle, PackageX } from 'lucide-react';
+import { PlusCircle, History, Sparkles, ListTodo, BellRing, PackageX } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
 import NotificationBell from '../UI/NotificationBell';
 import { useContext, useEffect, useState, useRef } from 'react';
@@ -158,25 +158,7 @@ const PharmacistSidebar = () => {
       </nav>
       
       <div style={{ marginTop: 'auto', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <div style={{
-            display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.5rem 0.75rem 0.5rem',
-            marginBottom: '0.25rem', borderBottom: '1px dashed var(--glass-border)'
-        }}>
-            <div style={{
-                width: '36px', height: '36px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-            }}>
-                <UserCircle size={24} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: '1.2', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                    {user?.name || user?.username || 'Pharmacist'}
-                </span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.2' }}>
-                    {user?.role || 'Pharmacy Branch'}
-                </span>
-            </div>
-        </div>
+
             <button 
               onClick={() => {
                   if (notiPermission === 'default') {
@@ -214,29 +196,6 @@ const PharmacistSidebar = () => {
               <BellRing size={18} />
               {notiPermission === 'default' ? 'Enable Alerts' : notiPermission === 'granted' ? 'Alerts Enabled (Test)' : 'Alerts Blocked'}
             </button>
-        <button 
-          onClick={logout}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            padding: '0.75rem 1rem',
-            width: '100%',
-            background: 'none',
-            border: 'none',
-            color: '#ef4444',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            fontWeight: 500,
-            borderRadius: '8px',
-            transition: 'background 0.2s'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
-          onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-        >
-          <LogOut size={20} />
-          Logout
-        </button>
         <div style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
             <div style={{ marginTop: '0.5rem' }}>
                 <span style={{ background: '#f1f5f9', color: '#64748b', padding: '0.2rem 0.6rem', borderRadius: '12px', fontWeight: 600 }}>

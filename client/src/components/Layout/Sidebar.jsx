@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Pill, History, GitBranch, LogOut, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, UserCircle, PackageX, ArrowRightLeft } from 'lucide-react';
+import { LayoutDashboard, Users, Pill, History, GitBranch, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, PackageX, ArrowRightLeft } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
 import { useContext, useState, useEffect, useRef } from 'react';
 import AuthContext from '../../context/AuthContext';
@@ -285,57 +285,10 @@ const Sidebar = () => {
             </NavLink>
           );
         })}
-      <button
-            onClick={logout}
-            aria-label="Logout"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '8px',
-              textDecoration: 'none',
-              color: '#ef4444', 
-              backgroundColor: 'transparent',
-              fontWeight: 500,
-              transition: 'all 0.2s ease',
-              border: '1px solid transparent',
-              width: '100%',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontFamily: 'inherit'
-            }}
-            onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#fee2e2';
-            }}
-            onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <LogOut size={20} />
-            Logout
-          </button>
+
       </nav>
       <div style={{ marginTop: 'auto', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-        <div style={{
-            display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.5rem 0.75rem 0.5rem',
-            marginBottom: '0.25rem', borderBottom: '1px dashed var(--glass-border)'
-        }}>
-            <div style={{
-                width: '36px', height: '36px', borderRadius: '50%', background: 'var(--primary-light)', color: 'var(--primary)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-            }}>
-                <UserCircle size={24} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: '1.2', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                    {user?.name || user?.username || 'Admin User'}
-                </span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.2' }}>
-                    {user?.isSuperAdmin ? 'System Admin' : 'Store Admin'}
-                </span>
-            </div>
-        </div>
+
             <button 
               onClick={() => {
                   if (notiPermission === 'default') {

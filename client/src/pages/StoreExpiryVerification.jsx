@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
-import { PackageSearch, Calendar, CheckCircle, Clock, ChevronDown, ChevronUp, Building2, Trash2, Edit2 } from 'lucide-react';
+import { useState, useEffect, useContext } from 'react';
+import { PackageSearch, Calendar, CheckCircle, Clock, ChevronDown, ChevronUp, Building2, Trash2, Edit2, Plus } from 'lucide-react';
 import api from '../services/api';
 import Button from '../components/UI/Button';
 import VerificationModal from '../components/Expiry/VerificationModal';
 import AdminEditExpiryModal from '../components/Expiry/AdminEditExpiryModal';
 import PasswordConfirmModal from '../components/UI/PasswordConfirmModal';
+import NewExpiryReturnModal from '../components/Expiry/NewExpiryReturnModal';
 import { useNotification } from '../context/NotificationContext';
+import AuthContext from '../context/AuthContext';
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
@@ -58,7 +60,7 @@ const ReturnCard = ({ ret, onVerify, onDelete, onEdit }) => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.1rem' }}>
                             <Building2 size={13} color="#94a3b8" />
                             <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>
-                                {ret.branchId?.name || 'Unknown Branch'}
+                                {ret.branchId?.name || 'Main Store'}
                             </span>
                         </div>
                         <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
@@ -210,6 +212,7 @@ const ReturnCard = ({ ret, onVerify, onDelete, onEdit }) => {
 };
 
 const StoreExpiryVerification = () => {
+    const { user } = useContext(AuthContext);
     const { showToast } = useNotification();
     const [returns, setReturns] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -221,6 +224,7 @@ const StoreExpiryVerification = () => {
     const [filterYear, setFilterYear] = useState('');
     const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc'
     const [actionModal, setActionModal] = useState({ isOpen: false, requestId: null });
+    const [isNewExpiryModalOpen, setIsNewExpiryModalOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
     useEffect(() => {
@@ -280,13 +284,18 @@ const StoreExpiryVerification = () => {
     return (
         <div style={{ paddingBottom: '2rem' }}>
             {/* Header */}
-            <div style={{ marginBottom: '1.5rem' }}>
-                <h1 style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-                    Store Expiry Verification
-                </h1>
-                <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: isMobile ? '0.85rem' : '1rem' }}>
-                    Verify expired items sent from branches.
-                </p>
+            <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                    <h1 style={{ fontSize: isMobile ? '1.5rem' : '1.8rem', fontWeight: 800, color: 'var(--text-main)', marginBottom: '0.25rem' }}>
+                        Store Expiry Verification
+                    </h1>
+                    <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: isMobile ? '0.85rem' : '1rem' }}>
+                        Verify expired items sent from branches or add store expiries.
+                    </p>
+                </div>
+                <Button onClick={() => setIsNewExpiryModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Plus size={16} /> Add Store Expiry
+                </Button>
             </div>
 
             {/* Stats strip */}
@@ -423,6 +432,20 @@ const StoreExpiryVerification = () => {
                 confirmText="Confirm Deletion"
                 variant="danger"
             />
+
+            {/* New Expiry Return Modal (for Store) */}
+            {isNewExpiryModalOpen && (
+                <NewExpiryReturnModal
+                    isOpen={isNewExpiryModalOpen}
+                    onClose={() => setIsNewExpiryModalOpen(false)}
+                    onSuccess={() => {
+                        setIsNewExpiryModalOpen(false);
+                        fetchReturns();
+                    }}
+                    allMedicines={allMedicines}
+                    userId={user?._id}
+                />
+            )}
         </div>
     );
 };
