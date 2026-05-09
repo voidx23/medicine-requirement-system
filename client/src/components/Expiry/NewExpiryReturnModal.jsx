@@ -498,8 +498,8 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                         ) : (
                             <div>
                                 {!isMobile && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0, zIndex: 10 }}>
-                                        <div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div style={{ textAlign: 'center' }}>Batch</div><div />
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 70px 70px 120px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0, zIndex: 10 }}>
+                                        <div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div style={{ textAlign: 'left' }}>Batch</div><div />
                                     </div>
                                 )}
                                 {items.map((item, idx) => (
@@ -507,9 +507,11 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                                         padding: '0.6rem 0.75rem', 
                                         borderBottom: idx !== items.length - 1 ? '1px solid #f1f5f9' : 'none', 
                                         background: item.isCustom ? '#fffbeb' : '#fff',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        gap: '0.5rem'
+                                        display: isMobile ? 'flex' : 'grid',
+                                        gridTemplateColumns: isMobile ? 'none' : '1fr 70px 70px 120px 36px',
+                                        flexDirection: isMobile ? 'column' : 'row',
+                                        gap: '0.5rem',
+                                        alignItems: isMobile ? 'stretch' : 'center'
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
                                             <div style={{ overflow: 'hidden' }}>
@@ -519,29 +521,46 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                                                 </div>
                                                 {item.barcode && <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{item.barcode}</div>}
                                             </div>
-                                            <button type="button" onClick={() => removeItem(idx)}
-                                                style={{ background: '#fee2e2', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '6px' }}>
-                                                <Trash2 size={14} />
-                                            </button>
+                                            {isMobile && (
+                                                <button type="button" onClick={() => removeItem(idx)}
+                                                    style={{ background: '#fee2e2', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '6px' }}>
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            )}
                                         </div>
                                         
-                                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '60px 60px 1fr', gap: '0.5rem', alignItems: 'center' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '30px' }}>Box:</span>
-                                                <input type="number" min="0" value={item.qtySent} onChange={e => updateQty(idx, e.target.value)} onBlur={() => normalizeQty(idx)}
-                                                    style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
+                                        {isMobile ? (
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', alignItems: 'center' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '30px' }}>Box:</span>
+                                                    <input type="number" min="0" value={item.qtySent} onChange={e => updateQty(idx, e.target.value)} onBlur={() => normalizeQty(idx)}
+                                                        style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem', boxSizing: 'border-box' }} />
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '30px' }}>Lse:</span>
+                                                    <input type="number" min="0" value={item.qtySentLoose || 0} onChange={e => updateQtyLoose(idx, e.target.value)} onBlur={() => normalizeQty(idx)}
+                                                        style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem', boxSizing: 'border-box' }} />
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', gridColumn: 'span 2' }}>
+                                                    <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '40px' }}>Batch:</span>
+                                                    <input type="text" placeholder="Batch Number" value={item.batchNumber || ''} onChange={e => updateBatch(idx, e.target.value)}
+                                                        style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.82rem', boxSizing: 'border-box' }} />
+                                                </div>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '30px' }}>Lse:</span>
-                                                <input type="number" min="0" value={item.qtySentLoose || 0} onChange={e => updateQtyLoose(idx, e.target.value)} onBlur={() => normalizeQty(idx)}
-                                                    style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
-                                            </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', gridColumn: isMobile ? 'span 2' : 'auto' }}>
-                                                <span style={{ fontSize: '0.7rem', color: '#64748b', minWidth: '30px' }}>Batch:</span>
+                                        ) : (
+                                            <>
+                                                <input type="number" min="0" value={item.qtySent} onChange={e => updateQty(idx, e.target.value)} onBlur={() => normalizeQty(idx)} placeholder="Box"
+                                                    style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem', boxSizing: 'border-box' }} />
+                                                <input type="number" min="0" value={item.qtySentLoose || 0} onChange={e => updateQtyLoose(idx, e.target.value)} onBlur={() => normalizeQty(idx)} placeholder="Lse"
+                                                    style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem', boxSizing: 'border-box' }} />
                                                 <input type="text" placeholder="Batch" value={item.batchNumber || ''} onChange={e => updateBatch(idx, e.target.value)}
-                                                    style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.82rem' }} />
-                                            </div>
-                                        </div>
+                                                    style={{ width: '100%', padding: '0.35rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.82rem', boxSizing: 'border-box' }} />
+                                                <button type="button" onClick={() => removeItem(idx)} title="Remove Item"
+                                                    style={{ background: '#fee2e2', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '6px' }}>
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 ))}
                                 <div ref={itemsEndRef} />
