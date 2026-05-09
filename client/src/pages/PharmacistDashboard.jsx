@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { Search, Plus, Trash2, Send } from 'lucide-react';
 import api from '../services/api';
 import AddItem from '../components/Dashboard/AddItem'; // Reuse for search logic? Or build custom?
