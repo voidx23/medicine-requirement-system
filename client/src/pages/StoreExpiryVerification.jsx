@@ -114,10 +114,15 @@ const ReturnCard = ({ ret, onVerify, onDelete, onEdit }) => {
             {/* Collapsible items */}
             {expanded && (
                 <div style={{ padding: isMobile ? '0.75rem' : '1rem 1.5rem' }}>
-                    {/* Store note */}
+                    {/* Notes */}
+                    {ret.branchNote && (
+                        <div style={{ padding: '0.6rem 0.9rem', background: '#f0fdf4', borderRadius: '6px', fontSize: '0.82rem', color: '#166534', marginBottom: '0.75rem' }}>
+                            📝 <strong>Branch Note:</strong> {ret.branchNote}
+                        </div>
+                    )}
                     {ret.storeNote && (
                         <div style={{ padding: '0.6rem 0.9rem', background: '#fef3c7', borderRadius: '6px', fontSize: '0.82rem', color: '#92400e', marginBottom: '0.75rem' }}>
-                            📝 <strong>Store note:</strong> {ret.storeNote}
+                            📝 <strong>Store Note:</strong> {ret.storeNote}
                         </div>
                     )}
 
@@ -125,11 +130,12 @@ const ReturnCard = ({ ret, onVerify, onDelete, onEdit }) => {
                     <div style={{ border: isMobile ? 'none' : '1px solid #f1f5f9', borderRadius: '8px', overflow: 'hidden' }}>
                         {!isMobile && (
                             <div style={{
-                                display: 'grid', gridTemplateColumns: '1fr 100px 100px 90px',
+                                display: 'grid', gridTemplateColumns: '30px 1fr 100px 100px 90px',
                                 padding: '0.5rem 0.75rem', background: '#f8fafc',
                                 fontWeight: 700, fontSize: '0.72rem', color: '#64748b',
                                 borderBottom: '1px solid #f1f5f9'
                             }}>
+                                <div>#</div>
                                 <div>Medicine</div>
                                 <div style={{ textAlign: 'center' }}>Sent (Bx/L)</div>
                                 <div style={{ textAlign: 'center' }}>Rcv (Bx/L)</div>
@@ -148,9 +154,12 @@ const ReturnCard = ({ ret, onVerify, onDelete, onEdit }) => {
                                             borderColor: mismatch ? '#fecdd3' : '#f1f5f9',
                                             fontSize: '0.82rem'
                                         }}>
-                                            <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.4rem' }}>
-                                                {item.medicineId?.name || item.customName || 'Unknown'}
-                                                {item.customName && <span style={{ fontSize: '0.6rem', background: '#fde68a', color: '#92400e', padding: '1px 4px', borderRadius: '3px', marginLeft: '5px' }}>CUSTOM</span>}
+                                            <div style={{ fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.4rem', display: 'flex', gap: '0.5rem' }}>
+                                                <span style={{ color: '#94a3b8' }}>{idx + 1}.</span>
+                                                <span>
+                                                    {item.medicineId?.name || item.customName || 'Unknown'}
+                                                    {item.customName && <span style={{ fontSize: '0.6rem', background: '#fde68a', color: '#92400e', padding: '1px 4px', borderRadius: '3px', marginLeft: '5px' }}>CUSTOM</span>}
+                                                </span>
                                             </div>
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                                                 <div style={{ color: 'var(--text-muted)' }}>Sent: <span style={{ color: 'var(--text-main)', fontWeight: 500 }}>{item.qtySent} / {item.qtySentLoose || 0}</span></div>
@@ -163,12 +172,13 @@ const ReturnCard = ({ ret, onVerify, onDelete, onEdit }) => {
                                 }
                                 return (
                                     <div key={idx} style={{
-                                        display: 'grid', gridTemplateColumns: '1fr 100px 100px 90px',
+                                        display: 'grid', gridTemplateColumns: '30px 1fr 100px 100px 90px',
                                         padding: '0.5rem 0.75rem', alignItems: 'center',
                                         background: mismatch ? 'rgba(239,68,68,0.04)' : idx % 2 === 0 ? '#fff' : '#fafafa',
                                         borderBottom: idx !== ret.items.length - 1 ? '1px solid #f1f5f9' : 'none',
                                         fontSize: '0.85rem'
                                     }}>
+                                        <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{idx + 1}</div>
                                         <div style={{ fontWeight: 500, color: 'var(--text-main)' }}>
                                             {item.medicineId?.name || item.customName || 'Unknown'}
                                             {item.customName && <span style={{ fontSize: '0.65rem', background: '#fde68a', color: '#92400e', padding: '1px 4px', borderRadius: '3px', marginLeft: '5px' }}>CUSTOM</span>}

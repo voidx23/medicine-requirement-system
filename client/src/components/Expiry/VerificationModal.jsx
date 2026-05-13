@@ -68,7 +68,8 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
                 
                 <div style={{ background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px', gap: '1rem', padding: '0.75rem 1rem', background: '#f1f5f9', fontWeight: 600, fontSize: '0.85rem', color: '#475569' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '30px 1fr 100px 100px', gap: '1rem', padding: '0.75rem 1rem', background: '#f1f5f9', fontWeight: 600, fontSize: '0.85rem', color: '#475569' }}>
+                        <div>#</div>
                         <div>Medicine</div>
                         <div style={{ textAlign: 'center' }}>Sent (Bx/L)</div>
                         <div style={{ textAlign: 'center' }}>Rcv (Bx/L)</div>
@@ -77,11 +78,12 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
                     <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
                         {items.map((item, idx) => (
                             <div key={idx} style={{ 
-                                display: 'grid', gridTemplateColumns: '1fr 100px 100px', gap: '1rem', 
+                                display: 'grid', gridTemplateColumns: '30px 1fr 100px 100px', gap: '1rem', 
                                 padding: '0.75rem 1rem', alignItems: 'center', 
                                 borderBottom: idx !== items.length - 1 ? '1px solid #e2e8f0' : 'none',
                                 background: (item.qtyReceived !== item.qtySent || item.qtyReceivedLoose !== item.qtySentLoose) ? 'rgba(239, 68, 68, 0.05)' : 'transparent'
                             }}>
+                                <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{idx + 1}</div>
                                 <div>
                                     <div style={{ fontWeight: 500, color: 'var(--text-main)', fontSize: '0.9rem' }}>{item.medicineId?.name || item.customName || 'Unknown'}</div>
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem' }}>

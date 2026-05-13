@@ -348,6 +348,7 @@ const MedicineAudit = () => {
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
                                 <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(249, 250, 251, 0.95)', backdropFilter: 'blur(4px)' }}>
                                     <tr style={{ borderBottom: '2px solid rgba(0,0,0,0.06)', textAlign: 'left' }}>
+                                        <th style={{ padding: '1.25rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px', width: '60px' }}>#</th>
                                         <th style={{ padding: '1.25rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                  <CalendarDays size={16} /> Date Logged
@@ -385,6 +386,9 @@ const MedicineAudit = () => {
                                             e.currentTarget.style.background = 'transparent';
                                             e.currentTarget.style.transform = 'none';
                                         }}>
+                                            <td style={{ padding: '1.1rem 1.5rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                                                {index + 1}
+                                            </td>
                                             <td style={{ padding: '1.1rem 1.5rem', color: 'var(--text-main)', fontWeight: 500 }}>
                                                 {new Date(record.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric'})}
                                             </td>

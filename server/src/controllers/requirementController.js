@@ -113,14 +113,25 @@ const fetchReportDataHelper = async ({ startDate, endDate, supplierIds, listId }
             };
         }
 
-        // Deduplication Check
-        // We create a unique key: SupplierID + MedicineID
         const uniqueKey = `${supplierId}-${medicine._id.toString()}`;
         
         if (!processedMedicineIds.has(uniqueKey)) {
-            groupedItems[supplierId].medicines.push(medicine);
+            groupedItems[supplierId].medicines.push({
+                _id: medicine._id,
+                name: medicine.name,
+                isUrgent: item.isUrgent || false
+            });
             processedMedicineIds.add(uniqueKey);
+        } else if (item.isUrgent) {
+            // If duplicate medicine exists but this specific instance is urgent, mark it as urgent
+            const existingMed = groupedItems[supplierId].medicines.find(m => m._id.toString() === medicine._id.toString());
+            if (existingMed) existingMed.isUrgent = true;
         }
+    });
+
+    // Sort medicines within each supplier group: Urgent first
+    Object.values(groupedItems).forEach(group => {
+        group.medicines.sort((a, b) => (b.isUrgent ? 1 : 0) - (a.isUrgent ? 1 : 0));
     });
 
     return { 
@@ -230,8 +241,6 @@ export const addItem = async (req, res) => {
     }
 };
 
-// @desc    Remove item from list
-// @route   DELETE /api/requirements/item/:medicineId
 export const removeItem = async (req, res) => {
     try {
         const { medicineId } = req.params;
@@ -247,6 +256,38 @@ export const removeItem = async (req, res) => {
         }
 
         res.json(requirementList);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Toggle item urgency
+// @route   PATCH /api/requirements/item/:medicineId/urgent
+export const toggleUrgent = async (req, res) => {
+    try {
+        const { medicineId } = req.params;
+        const today = getTodayDate();
+
+        const requirementList = await RequirementList.findOne({ date: today });
+
+        if (requirementList) {
+            const item = requirementList.items.find(
+                (item) => item.medicineId.toString() === medicineId
+            );
+            if (item) {
+                item.isUrgent = !item.isUrgent;
+                await requirementList.save();
+            }
+        }
+
+        // Return updated list with populated fields
+        const updatedList = await RequirementList.findOne({ date: today })
+            .populate({
+                path: 'items.medicineId',
+                populate: { path: 'supplierId', select: 'name' }
+            });
+
+        res.json(updatedList);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -458,7 +499,7 @@ export const generatePDF = async (req, res) => {
             // Medicines
             doc.font('Helvetica').fontSize(12);
             medicines.forEach((med, index) => {
-                const nameWidth = 280; // Width allocated for name
+                const nameWidth = med.isUrgent ? 220 : 280; // Make room for URGENT label
                 // Calculate height this text will take
                 const nameHeight = doc.heightOfString(med.name, { width: nameWidth });
                 const rowHeight = Math.max(nameHeight, 20); // At least 20px
@@ -469,15 +510,31 @@ export const generatePDF = async (req, res) => {
                 const currentY = doc.y;
                 
                 // Print S.No
-                doc.text(`${index + 1}`, COL_SNO, currentY);
+                doc.fillColor(med.isUrgent ? '#dc2626' : 'black')
+                   .font(med.isUrgent ? 'Helvetica-Bold' : 'Helvetica')
+                   .text(`${index + 1}`, COL_SNO, currentY);
                 
-                // Print Name (with width limit to wrap correctly)
+                // Print Name
                 doc.text(med.name, COL_NAME, currentY, { width: nameWidth });
+
+                // Print URGENT tag
+                if (med.isUrgent) {
+                    doc.fontSize(10)
+                       .rect(COL_NAME + nameWidth + 5, currentY, 65, 15)
+                       .fill('#fee2e2');
+                    
+                    doc.fillColor('#991b1b')
+                       .text('URGENT', COL_NAME + nameWidth + 10, currentY + 2, { width: 55, align: 'center' });
+                    
+                    // Reset for next lines
+                    doc.fontSize(12).fillColor('black').font('Helvetica');
+                }
                 
                 // Move cursor down by the actual height of the row
-                doc.y = currentY + rowHeight + 5; // 5px padding
+                doc.y = currentY + rowHeight + 10; // Extra padding for clarity
             });
 
+            doc.fillColor('black'); // Ensure reset
             doc.moveDown(1.5); // Space between suppliers
             
             // Separator line

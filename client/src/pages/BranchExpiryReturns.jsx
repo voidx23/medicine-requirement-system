@@ -89,7 +89,18 @@ const BranchExpiryReturns = () => {
                         </span>
                     </div>
 
-                    {/* Store Note */}
+                    {/* Notes */}
+                    {ret.branchNote && (
+                        <div style={{
+                            background: '#f0fdf4', color: '#166534',
+                            padding: '0.75rem 1rem', borderRadius: '8px', fontSize: '0.85rem',
+                            display: 'flex', gap: '0.5rem', alignItems: 'flex-start',
+                            marginBottom: '0.5rem'
+                        }}>
+                            <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+                            <div><strong>Your Note:</strong> {ret.branchNote}</div>
+                        </div>
+                    )}
                     {ret.storeNote && (
                         <div style={{
                             background: '#fef3c7', color: '#92400e',
@@ -105,11 +116,12 @@ const BranchExpiryReturns = () => {
                     <div style={{ border: isMobile ? 'none' : '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
                         {!isMobile && (
                             <div style={{
-                                display: 'grid', gridTemplateColumns: '1fr 100px 100px',
+                                display: 'grid', gridTemplateColumns: '30px 1fr 100px 100px',
                                 padding: '0.65rem 1rem', background: '#f8fafc',
                                 fontWeight: 700, fontSize: '0.78rem', color: '#475569',
                                 borderBottom: '1px solid #e2e8f0'
                             }}>
+                                <div>#</div>
                                 <div>Medicine</div>
                                 <div style={{ textAlign: 'center' }}>Sent (Bx/L)</div>
                                 <div style={{ textAlign: 'center' }}>Verified (Bx/L)</div>
@@ -127,8 +139,9 @@ const BranchExpiryReturns = () => {
                                             borderColor: mismatch ? '#fecdd3' : '#e2e8f0',
                                             display: 'flex', flexDirection: 'column', gap: '0.5rem'
                                         }}>
-                                            <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.9rem' }}>
-                                                {item.medicineId?.name || 'Unknown'}
+                                            <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.9rem', display: 'flex', gap: '0.5rem' }}>
+                                                <span style={{ color: '#94a3b8' }}>{idx + 1}.</span>
+                                                <span>{item.medicineId?.name || 'Unknown'}</span>
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
                                                 <span style={{ color: 'var(--text-muted)' }}>Sent:</span>
@@ -145,11 +158,12 @@ const BranchExpiryReturns = () => {
                                 }
                                 return (
                                     <div key={idx} style={{
-                                        display: 'grid', gridTemplateColumns: '1fr 100px 100px',
+                                        display: 'grid', gridTemplateColumns: '30px 1fr 100px 100px',
                                         padding: '0.6rem 1rem', alignItems: 'center',
                                         background: mismatch ? 'rgba(239,68,68,0.04)' : idx % 2 === 0 ? '#fff' : '#fafafa',
                                         borderBottom: idx !== ret.items.length - 1 ? '1px solid #f1f5f9' : 'none'
                                     }}>
+                                        <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{idx + 1}</div>
                                         <div>
                                             <div style={{ fontWeight: 500, fontSize: '0.88rem', color: 'var(--text-main)' }}>
                                                 {item.medicineId?.name || 'Unknown'}

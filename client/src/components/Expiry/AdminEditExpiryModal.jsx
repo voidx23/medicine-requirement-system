@@ -14,6 +14,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
     const [month, setMonth] = useState(1);
     const [year, setYear] = useState(new Date().getFullYear());
     const [items, setItems] = useState([]);
+    const [branchNote, setBranchNote] = useState('');
 
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -35,6 +36,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
         if (expiryList && isOpen) {
             setMonth(expiryList.month);
             setYear(expiryList.year);
+            setBranchNote(expiryList.branchNote || '');
             setItems(expiryList.items.map(i => ({
                 medicineId: i.medicineId?._id || i.medicineId || `custom_${(i.customName || '').toLowerCase()}`,
                 name: i.medicineId?.name || i.customName || 'Unknown',
@@ -163,6 +165,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
             await api.put(`/expiry/${expiryList._id}`, {
                 month: parseInt(month),
                 year: parseInt(year),
+                branchNote,
                 items: items.map(i => ({
                     medicineId: i.isCustom ? undefined : i.medicineId,
                     customName: i.isCustom ? i.name : undefined,
@@ -258,11 +261,12 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                 </div>
 
                 <div style={{ background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', height: '240px', overflowY: 'auto' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0, zIndex: 10 }}>
-                        <div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div style={{ textAlign: 'center' }}>Batch</div><div />
+                    <div style={{ display: 'grid', gridTemplateColumns: '30px 1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0, zIndex: 10 }}>
+                        <div>#</div><div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div style={{ textAlign: 'center' }}>Batch</div><div />
                     </div>
                     {items.map((item, idx) => (
-                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.4rem 0.75rem', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
+                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '30px 1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.4rem 0.75rem', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
+                            <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{idx + 1}</div>
                             <div style={{ fontSize: '0.82rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
                             <input type="number" min="0" value={item.qtySent} onChange={e => updateQty(item.medicineId, e.target.value)}
                                 style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
@@ -275,6 +279,15 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                             </button>
                         </div>
                     ))}
+                </div>
+
+                <div className="input-group">
+                    <label>Branch Note</label>
+                    <textarea 
+                        value={branchNote}
+                        onChange={e => setBranchNote(e.target.value)}
+                        style={{ padding: '0.65rem', borderRadius: '8px', border: '1px solid var(--glass-border)', width: '100%', minHeight: '60px', boxSizing: 'border-box' }}
+                    />
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>

@@ -14,8 +14,8 @@ const DRAFT_KEY = (userId) => `expiry_draft_${userId}`;
 
 // --- SUB-MODAL FOR ITEM QUANTITY & BATCH ---
 const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
-    const [qty, setQty] = useState(1);
-    const [loose, setLoose] = useState(0);
+    const [qty, setQty] = useState('');
+    const [loose, setLoose] = useState('');
     const [batch, setBatch] = useState('');
     
     const qtyRef = useRef(null);
@@ -47,8 +47,8 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
 
     useEffect(() => {
         if (isOpen) {
-            setQty(1);
-            setLoose(0);
+            setQty('');
+            setLoose('');
             setBatch('');
             setTimeout(() => qtyRef.current?.focus(), 50);
         }
@@ -137,6 +137,7 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [year, setYear] = useState(new Date().getFullYear());
     const [items, setItems] = useState([]);
+    const [branchNote, setBranchNote] = useState('');
     const [draftRestored, setDraftRestored] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -178,6 +179,7 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                 setMonth(draft.month || new Date().getMonth() + 1);
                 setYear(draft.year || new Date().getFullYear());
                 setItems(draft.items || []);
+                setBranchNote(draft.branchNote || '');
                 if (draft.items?.length > 0) setDraftRestored(true);
             } catch { /* ignore */ }
         }
@@ -187,8 +189,8 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
     useEffect(() => {
         if (!isOpen) return;
         const key = DRAFT_KEY(userId || 'guest');
-        localStorage.setItem(key, JSON.stringify({ month, year, items }));
-    }, [month, year, items, isOpen, userId]);
+        localStorage.setItem(key, JSON.stringify({ month, year, items, branchNote }));
+    }, [month, year, items, branchNote, isOpen, userId]);
 
     // ── Auto scroll to bottom when items added ──
     useEffect(() => {
@@ -358,10 +360,12 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                     batchNumber: i.batchNumber
                 })),
                 status: 'Submitted',
+                branchNote,
                 verifiedBy: verifiedName
             });
             localStorage.removeItem(DRAFT_KEY(userId || 'guest'));
             setItems([]);
+            setBranchNote('');
             setMonth(new Date().getMonth() + 1);
             setDraftRestored(false);
             onSuccess();
@@ -498,8 +502,8 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                         ) : (
                             <div>
                                 {!isMobile && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 70px 70px 120px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0, zIndex: 10 }}>
-                                        <div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div style={{ textAlign: 'left' }}>Batch</div><div />
+                                    <div style={{ display: 'grid', gridTemplateColumns: '30px 1fr 70px 70px 120px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0, zIndex: 10 }}>
+                                        <div>#</div><div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div style={{ textAlign: 'left' }}>Batch</div><div />
                                     </div>
                                 )}
                                 {items.map((item, idx) => (
@@ -508,16 +512,20 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                                         borderBottom: idx !== items.length - 1 ? '1px solid #f1f5f9' : 'none', 
                                         background: item.isCustom ? '#fffbeb' : '#fff',
                                         display: isMobile ? 'flex' : 'grid',
-                                        gridTemplateColumns: isMobile ? 'none' : '1fr 70px 70px 120px 36px',
+                                        gridTemplateColumns: isMobile ? 'none' : '30px 1fr 70px 70px 120px 36px',
                                         flexDirection: isMobile ? 'column' : 'row',
                                         gap: '0.5rem',
                                         alignItems: isMobile ? 'stretch' : 'center'
                                     }}>
+                                        {!isMobile && <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{idx + 1}</div>}
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
                                             <div style={{ overflow: 'hidden' }}>
-                                                <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-main)', marginBottom: '2px' }}>
-                                                    {item.isCustom && <span style={{ fontSize: '0.6rem', background: '#fde68a', color: '#92400e', padding: '1px 4px', borderRadius: '3px', marginRight: '4px' }}>CUSTOM</span>}
-                                                    {item.name}
+                                                <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-main)', marginBottom: '2px', display: 'flex', gap: '0.5rem' }}>
+                                                    {isMobile && <span style={{ color: '#94a3b8' }}>{idx + 1}.</span>}
+                                                    <span>
+                                                        {item.isCustom && <span style={{ fontSize: '0.6rem', background: '#fde68a', color: '#92400e', padding: '1px 4px', borderRadius: '3px', marginRight: '4px' }}>CUSTOM</span>}
+                                                        {item.name}
+                                                    </span>
                                                 </div>
                                                 {item.barcode && <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{item.barcode}</div>}
                                             </div>
@@ -567,6 +575,16 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
                             </div>
                         )}
                     </div>
+                </div>
+
+                <div className="input-group">
+                    <label style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-main)', marginBottom: '0.5rem', display: 'block' }}>Branch Note (Optional)</label>
+                    <textarea 
+                        value={branchNote}
+                        onChange={(e) => setBranchNote(e.target.value)}
+                        placeholder="Add any remarks or notes for the store..."
+                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#fff', minHeight: '80px', resize: 'vertical', boxSizing: 'border-box', fontSize: '0.88rem' }}
+                    />
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', flexDirection: isMobile ? 'column-reverse' : 'row' }}>

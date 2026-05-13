@@ -48,6 +48,27 @@ const expiryItemSchema = new mongoose.Schema({
     batchNumber: {
         type: String,
         default: ''
+    },
+    compensationStatus: {
+        type: String,
+        enum: ['Pending', 'Settled'],
+        default: 'Pending'
+    },
+    compensatedAt: {
+        type: Date,
+        default: null
+    },
+    expectedCompensation: {
+        type: Number,
+        default: 0
+    },
+    actualCompensation: {
+        type: Number,
+        default: 0
+    },
+    compensationReason: {
+        type: String,
+        default: ''
     }
 });
 
@@ -71,6 +92,10 @@ const expiryReturnSchema = new mongoose.Schema({
         default: 'Draft'
     },
     storeNote: {
+        type: String,
+        default: ''
+    },
+    branchNote: {
         type: String,
         default: ''
     },

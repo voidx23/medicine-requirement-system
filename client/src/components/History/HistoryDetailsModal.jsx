@@ -22,7 +22,7 @@ const HistoryDetailsModal = ({ isOpen, onClose, data }) => {
     // Filter items
     const filteredItems = useMemo(() => {
         if (!data) return [];
-        return data.items.filter(item => {
+        const filtered = data.items.filter(item => {
             const medName = item.medicineId?.name?.toLowerCase() || '';
             const supName = item.medicineId?.supplierId?.name || '';
             
@@ -31,6 +31,9 @@ const HistoryDetailsModal = ({ isOpen, onClose, data }) => {
 
             return matchesSearch && matchesSupplier;
         });
+
+        // Sort: Urgent items first
+        return filtered.sort((a, b) => (b.isUrgent ? 1 : 0) - (a.isUrgent ? 1 : 0));
     }, [data, searchQuery, selectedSupplier]);
 
     if (!isOpen || !data) return null;
@@ -174,10 +177,23 @@ const HistoryDetailsModal = ({ isOpen, onClose, data }) => {
                             </thead>
                             <tbody>
                                 {filteredItems.map((item, index) => (
-                                    <tr key={index} className="table-row-hover" style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                        <td style={{ padding: '0.75rem 1.5rem', color: '#94a3b8', fontWeight: 500 }}>{index + 1}</td>
+                                    <tr key={index} className="table-row-hover" style={{ 
+                                        borderBottom: '1px solid #f1f5f9',
+                                        background: item.isUrgent ? 'rgba(239, 68, 68, 0.03)' : 'inherit'
+                                    }}>
+                                        <td style={{ padding: '0.75rem 1.5rem', color: item.isUrgent ? 'var(--danger)' : '#94a3b8', fontWeight: 500 }}>{index + 1}</td>
                                         <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: '#334155' }}>
-                                            {item.medicineId?.name || <span style={{color:'var(--danger)'}}>Deleted Item</span>}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                {item.medicineId?.name || <span style={{color:'var(--danger)'}}>Deleted Item</span>}
+                                                {item.isUrgent && (
+                                                    <span style={{ 
+                                                        fontSize: '0.6rem', background: 'var(--danger)', color: 'white', 
+                                                        padding: '1px 5px', borderRadius: '4px', fontWeight: 700
+                                                    }}>
+                                                        URGENT
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td style={{ padding: '0.75rem 1.5rem' }}>
                                             <span style={{ 

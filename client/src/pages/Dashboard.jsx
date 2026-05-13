@@ -106,6 +106,39 @@ const Dashboard = () => {
     }
   };
 
+  const handleToggleUrgent = async (medicineId) => {
+    // 1. Optimistic Update
+    setList(prev => {
+        const newItems = prev.items.map(item => {
+            if (item.medicineId?._id === medicineId || item.medicineId === medicineId) {
+                return { ...item, isUrgent: !item.isUrgent };
+            }
+            return item;
+        });
+        return { ...prev, items: newItems };
+    });
+
+    // 2. Background API Call
+    try {
+      const response = await api.patch(`/requirements/item/${medicineId}/urgent`);
+      
+      // Sync with server state
+      setList(response.data);
+
+      // Show toast ONLY after server responds
+      const updatedItem = response.data.items.find(i => i.medicineId?._id === medicineId || i.medicineId === medicineId);
+      if (updatedItem) {
+        showToast(updatedItem.isUrgent ? 'Item marked as Very Important' : 'Priority removed', 'success');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update priority', 'error');
+      
+      // 3. Revert on failure (since we updated optimistically)
+      fetchTodayList(); // Simplest way to sync back to correct state
+    }
+  };
+
   // Called from within the Modal
   const executePDFGeneration = async (selectedSupplierIds) => {
     try {
@@ -201,6 +234,7 @@ const Dashboard = () => {
                 <RequirementList 
                     items={list.items} 
                     onRemove={handleRemoveItem} 
+                    onToggleUrgent={handleToggleUrgent}
                 />
                 <div ref={bottomRef} />
             </>

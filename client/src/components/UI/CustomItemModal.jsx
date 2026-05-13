@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react';
 
 const CustomItemModal = ({ isOpen, onClose, onConfirm }) => {
     const [name, setName] = useState('');
-    const [quantity, setQuantity] = useState(1);
+    const [quantity, setQuantity] = useState('');
     const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
     useEffect(() => {
@@ -19,7 +19,7 @@ const CustomItemModal = ({ isOpen, onClose, onConfirm }) => {
         if (name.trim()) {
             onConfirm(name.trim(), parseInt(quantity) || 1);
             setName('');
-            setQuantity(1);
+            setQuantity('');
         }
     };
 

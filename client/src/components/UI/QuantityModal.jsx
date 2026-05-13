@@ -4,7 +4,7 @@ import Button from './Button';
 import { Plus, Minus } from 'lucide-react';
 
 const QuantityModal = ({ isOpen, onClose, onConfirm, medicine }) => {
-    const [quantity, setQuantity] = useState(1);
+    const [quantity, setQuantity] = useState('');
     const inputRef = useRef(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
@@ -16,7 +16,7 @@ const QuantityModal = ({ isOpen, onClose, onConfirm, medicine }) => {
 
     useEffect(() => {
         if (isOpen) {
-            setQuantity(prev => (prev !== 1 ? 1 : prev));
+            setQuantity('');
             // Small timeout to ensure modal is rendered before focus
             setTimeout(() => inputRef.current?.focus(), 50);
         }
@@ -52,7 +52,7 @@ const QuantityModal = ({ isOpen, onClose, onConfirm, medicine }) => {
                         <button 
                             type="button" 
                             className="btn-icon"
-                            onClick={() => setQuantity(Math.max(1, (parseInt(quantity) || 0) - 1))}
+                            onClick={() => setQuantity(Math.max(0, (parseInt(quantity) || 0) - 1))}
                             style={{ background: '#f1f5f9', width: isMobile ? '36px' : '40px', height: isMobile ? '36px' : '40px', borderRadius: '8px', flexShrink: 0 }}
                         >
                             <Minus size={18} />
@@ -73,7 +73,7 @@ const QuantityModal = ({ isOpen, onClose, onConfirm, medicine }) => {
                             }}
                             onBlur={() => {
                                 if (!quantity || parseInt(quantity) < 1) {
-                                    setQuantity(1);
+                                    setQuantity('');
                                 }
                             }}
                             style={{ 

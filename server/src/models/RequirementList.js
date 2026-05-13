@@ -15,6 +15,10 @@ const requirementListSchema = new mongoose.Schema({
         addedAt: {
             type: Date,
             default: Date.now
+        },
+        isUrgent: {
+            type: Boolean,
+            default: false
         }
     }]
 }, {

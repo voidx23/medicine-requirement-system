@@ -11,7 +11,7 @@ import User from '../models/User.js';
 // @access  Private (Pharmacist)
 export const createExpiryReturn = async (req, res) => {
     try {
-        const { month, year, items, status } = req.body;
+        const { month, year, items, status, branchNote } = req.body;
         
         const existing = await ExpiryReturn.findOne({ branchId: req.user._id, month, year });
         if (existing && existing.status !== 'Draft') {
@@ -23,6 +23,7 @@ export const createExpiryReturn = async (req, res) => {
         if (expiryList) {
             expiryList.items = items;
             expiryList.status = status || 'Draft';
+            if (branchNote !== undefined) expiryList.branchNote = branchNote;
             if (status === 'Submitted') expiryList.submittedAt = new Date();
             await expiryList.save();
         } else {
@@ -32,6 +33,7 @@ export const createExpiryReturn = async (req, res) => {
                 year,
                 items,
                 status: status || 'Draft',
+                branchNote: branchNote || '',
                 submittedAt: status === 'Submitted' ? new Date() : null
             });
         }
@@ -155,7 +157,7 @@ export const verifyExpiryReturn = async (req, res) => {
 // @access  Private (Admin)
 export const updateExpiryReturn = async (req, res) => {
     try {
-        const { month, year, items, password } = req.body;
+        const { month, year, items, branchNote, password } = req.body;
         const expiryList = await ExpiryReturn.findById(req.params.id);
 
         if (!expiryList) return res.status(404).json({ message: 'List not found' });
@@ -170,6 +172,7 @@ export const updateExpiryReturn = async (req, res) => {
         if (month) expiryList.month = parseInt(month);
         if (year) expiryList.year = parseInt(year);
         if (items) expiryList.items = items;
+        if (branchNote !== undefined) expiryList.branchNote = branchNote;
 
         await expiryList.save();
         res.json(expiryList);
@@ -278,16 +281,18 @@ export const processHandover = async (req, res) => {
             const item = expiryReturn.items.id(ref.itemId);
             if (!item || item.handoverStatus === 'HandedOver') continue;
 
-            // Mark as handed over
-            item.handoverStatus = 'HandedOver';
-            item.handedOverAt = new Date();
-            await expiryReturn.save();
-
             // Need units to calculate loose cost correctly
             const med = await Medicine.findById(item.medicineId);
             const units = med?.unitsPerBox || 1;
             const valBoxes = item.qtyReceived * item.costPriceAtReturn;
             const valLoose = (item.qtyReceivedLoose || 0) * (item.costPriceAtReturn / units);
+            const totalItemValue = valBoxes + valLoose;
+
+            // Mark as handed over
+            item.handoverStatus = 'HandedOver';
+            item.handedOverAt = new Date();
+            item.expectedCompensation = totalItemValue;
+            await expiryReturn.save();
 
             // Accumulate ledger value per month/year bucket
             const key = `${expiryReturn.month}-${expiryReturn.year}`;
@@ -357,23 +362,85 @@ export const getSupplierLedgers = async (req, res) => {
     }
 };
 
+// @desc    Get detailed items for a supplier ledger
+// @route   GET /api/expiry/ledgers/:id/details
+// @access  Private (Admin)
+export const getLedgerDetails = async (req, res) => {
+    try {
+        const ledger = await SupplierExpiryLedger.findById(req.params.id);
+        if (!ledger) return res.status(404).json({ message: 'Ledger not found' });
+
+        const returns = await ExpiryReturn.find({
+            month: ledger.month,
+            year: ledger.year,
+            status: 'Verified',
+            'items.handoverStatus': 'HandedOver'
+        })
+        .populate('branchId', 'name')
+        .populate({
+            path: 'items.medicineId',
+            select: 'name barcode supplierId costPrice unitsPerBox'
+        });
+
+        const items = [];
+        for (const ret of returns) {
+            for (const item of ret.items) {
+                if (item.handoverStatus === 'HandedOver' && item.medicineId?.supplierId?.toString() === ledger.supplierId.toString()) {
+                    items.push({
+                        ...item.toObject(),
+                        branchName: ret.branchId?.name,
+                        expiryReturnId: ret._id
+                    });
+                }
+            }
+        }
+        res.json(items);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Log a compensation against a ledger
 // @route   POST /api/expiry/ledgers/:id/compensate
 // @access  Private (Admin)
 export const logCompensation = async (req, res) => {
     try {
-        const { type, value, note } = req.body;
+        const { type, note, compensatedItems } = req.body;
         
         const ledger = await SupplierExpiryLedger.findById(req.params.id).populate('supplierId', 'name');
         if (!ledger) return res.status(404).json({ message: 'Ledger not found' });
 
-        const val = parseFloat(value);
-        if (isNaN(val) || val <= 0) return res.status(400).json({ message: 'Invalid value' });
+        if (!compensatedItems || compensatedItems.length === 0) {
+            return res.status(400).json({ message: 'No items provided for compensation' });
+        }
 
-        ledger.compensations.push({ type, value: val, note });
-        ledger.totalValueCompensated += val;
+        let totalCompensatedNow = 0;
+
+        for (const comp of compensatedItems) {
+            const expiryReturn = await ExpiryReturn.findById(comp.expiryReturnId);
+            if (!expiryReturn) continue;
+
+            const item = expiryReturn.items.id(comp.itemId);
+            if (!item || item.compensationStatus === 'Settled') continue;
+
+            const actualComp = parseFloat(comp.actualCompensation);
+            if (isNaN(actualComp) || actualComp < 0) continue;
+
+            item.compensationStatus = 'Settled';
+            item.compensatedAt = new Date();
+            item.actualCompensation = actualComp;
+            item.compensationReason = comp.reason || '';
+
+            await expiryReturn.save();
+            totalCompensatedNow += actualComp;
+        }
+
+        if (totalCompensatedNow > 0) {
+            ledger.compensations.push({ type, value: totalCompensatedNow, note });
+            ledger.totalValueCompensated += totalCompensatedNow;
+            await ledger.save();
+        }
         
-        await ledger.save();
         res.json(ledger);
     } catch (error) {
         res.status(500).json({ message: error.message });

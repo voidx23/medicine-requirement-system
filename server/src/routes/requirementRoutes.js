@@ -1,6 +1,6 @@
 import express from 'express';
 // Import debugTime (needs to be added to import list above manually first? No, I should update import)
-import { getTodayRequirement, addItem, removeItem, generatePDF, getHistory, deleteHistory, getReportData, getMedicineAudit } from '../controllers/requirementController.js';
+import { getTodayRequirement, addItem, removeItem, generatePDF, getHistory, deleteHistory, getReportData, getMedicineAudit, toggleUrgent } from '../controllers/requirementController.js';
 
 const router = express.Router();
 
@@ -12,6 +12,7 @@ router.post('/generate-pdf', generatePDF);
 router.post('/report-data', getReportData); 
 router.delete('/history/:id', deleteHistory);
 router.get('/medicine-audit', getMedicineAudit);
+router.patch('/item/:medicineId/urgent', toggleUrgent);
 
 
 export default router;
