@@ -16,7 +16,6 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [list, setList] = useState({ items: [] });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [pendingExpiryCount, setPendingExpiryCount] = useState(0);
 
@@ -26,7 +25,6 @@ const Dashboard = () => {
       setList(response.data);
     } catch (err) {
       console.error('Failed to fetch list', err);
-      setError('Could not load today\'s list');
     } finally {
       setLoading(false);
     }
@@ -163,7 +161,7 @@ const Dashboard = () => {
           try {
               const json = JSON.parse(text);
               showToast(json.message || 'Failed to generate PDF', 'error');
-          } catch (e) {
+          } catch {
               showToast('Failed to generate PDF', 'error');
           }
       } else {

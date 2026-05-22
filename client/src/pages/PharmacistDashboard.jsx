@@ -1,5 +1,5 @@
-import { useState, useContext, useEffect } from 'react';
-import { Search, Plus, Trash2, Send } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Plus, Trash2, Send, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 import AddItem from '../components/Dashboard/AddItem'; // Reuse for search logic? Or build custom?
 // Let's build a custom one to keep it simple and isolated as requested.
@@ -72,7 +72,7 @@ const PharmacistDashboard = () => {
 
     const addToCart = (medicine) => {
         if (!cart.find(item => item._id === medicine._id)) {
-            setCart([...cart, { ...medicine, quantity: 1 }]);
+            setCart([...cart, { ...medicine, quantity: 1, isUrgent: false }]);
         }
         setQuery('');
         setResults([]);
@@ -84,6 +84,10 @@ const PharmacistDashboard = () => {
 
     const updateQuantity = (id, newQty) => {
         setCart(cart.map(item => item._id === id ? { ...item, quantity: parseInt(newQty) || 1 } : item));
+    };
+
+    const toggleUrgent = (id) => {
+        setCart(cart.map(item => item._id === id ? { ...item, isUrgent: !item.isUrgent } : item));
     };
 
     const handleSubmitRequest = async () => {
@@ -187,15 +191,28 @@ const PharmacistDashboard = () => {
                             {cart.map(item => (
                                 <div key={item._id} style={{
                                     padding: '1rem',
-                                    background: 'white',
+                                    background: item.isUrgent ? 'rgba(239, 68, 68, 0.05)' : 'white',
                                     borderRadius: '12px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '1rem',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                    border: item.isUrgent ? '1.5px solid var(--danger)' : '1px solid transparent',
+                                    transition: 'all 0.3s ease'
                                 }}>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: '600' }}>{item.name}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                            <span style={{ fontWeight: '600' }}>{item.name}</span>
+                                            {item.isUrgent && (
+                                                <span style={{ 
+                                                    fontSize: '0.65rem', background: 'var(--danger)', color: 'white', 
+                                                    padding: '1px 6px', borderRadius: '4px', fontWeight: 700,
+                                                    letterSpacing: '0.5px'
+                                                }}>
+                                                    URGENT
+                                                </span>
+                                            )}
+                                        </div>
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{item.supplierId?.name}</div>
                                     </div>
                                     
@@ -216,9 +233,34 @@ const PharmacistDashboard = () => {
                                     </div>
 
                                     <button 
+                                        onClick={() => toggleUrgent(item._id)}
+                                        style={{ 
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: item.isUrgent ? 'var(--danger)' : 'var(--text-muted)',
+                                            cursor: 'pointer',
+                                            padding: '0.5rem',
+                                            borderRadius: '50%',
+                                            transition: 'all 0.2s',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.currentTarget.style.backgroundColor = item.isUrgent ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                        }}
+                                        title={item.isUrgent ? "Mark as Normal" : "Mark as Urgent"}
+                                    >
+                                        <AlertCircle size={18} fill={item.isUrgent ? 'var(--danger)' : 'none'} color={item.isUrgent ? 'white' : 'currentColor'} />
+                                    </button>
+
+                                    <button 
                                         className="btn-icon" 
                                         onClick={() => removeFromCart(item._id)}
-                                        style={{ color: '#ef4444' }}
+                                        style={{ color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                     >
                                         <Trash2 size={18} />
                                     </button>
@@ -252,8 +294,18 @@ const PharmacistDashboard = () => {
                             <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '0.5rem', marginTop: 'auto' }}>
                                 <div style={{ fontSize: '0.85rem' }}>
                                     {req.items.slice(0, 3).map((item, idx) => (
-                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span>{item.name}</span>
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                <span>{item.name}</span>
+                                                {item.isUrgent && (
+                                                    <span style={{ 
+                                                        fontSize: '0.55rem', background: 'var(--danger)', color: 'white', 
+                                                        padding: '1px 4px', borderRadius: '3px', fontWeight: 700
+                                                    }}>
+                                                        URGENT
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span style={{ fontWeight: 'bold' }}>x{item.quantity}</span>
                                         </div>
                                     ))}

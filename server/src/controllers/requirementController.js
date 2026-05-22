@@ -207,7 +207,7 @@ export const getTodayRequirement = async (req, res) => {
 // @route   POST /api/requirements/add-item
 export const addItem = async (req, res) => {
     try {
-        const { medicineId } = req.body;
+        const { medicineId, isUrgent } = req.body;
         const today = getTodayDate();
 
         let requirementList = await RequirementList.findOne({ date: today });
@@ -222,11 +222,16 @@ export const addItem = async (req, res) => {
         );
 
         if (exists) {
-            return res.status(400).json({ message: 'Medicine already in today\'s list' });
+            if (isUrgent && !exists.isUrgent) {
+                exists.isUrgent = true;
+                await requirementList.save();
+            } else {
+                return res.status(400).json({ message: 'Medicine already in today\'s list' });
+            }
+        } else {
+            requirementList.items.push({ medicineId, isUrgent: !!isUrgent });
+            await requirementList.save();
         }
-
-        requirementList.items.push({ medicineId });
-        await requirementList.save();
 
         // return updated list with populated fields
         const updatedList = await RequirementList.findById(requirementList._id)

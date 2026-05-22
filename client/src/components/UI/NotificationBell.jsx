@@ -11,7 +11,7 @@ const NotificationBell = () => {
         try {
             const res = await api.get('/notifications');
             setUnreadCount(res.data.filter(n => !n.isRead).length);
-        } catch (error) {
+        } catch {
             // silent fail — non-critical
         }
     };

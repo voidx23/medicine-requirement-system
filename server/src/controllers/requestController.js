@@ -20,7 +20,8 @@ export const submitRequest = async (req, res) => {
                 medicineId: (item.isCustom || item._id?.toString().startsWith('custom-')) ? null : item._id,
                 name: item.name,
                 quantity: item.quantity,
-                isCustom: !!(item.isCustom || item._id?.toString().startsWith('custom-'))
+                isCustom: !!(item.isCustom || item._id?.toString().startsWith('custom-')),
+                isUrgent: !!item.isUrgent
             })),
             status: 'pending'
         });
@@ -309,7 +310,8 @@ export const forwardItems = async (req, res) => {
                     medicineId: item.medicineId,
                     name: item.name,
                     quantity: item.quantity,
-                    isCustom: item.isCustom
+                    isCustom: item.isCustom,
+                    isUrgent: !!item.isUrgent
                 });
 
                 // Mark as forwarded in OLD list

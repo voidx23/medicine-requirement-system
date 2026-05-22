@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useContext } from 'react';
-import { Search, Plus, Trash2, Send, FileText } from 'lucide-react';
+import { Search, Plus, Trash2, Send, FileText, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 import Button from '../components/UI/Button';
 import QuantityModal from '../components/UI/QuantityModal';
@@ -168,7 +168,7 @@ const PharmacistNewRequest = () => {
 
         setRequestItems(prev => {
             // Add new
-            return [...prev, { ...pendingItem, quantity }];
+            return [...prev, { ...pendingItem, quantity, isUrgent: false }];
         });
 
         // Cleanup
@@ -211,7 +211,8 @@ const PharmacistNewRequest = () => {
             name: name.trim(),
             supplierId: null, // No supplier
             quantity,
-            isCustom: true
+            isCustom: true,
+            isUrgent: false
         };
 
         setRequestItems(prev => [...prev, newItem]);
@@ -258,6 +259,10 @@ const PharmacistNewRequest = () => {
 
     const updateQuantity = (id, newQty) => {
         setRequestItems(requestItems.map(item => item._id === id ? { ...item, quantity: parseInt(newQty) || 1 } : item));
+    };
+
+    const toggleUrgent = (id) => {
+        setRequestItems(prev => prev.map(item => item._id === id ? { ...item, isUrgent: !item.isUrgent } : item));
     };
 
     const handleSubmitRequest = () => {
@@ -482,12 +487,23 @@ const PharmacistNewRequest = () => {
                                         display: 'flex', 
                                         flexDirection: 'column', 
                                         gap: '0.4rem',
-                                        borderBottom: index === requestItems.length - 1 ? 'none' : '1px solid #f1f5f9'
+                                        borderBottom: index === requestItems.length - 1 ? 'none' : '1px solid #f1f5f9',
+                                        background: item.isUrgent ? 'rgba(239, 68, 68, 0.05)' : 'transparent',
+                                        transition: 'background 0.3s ease'
                                     }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.85rem', lineHeight: '1.2' }}>
+                                                <div style={{ fontWeight: 600, color: item.isUrgent ? 'var(--danger)' : 'var(--text-main)', fontSize: '0.85rem', lineHeight: '1.2', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                     {item.name}
+                                                    {item.isUrgent && (
+                                                        <span style={{ 
+                                                            fontSize: '0.65rem', background: 'var(--danger)', color: 'white', 
+                                                            padding: '1px 6px', borderRadius: '4px', fontWeight: 700,
+                                                            letterSpacing: '0.5px'
+                                                        }}>
+                                                            URGENT
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {item.isCustom && (
                                                     <span style={{ fontSize: '0.65rem', color: '#d97706', background: '#fef3c7', padding: '1px 6px', borderRadius: '4px' }}>Manual</span>
@@ -513,8 +529,26 @@ const PharmacistNewRequest = () => {
                                                     style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff', fontSize: '1rem' }}
                                                 >+</button>
                                                 <button 
+                                                    onClick={() => toggleUrgent(item._id)}
+                                                    style={{ 
+                                                        background: 'transparent',
+                                                        border: 'none',
+                                                        color: item.isUrgent ? 'var(--danger)' : 'var(--text-muted)',
+                                                        cursor: 'pointer',
+                                                        padding: '0.25rem',
+                                                        borderRadius: '50%',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        marginLeft: '0.25rem'
+                                                    }}
+                                                    title={item.isUrgent ? "Mark as Normal" : "Mark as Urgent"}
+                                                >
+                                                    <AlertCircle size={16} fill={item.isUrgent ? 'var(--danger)' : 'none'} color={item.isUrgent ? 'white' : 'currentColor'} />
+                                                </button>
+                                                <button 
                                                     onClick={() => removeItem(item._id)}
-                                                    style={{ background: 'transparent', border: 'none', color: '#ef4444', marginLeft: '0.5rem' }}
+                                                    style={{ background: 'transparent', border: 'none', color: '#ef4444', marginLeft: '0.25rem' }}
                                                 >
                                                     <Trash2 size={16} />
                                                 </button>
@@ -536,11 +570,24 @@ const PharmacistNewRequest = () => {
                                     </thead>
                                     <tbody>
                                         {requestItems.map((item, index) => (
-                                            <tr key={item._id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
-                                                <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{index + 1}</td>
+                                            <tr key={item._id} style={{ 
+                                                borderBottom: '1px solid rgba(0,0,0,0.05)',
+                                                background: item.isUrgent ? 'rgba(239, 68, 68, 0.05)' : 'transparent',
+                                                transition: 'background 0.3s ease'
+                                            }}>
+                                                <td style={{ padding: '1rem', color: item.isUrgent ? 'var(--danger)' : 'var(--text-muted)', fontWeight: item.isUrgent ? 700 : 400 }}>{index + 1}</td>
                                                 <td style={{ padding: '1rem', fontWeight: 500 }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                                         {item.name}
+                                                        {item.isUrgent && (
+                                                            <span style={{ 
+                                                                fontSize: '0.65rem', background: 'var(--danger)', color: 'white', 
+                                                                padding: '1px 6px', borderRadius: '4px', fontWeight: 700,
+                                                                letterSpacing: '0.5px'
+                                                            }}>
+                                                                URGENT
+                                                            </span>
+                                                        )}
                                                         {!item.isCustom && (
                                                             <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontWeight: 600 }}>
                                                                 Unit: {item.unitsPerBox === 1 ? 'NOS' : item.unitsPerBox || 1}
@@ -559,12 +606,38 @@ const PharmacistNewRequest = () => {
                                                         }}
                                                     />
                                                 </td>
-                                                <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.25rem' }}>
+                                                    <button 
+                                                        onClick={() => toggleUrgent(item._id)}
+                                                        style={{ 
+                                                            background: 'transparent',
+                                                            border: 'none',
+                                                            color: item.isUrgent ? 'var(--danger)' : 'var(--text-muted)',
+                                                            cursor: 'pointer',
+                                                            padding: '0.5rem',
+                                                            borderRadius: '50%',
+                                                            transition: 'all 0.2s',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center'
+                                                        }}
+                                                        onMouseOver={(e) => {
+                                                            e.currentTarget.style.backgroundColor = item.isUrgent ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+                                                        }}
+                                                        onMouseOut={(e) => {
+                                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                                        }}
+                                                        title={item.isUrgent ? "Mark as Normal" : "Mark as Urgent"}
+                                                    >
+                                                        <AlertCircle size={18} fill={item.isUrgent ? 'var(--danger)' : 'none'} color={item.isUrgent ? 'white' : 'currentColor'} />
+                                                    </button>
+
                                                     <button 
                                                         onClick={() => removeItem(item._id)}
                                                         style={{ 
                                                             background: 'transparent', border: 'none', color: '#ef4444', 
-                                                            cursor: 'pointer', padding: '0.5rem', borderRadius: '50%', transition: 'background 0.2s'
+                                                            cursor: 'pointer', padding: '0.5rem', borderRadius: '50%', transition: 'background 0.2s',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
                                                         }}
                                                         onMouseOver={(e) => e.currentTarget.style.background = '#fee2e2'}
                                                         onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}

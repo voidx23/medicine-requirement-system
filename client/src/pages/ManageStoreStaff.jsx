@@ -115,7 +115,7 @@ const ManageStoreStaff = () => {
         try {
             await storeStaffService.delete(id);
             fetchStaff();
-        } catch (error) {
+        } catch {
             alert('Error deleting staff');
         }
     };

@@ -89,7 +89,7 @@ const ManageBranches = () => {
             setSelectedStaffToAssign('');
             fetchBranchStaff(selectedBranch._id);
             showToast('Pharmacist assigned successfully', 'success');
-        } catch (error) {
+        } catch {
             showToast('Error assigning pharmacist', 'error');
         }
     };
@@ -100,7 +100,7 @@ const ManageBranches = () => {
         try {
             await staffService.removeBranch(staffId, selectedBranch._id);
             fetchBranchStaff(selectedBranch._id);
-        } catch (error) {
+        } catch {
             showToast('Error removing pharmacist from branch', 'error');
         }
     };
@@ -108,7 +108,7 @@ const ManageBranches = () => {
     const handleCreateBranch = async (e) => {
         e.preventDefault();
         try {
-            const { data } = await api.post('/branches', newBranchData);
+            await api.post('/branches', newBranchData);
             showToast('New Branch Created Successfully', 'success');
             setIsBranchModalOpen(false);
             setNewBranchData({ name: '', password: '', location: '', contactNumber: '' });
@@ -147,7 +147,7 @@ const ManageBranches = () => {
             setIsEditModalOpen(false);
             setSelectedBranch(prev => ({ ...prev, ...data }));
             fetchBranches();
-        } catch (error) {
+        } catch {
             showToast('Failed to update branch', 'error');
         }
     };

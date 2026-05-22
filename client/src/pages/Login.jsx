@@ -73,7 +73,7 @@ const Login = () => {
                  return false; // Proceed
             });
              // Navigation happens in useEffect automatically
-        } catch (err) {
+        } catch {
             setError('Invalid credentials');
             setIsLoading(false);
         }

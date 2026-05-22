@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { MessageSquare, Lightbulb, Bug, User, Clock, ChevronDown, ChevronUp, RotateCw } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
@@ -10,7 +10,7 @@ const AdminFeedback = () => {
     const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState(null);
 
-    const fetchFeedback = async () => {
+    const fetchFeedback = useCallback(async () => {
         setLoading(true);
         try {
             const [{ data }] = await Promise.all([
@@ -24,11 +24,11 @@ const AdminFeedback = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
 
     useEffect(() => {
         fetchFeedback();
-    }, []);
+    }, [fetchFeedback]);
 
     const toggleExpand = (id) => {
         setExpandedId(expandedId === id ? null : id);

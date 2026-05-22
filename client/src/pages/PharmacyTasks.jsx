@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import { CheckSquare, ListTodo, History as HistoryIcon, ArrowRightLeft, Plus } from 'lucide-react';
 import taskService from '../services/taskService';
 import AuthContext from '../context/AuthContext';
@@ -20,7 +20,7 @@ const PharmacyTasks = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
-    const loadTasks = async () => {
+    const loadTasks = useCallback(async () => {
         setLoading(true);
         try {
             const data = await taskService.getPharmacyTasks();
@@ -31,7 +31,7 @@ const PharmacyTasks = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
 
     useEffect(() => {
         if (!user?.token) return;
@@ -44,7 +44,7 @@ const PharmacyTasks = () => {
         }, 10000);
         
         return () => clearInterval(intervalId);
-    }, [user]);
+    }, [user, loadTasks]);
 
     const handleCompleteTask = async (taskId, status, comment) => {
         try {
@@ -52,7 +52,7 @@ const PharmacyTasks = () => {
             showToast('Task marked as completed!', 'success');
             setSelectedTask(null);
             loadTasks();
-        } catch (error) {
+        } catch {
             showToast('Failed to complete task', 'error');
         }
     };

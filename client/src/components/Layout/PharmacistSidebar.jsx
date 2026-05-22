@@ -7,7 +7,7 @@ import AuthContext from '../../context/AuthContext';
 import taskService from '../../services/taskService';
 
 const PharmacistSidebar = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [pendingTasksCount, setPendingTasksCount] = useState(0);
   const [notiPermission, setNotiPermission] = useState(
@@ -73,7 +73,7 @@ const PharmacistSidebar = () => {
       fetchCount();
       const intervalId = setInterval(fetchCount, 10000); // 10s polling for badge
       return () => clearInterval(intervalId);
-  }, [user]);
+  }, [user, navigate]);
   
   const links = [
     { to: '/pharmacist-dashboard/new', icon: PlusCircle, label: 'New Request' },

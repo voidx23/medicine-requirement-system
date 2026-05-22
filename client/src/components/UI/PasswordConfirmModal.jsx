@@ -29,7 +29,7 @@ const PasswordConfirmModal = ({
     try {
         await onConfirm(password);
         setPassword('');
-    } catch (err) {
+    } catch {
         setError('Verification failed');
     } finally {
         setLoading(false);

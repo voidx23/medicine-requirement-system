@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { CheckCircle, XCircle, ChevronDown, ChevronUp, RotateCw, Trash2, ListPlus, ListX, Store, Users, Filter, PackageCheck, Edit, Search, Calendar } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronDown, ChevronUp, RotateCw, Trash2, ListPlus, ListX, Store, Users, Filter, PackageCheck, Edit, Search, Calendar, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import { useContext } from 'react';
@@ -91,6 +91,7 @@ const AdminRequests = () => {
             
             setExpandedId(null); // Close any expanded rows
         } catch (error) {
+            console.error(error);
             showToast('Failed to fetch history', 'error');
         } finally {
             setHistoryLoading(false);
@@ -126,28 +127,28 @@ const AdminRequests = () => {
     }, [requests]);
 
     const filteredRequests = useMemo(() => {
-        if (selectedPharmacistId === 'all') return requests;
-        return requests.filter(req => (req.pharmacistId?._id || 'unknown') === selectedPharmacistId);
+        let list = requests;
+        if (selectedPharmacistId !== 'all') {
+            list = requests.filter(req => (req.pharmacistId?._id || 'unknown') === selectedPharmacistId);
+        }
+        
+        // Sort: Bubble pending requests with pending urgent items to the top.
+        return [...list].sort((a, b) => {
+            const aHasUrgent = a.items.some(item => item.isUrgent && item.status !== 'packed' && item.status !== 'forwarded');
+            const bHasUrgent = b.items.some(item => item.isUrgent && item.status !== 'packed' && item.status !== 'forwarded');
+            
+            if (aHasUrgent && !bHasUrgent) return -1;
+            if (!aHasUrgent && bHasUrgent) return 1;
+            
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
     }, [requests, selectedPharmacistId]);
 
     const totalPending = requests.filter(r => r.status === 'pending').length;
 
     // --- Actions ---
-    const updateStatus = async (id, status) => {
-        const isConfirmed = await showConfirm(`Are you sure you want to mark this as ${status}?`, status === 'rejected' ? 'danger' : 'success');
-        if (!isConfirmed) return;
 
-        try {
-            await api.put(`/requests/${id}/status`, { status });
-            fetchRequests();
-            showToast(`Request marked as ${status}`, status === 'approved' ? 'success' : 'info');
-        } catch (error) {
-            console.error(error);
-            showToast('Failed to update status', 'error');
-        }
-    };
-
-    const toggleShortlist = async (medicineId, medicineName) => {
+    const toggleShortlist = async (medicineId, medicineName, isUrgent = false) => {
         const isAdded = dailyListIds.has(medicineId);
         try {
             if (isAdded) {
@@ -155,9 +156,9 @@ const AdminRequests = () => {
                 setDailyListIds(prev => { const next = new Set(prev); next.delete(medicineId); return next; });
                 showToast(`Removed ${medicineName}`, 'info');
             } else {
-                await api.post('/requirements/add-item', { medicineId });
+                await api.post('/requirements/add-item', { medicineId, isUrgent });
                 setDailyListIds(prev => { const next = new Set(prev); next.add(medicineId); return next; });
-                showToast(`Added ${medicineName}`, 'success');
+                showToast(`Added ${medicineName}${isUrgent ? ' (Urgent)' : ''}`, 'success');
             }
         } catch (error) {
             showToast(error.response?.data?.message || 'Action failed', 'error');
@@ -415,7 +416,7 @@ const AdminRequests = () => {
                             </p>
                         </div>
                     ) : (
-                        (activeTab === 'pending' ? filteredRequests : historyRequests).map((req, index) => {
+                        (activeTab === 'pending' ? filteredRequests : historyRequests).map((req) => {
                             // Extract item statuses for this request from local state
                             const requestItemStates = packingState[req._id] || {};
                             
@@ -442,7 +443,19 @@ const AdminRequests = () => {
                                             }}></div>
                                             
                                             <div>
-                                                <div style={{ fontWeight: '600', fontSize: '1.05rem' }}>{req.pharmacistId?.name}</div>
+                                                <div style={{ fontWeight: '600', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    {req.pharmacistId?.name}
+                                                    {req.items.some(item => item.isUrgent) && (
+                                                        <span style={{ 
+                                                            fontSize: '0.65rem', background: 'var(--danger)', color: 'white', 
+                                                            padding: '1px 6px', borderRadius: '4px', fontWeight: 700,
+                                                            letterSpacing: '0.5px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem'
+                                                        }}>
+                                                            <AlertCircle size={10} fill="white" color="var(--danger)" />
+                                                            URGENT
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                                     <span>{new Date(req.createdAt).toLocaleString()}</span>
                                                     {req.submittedBy && <span style={{ color: 'var(--primary)' }}>• Signed by {req.submittedBy}</span>}
@@ -486,7 +499,13 @@ const AdminRequests = () => {
                                                             const isPacked = currentStatus === 'packed';
 
                                                             return (
-                                                                <tr key={idx} style={{ borderBottom: '1px solid rgba(0,0,0,0.03)', background: isPacked ? 'rgba(34, 197, 94, 0.05)' : 'transparent' }}>
+                                                                <tr key={idx} style={{ 
+                                                                    borderBottom: '1px solid rgba(0,0,0,0.03)', 
+                                                                    background: isPacked 
+                                                                        ? 'rgba(34, 197, 94, 0.05)' 
+                                                                        : (item.isUrgent ? 'rgba(239, 68, 68, 0.05)' : 'transparent'),
+                                                                    transition: 'background 0.3s ease'
+                                                                }}>
                                                                     <td style={{ padding: '0.75rem 0', color: 'var(--text-muted)' }}>{idx + 1}</td>
                                                                     {req.status !== 'rejected' && (user?.isSuperAdmin || user?.permissions?.includes('dashboard')) && (
                                                                         <td style={{ width: '40px', padding: '0.75rem 0' }}>
@@ -510,14 +529,27 @@ const AdminRequests = () => {
                                                                             </button>
                                                                         </td>
                                                                     )}
-                                                                    <td style={{ padding: '0.75rem 0', fontWeight: 500, color: isPacked ? 'var(--text-muted)' : 'inherit', textDecoration: isPacked ? 'line-through' : 'none' }}>{item.name}</td>
+                                                                    <td style={{ padding: '0.75rem 0', fontWeight: 500, color: isPacked ? 'var(--text-muted)' : (item.isUrgent ? 'var(--danger)' : 'inherit'), textDecoration: isPacked ? 'line-through' : 'none' }}>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                            {item.name}
+                                                                            {item.isUrgent && (
+                                                                                <span style={{ 
+                                                                                    fontSize: '0.65rem', background: 'var(--danger)', color: 'white', 
+                                                                                    padding: '1px 6px', borderRadius: '4px', fontWeight: 700,
+                                                                                    letterSpacing: '0.5px'
+                                                                                }}>
+                                                                                    URGENT
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </td>
                                                                     <td style={{ padding: '0.75rem 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{item.medicineId?.supplierId?.name || 'Unknown'}</td>
                                                                     <td style={{ padding: '0.75rem 0', fontWeight: 'bold' }}>{item.quantity}</td>
                                                                     {(user?.isSuperAdmin || user?.permissions?.includes('dashboard')) && (
                                                                         <td style={{ padding: '0.75rem 0', textAlign: 'right' }}>
                                                                             {item.medicineId && (
                                                                                 <button
-                                                                                    onClick={(e) => { e.stopPropagation(); toggleShortlist(item.medicineId._id, item.name); }}
+                                                                                    onClick={(e) => { e.stopPropagation(); toggleShortlist(item.medicineId._id, item.name, !!item.isUrgent); }}
                                                                                     title={dailyListIds.has(item.medicineId._id) ? "Remove" : "Add"}
                                                                                     aria-label={dailyListIds.has(item.medicineId._id) ? `Remove ${item.name} from shortlist` : `Add ${item.name} to shortlist`}
                                                                                     style={{

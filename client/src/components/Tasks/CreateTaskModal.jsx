@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import { X, ArrowRightLeft, CheckSquare, Search, Plus } from 'lucide-react';
 import api from '../../services/api';
 import AuthContext from '../../context/AuthContext';
@@ -71,22 +71,22 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
             setRequestedQty(''); setDonorBranchId(''); setRecipientBranchId('');
             setError(null);
         }
-    }, [isOpen, editTask]);
+    }, [isOpen, editTask, isAdmin]);
 
     useEffect(() => {
         if (isOpen && (targetAudience === 'Specific' || taskType === 'transfer_request') && pharmacies.length === 0) {
             fetchPharmacies();
         }
-    }, [isOpen, targetAudience, taskType]);
+    }, [isOpen, targetAudience, taskType, fetchPharmacies, pharmacies.length]);
 
-    const fetchPharmacies = async () => {
+    const fetchPharmacies = useCallback(async () => {
         try {
             const { data } = await api.get('/branches');
             setPharmacies(data);
         } catch (err) {
             console.error('Failed to fetch pharmacies', err);
         }
-    };
+    }, []);
 
     // Medicine autocomplete
     const handleMedicineInput = (val) => {

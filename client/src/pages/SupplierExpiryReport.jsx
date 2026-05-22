@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Truck, DollarSign, Download, FileSpreadsheet, Trash2, ChevronDown, ChevronUp, Clock, CheckCircle } from 'lucide-react';
 import api from '../services/api';
 import Button from '../components/UI/Button';
@@ -259,7 +259,7 @@ const SupplierExpiryReport = () => {
         api.get('/suppliers').then(res => setSuppliers(res.data)).catch(console.error);
     }, []);
 
-    const fetchLedgers = async () => {
+    const fetchLedgers = useCallback(async () => {
         try {
             setLoading(true);
             let url = `/expiry/ledgers?year=${selectedYear}`;
@@ -272,9 +272,9 @@ const SupplierExpiryReport = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedSupplier, selectedYear, selectedMonths]);
 
-    useEffect(() => { fetchLedgers(); }, [selectedSupplier, selectedYear, selectedMonths]);
+    useEffect(() => { fetchLedgers(); }, [selectedSupplier, selectedYear, selectedMonths, fetchLedgers]);
 
     const handleDeleteClick = (id) => {
         setActionModal({ isOpen: true, ledgerId: id });

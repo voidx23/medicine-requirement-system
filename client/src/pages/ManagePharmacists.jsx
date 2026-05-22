@@ -49,7 +49,7 @@ const ManagePharmacists = () => {
             fetchStaff();
             // Assuming you have notification context, otherwise use alert:
             alert('Pharmacist Added Successfully');
-        } catch (error) {
+        } catch {
             alert('Error adding pharmacist');
         }
     };
@@ -75,7 +75,7 @@ const ManagePharmacists = () => {
             setEditStaffPin('');
             fetchStaff();
             alert('Pharmacist Updated Successfully');
-        } catch (error) {
+        } catch {
             alert('Error updating pharmacist');
         }
     };
@@ -85,7 +85,7 @@ const ManagePharmacists = () => {
         try {
             await staffService.delete(id);
             fetchStaff();
-        } catch (error) {
+        } catch {
             alert('Error deleting pharmacist');
         }
     };

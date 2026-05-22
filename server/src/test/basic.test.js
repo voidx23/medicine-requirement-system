@@ -6,11 +6,11 @@ describe('Basic Backend Test Context', () => {
         const user = await User.create({
             username: 'test_user',
             password: 'password123',
-            role: 'pharmacist'
+            role: 'admin'
         });
         
         expect(user.username).toBe('test_user');
-        expect(user.role).toBe('pharmacist');
+        expect(user.role).toBe('admin');
         
         const found = await User.findOne({ username: 'test_user' });
         expect(found).not.toBeNull();

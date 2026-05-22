@@ -6,7 +6,7 @@ import AuthContext from '../../context/AuthContext';
 import api from '../../services/api';
 
 const Sidebar = () => {
-  const { user, logout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const [notiPermission, setNotiPermission] = useState(
@@ -74,7 +74,7 @@ const Sidebar = () => {
       fetchCount();
       const intervalId = setInterval(fetchCount, 10000); // 10s polling for badge
       return () => clearInterval(intervalId);
-  }, [user]);
+  }, [user, navigate]);
 
   const rawLinks = [
     { to: '/', icon: LayoutDashboard, label: 'Daily Requirement List', reqPerm: 'dashboard' },

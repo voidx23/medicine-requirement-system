@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Package, AlertCircle } from 'lucide-react';
 import api from '../../services/api';
 import Modal from '../UI/Modal';
@@ -11,18 +11,8 @@ const SupplierProductsModal = ({ isOpen, onClose, supplier }) => {
     const [error, setError] = useState('');
     const [search, setSearch] = useState('');
 
-    useEffect(() => {
-        if (isOpen && supplier) {
-            fetchSupplierProducts();
-        } else {
-            // Reset state when closed
-            setMedicines([]);
-            setSearch('');
-            setError('');
-        }
-    }, [isOpen, supplier]);
-
-    const fetchSupplierProducts = async () => {
+    const fetchSupplierProducts = useCallback(async () => {
+        if (!supplier?._id) return;
         setLoading(true);
         setError('');
         try {
@@ -37,7 +27,18 @@ const SupplierProductsModal = ({ isOpen, onClose, supplier }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [supplier]);
+
+    useEffect(() => {
+        if (isOpen && supplier) {
+            fetchSupplierProducts();
+        } else {
+            // Reset state when closed
+            setMedicines([]);
+            setSearch('');
+            setError('');
+        }
+    }, [isOpen, supplier, fetchSupplierProducts]);
 
     const filteredMedicines = medicines.filter(m => 
         m.name.toLowerCase().includes(search.toLowerCase()) || 

@@ -34,7 +34,6 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
 
     const { transferDetails: td, transferRole } = task;
     const isDonor = transferRole === 'donor';
-    const isRequester = transferRole === 'requester';
     
     // Calculate if overall task is still pending or fully responded
     const allItemsResponded = td?.items?.every(it => it.responseStatus !== 'pending');

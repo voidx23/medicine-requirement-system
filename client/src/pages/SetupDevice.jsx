@@ -12,7 +12,7 @@ const SetupDevice = () => {
             try {
                 const data = await staffService.getBranches();
                 setBranches(data);
-            } catch (error) {
+            } catch {
                 console.error("Failed to load branches");
             }
         };

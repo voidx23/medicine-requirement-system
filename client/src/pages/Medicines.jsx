@@ -22,7 +22,6 @@ const Medicines = () => {
   const { showConfirm, showToast } = useNotification();
   const [medicines, setMedicines] = useState([]); // Displayed list
   const [allMedicines, setAllMedicines] = useState([]); 
-  const [filteredCount, setFilteredCount] = useState(0); // Count matching search
   const [dbTotalCount, setDbTotalCount] = useState(0); // GLOBAL Total in DB
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -41,7 +40,7 @@ const Medicines = () => {
       try {
           const { data } = await api.get('/medicines?limit=1'); // Minimal fetch
           setDbTotalCount(data.totalCount || 0);
-      } catch (e) {
+      } catch {
           console.error('Failed to fetch total count');
       }
   };
@@ -70,7 +69,7 @@ const Medicines = () => {
             setAllMedicines(prev => [...prev, ...data]);
         }
         
-        setFilteredCount(response.data.totalCount || 0);
+        
         // If we received fewer items than requested, we've reached the end
         setHasMore(data.length === 50);
     } catch (error) {
@@ -79,7 +78,7 @@ const Medicines = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   // Debounce Search Effect
   useEffect(() => {

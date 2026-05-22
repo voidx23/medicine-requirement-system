@@ -92,7 +92,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
         };
         window.addEventListener('keydown', handleKey);
         return () => window.removeEventListener('keydown', handleKey);
-    }, [scanMode, isOpen, allMedicines]);
+    }, [scanMode, isOpen, allMedicines, addItem]);
 
     const handleKeyDown = (e) => {
         const total = searchResults.length + (searchTerm.trim() ? 1 : 0);

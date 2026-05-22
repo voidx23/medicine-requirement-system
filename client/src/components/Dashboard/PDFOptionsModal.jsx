@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { FileText, Check, X, Printer } from 'lucide-react';
-import api from '../../services/api';
 import Modal from '../UI/Modal';
 import Button from '../UI/Button';
 

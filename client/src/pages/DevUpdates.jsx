@@ -154,7 +154,7 @@ const DevUpdates = () => {
             const res = await api.get('/system/version');
             setCurrentVersionString(res.data.versionString || 'v1.0.0');
             setUpdateModalOpen(true);
-        } catch (err) {
+        } catch {
             showToast('Failed to fetch current version', 'error');
         }
     };

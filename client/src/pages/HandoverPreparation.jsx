@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Truck, Package, ChevronDown, ChevronUp, CheckSquare, Square, AlertCircle, Trash2 } from 'lucide-react';
 import api from '../services/api';
 import Button from '../components/UI/Button';
@@ -17,7 +17,7 @@ const HandoverPreparation = () => {
     const [processing, setProcessing] = useState(null); // supplierId being processed
     const [showDisposed, setShowDisposed] = useState(false);
 
-    const fetchPending = async () => {
+    const fetchPending = useCallback(async () => {
         try {
             setLoading(true);
             const res = await api.get(`/expiry/handover-pending?includeDisposed=${showDisposed}`);
@@ -39,9 +39,9 @@ const HandoverPreparation = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showDisposed, showToast]);
 
-    useEffect(() => { fetchPending(); }, [showDisposed]);
+    useEffect(() => { fetchPending(); }, [showDisposed, fetchPending]);
 
     const toggleItem = (supplierId, itemId) => {
         setSelected(prev => {

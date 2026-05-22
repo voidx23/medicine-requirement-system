@@ -45,7 +45,7 @@ const UpdateUnitsModal = ({ isOpen, onClose, onImportSuccess }) => {
                 try {
                     const userInfo = JSON.parse(userInfoStr);
                     token = userInfo.token;
-                } catch (e) {
+                } catch {
                     console.error('Failed to parse userInfo');
                 }
             }
@@ -66,7 +66,7 @@ const UpdateUnitsModal = ({ isOpen, onClose, onImportSuccess }) => {
                 try {
                     const errorData = await response.json();
                     errorMessage = errorData.message || errorMessage;
-                } catch (e) {
+                } catch {
                     // Ignore json parse error
                 }
                 throw new Error(errorMessage);

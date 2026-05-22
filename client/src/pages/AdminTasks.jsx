@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import { Plus, CheckSquare } from 'lucide-react';
 import taskService from '../services/taskService';
 import AuthContext from '../context/AuthContext';
@@ -22,7 +22,7 @@ const AdminTasks = () => {
     const [taskToEdit, setTaskToEdit] = useState(null);
     const [selectedTask, setSelectedTask] = useState(null);
 
-    const loadTasks = async () => {
+    const loadTasks = useCallback(async () => {
         setLoading(true);
         try {
             const data = await taskService.getAdminTasks();
@@ -33,7 +33,7 @@ const AdminTasks = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [showToast]);
 
     useEffect(() => {
         if (!user?.token) return;
@@ -46,7 +46,7 @@ const AdminTasks = () => {
         }, 10000);
         
         return () => clearInterval(intervalId);
-    }, [user]);
+    }, [user, loadTasks]);
 
     const handleSubmitTask = async (taskData) => {
         try {

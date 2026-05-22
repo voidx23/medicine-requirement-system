@@ -117,9 +117,6 @@ const Reports = () => {
         }
     };
 
-    // Helper to get name
-    const getSupplierName = (id) => suppliers.find(s => s._id === id)?.name || 'Unknown';
-
     return (
         <div>
             <h1 className="header-title">Reports</h1>

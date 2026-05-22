@@ -35,17 +35,23 @@ describe('TaskCard Component', () => {
             ...mockTask, 
             type: 'transfer_request', 
             transferDetails: { 
-                medicineName: 'Panadol', 
-                requestedQty: 10,
-                donorBranchId: { username: 'Branch A' },
-                recipientBranchId: { username: 'Branch B' }
+                items: [
+                    {
+                        _id: 'item1',
+                        medicineName: 'Panadol',
+                        requestedQty: 10,
+                        responseStatus: 'rejected'
+                    }
+                ],
+                donorBranchId: { name: 'Branch A' },
+                recipientBranchId: { name: 'Branch B' }
             } 
         };
         render(<TaskCard task={transferTask} onClick={() => {}} />);
         
         expect(screen.getByText('Transfer')).toBeInTheDocument();
         expect(screen.getByText('Panadol')).toBeInTheDocument();
-        expect(screen.getByText('Qty:')).toBeInTheDocument();
-        expect(screen.getByText('10')).toBeInTheDocument();
+        expect(screen.getByText(/Items:/i)).toBeInTheDocument();
+        expect(screen.getByText('1')).toBeInTheDocument();
     });
 });

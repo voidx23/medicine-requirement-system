@@ -32,6 +32,10 @@ const requestSchema = mongoose.Schema({
         status: {
             type: String, 
             default: 'pending' // pending, packed, forwarded, skipped
+        },
+        isUrgent: {
+            type: Boolean,
+            default: false
         }
     }],
     status: {

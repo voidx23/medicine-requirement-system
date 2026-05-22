@@ -79,7 +79,18 @@ const ReorderModal = ({ isOpen, onClose, onConfirm, pendingItems }) => {
                                 onChange={() => {}} // handled by div click
                                 style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                             />
-                            <span style={{ fontWeight: 500, color: '#334155' }}>{item.name}</span>
+                            <span style={{ fontWeight: 500, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                {item.name}
+                                {item.isUrgent && (
+                                    <span style={{ 
+                                        fontSize: '0.65rem', background: 'var(--danger)', color: 'white', 
+                                        padding: '1px 6px', borderRadius: '4px', fontWeight: 700,
+                                        letterSpacing: '0.5px'
+                                    }}>
+                                        URGENT
+                                    </span>
+                                )}
+                            </span>
                             <span style={{ marginLeft: 'auto', background: '#e2e8f0', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem' }}>
                                 x{item.quantity}
                             </span>
@@ -149,6 +160,9 @@ const PharmacistHistory = () => {
                     if (existingItemIndex >= 0) {
                         // Increment quantity if it already exists
                         newCartItems[existingItemIndex].quantity += item.quantity;
+                        if (item.isUrgent) {
+                            newCartItems[existingItemIndex].isUrgent = true;
+                        }
                     } else {
                         // Add new item
                         newCartItems.push({
@@ -157,7 +171,8 @@ const PharmacistHistory = () => {
                             name: item.name,
                             quantity: item.quantity,
                             isCustom: item.isCustom,
-                            supplierId: null
+                            supplierId: null,
+                            isUrgent: !!item.isUrgent
                         });
                     }
                 });
@@ -321,7 +336,18 @@ const PharmacistHistory = () => {
                                             borderColor: item.status === 'packed' ? '#dcfce7' : (item.status === 'forwarded' ? '#dbeafe' : '#fecdd3')
                                         }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.95rem' }}>{item.name}</span>
+                                                <span style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                                    {item.name}
+                                                    {item.isUrgent && (
+                                                        <span style={{ 
+                                                            fontSize: '0.65rem', background: 'var(--danger)', color: 'white', 
+                                                            padding: '1px 6px', borderRadius: '4px', fontWeight: 700,
+                                                            letterSpacing: '0.5px'
+                                                        }}>
+                                                            URGENT
+                                                        </span>
+                                                    )}
+                                                </span>
                                                 <span style={{ fontWeight: 700, color: 'var(--primary)' }}>x{item.quantity}</span>
                                             </div>
                                             <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}>
@@ -353,7 +379,20 @@ const PharmacistHistory = () => {
                                                 background: item.status === 'packed' ? 'rgba(34, 197, 94, 0.03)' : (item.status === 'forwarded' ? 'rgba(59, 130, 246, 0.03)' : '#fff1f2') 
                                             }}>
                                                 <td style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>{idx + 1}</td>
-                                                <td style={{ padding: '0.75rem', color: 'var(--text-main)', textDecoration: item.status === 'packed' ? 'line-through' : 'none', opacity: item.status === 'packed' ? 0.6 : 1, fontWeight: item.status === 'packed' ? 400 : 500 }}>{item.name}</td>
+                                                <td style={{ padding: '0.75rem', color: 'var(--text-main)', textDecoration: item.status === 'packed' ? 'line-through' : 'none', opacity: item.status === 'packed' ? 0.6 : 1, fontWeight: item.status === 'packed' ? 400 : 500 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        {item.name}
+                                                        {item.isUrgent && (
+                                                            <span style={{ 
+                                                                fontSize: '0.65rem', background: 'var(--danger)', color: 'white', 
+                                                                padding: '1px 6px', borderRadius: '4px', fontWeight: 700,
+                                                                letterSpacing: '0.5px'
+                                                            }}>
+                                                                URGENT
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
                                                 <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 600 }}>{item.quantity}</td>
                                                 <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                                                     {item.status === 'packed' ? (

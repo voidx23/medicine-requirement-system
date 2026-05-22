@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, FileSpreadsheet, Search } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
@@ -26,7 +26,7 @@ const Suppliers = () => {
   const [viewingSupplier, setViewingSupplier] = useState(null); // For Products Modal
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchSuppliers = async () => {
+  const fetchSuppliers = useCallback(async () => {
     try {
       const response = await api.get('/suppliers');
       setSuppliers(response.data);
@@ -36,11 +36,11 @@ const Suppliers = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchSuppliers();
-  }, []);
+  }, [fetchSuppliers]);
 
   const handleAdd = () => {
     setSelectedSupplier(null);

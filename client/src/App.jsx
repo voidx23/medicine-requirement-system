@@ -85,7 +85,7 @@ const VersionPoller = () => {
                 } else if (localVersion !== null && serverVersion > localVersion) {
                     setIsUpdating(true);
                 }
-            } catch (err) {
+            } catch {
                 // Ignore silent background fails
             }
         };

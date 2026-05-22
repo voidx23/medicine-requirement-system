@@ -23,7 +23,7 @@ const History = () => {
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  const { showConfirm, showToast } = useNotification();
+  const { showToast } = useNotification();
 
   useEffect(() => {
     fetchHistory();
