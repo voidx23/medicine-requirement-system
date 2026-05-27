@@ -7,6 +7,12 @@ const expiryItemSchema = new mongoose.Schema({
         required: false,
         default: null
     },
+    supplierId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Supplier',
+        required: false,
+        default: null
+    },
     customName: {
         type: String,
         default: ''

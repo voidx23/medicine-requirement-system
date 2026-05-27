@@ -109,24 +109,61 @@ export const verifyExpiryReturn = async (req, res) => {
         // Build verified items — snapshot cost price, set handoverStatus = Pending
         const verifiedItems = [];
         for (const item of items) {
-            const med = await Medicine.findById(item.medicineId);
+            let finalMedicineId = item.medicineId || null;
+            let costPrice = item.costPriceAtReturn || 0;
+            let supplierId = item.supplierId || null;
+            let customName = item.customName || '';
+
+            if (!finalMedicineId && customName) {
+                if (!item.supplierId) {
+                    return res.status(400).json({ message: `Please select a supplier for the custom item: ${customName}` });
+                }
+
+                // Look up by name case-insensitively
+                let existingMed = await Medicine.findOne({
+                    name: { $regex: new RegExp(`^${customName.trim()}$`, 'i') }
+                });
+
+                if (!existingMed) {
+                    // Create new medicine in DB
+                    existingMed = await Medicine.create({
+                        name: customName.trim(),
+                        supplierId: item.supplierId,
+                        costPrice: item.costPriceAtReturn || 0,
+                        sellingPrice: item.sellingPrice || 0,
+                        unitsPerBox: item.unitsPerBox || 1,
+                        barcode: item.barcode || ''
+                    });
+                }
+                
+                finalMedicineId = existingMed._id;
+                costPrice = existingMed.costPrice;
+                supplierId = existingMed.supplierId;
+                customName = ''; // Promoted to standard medicine
+            } else if (finalMedicineId) {
+                const med = await Medicine.findById(finalMedicineId);
+                costPrice = med?.costPrice || 0;
+                supplierId = med?.supplierId || null;
+            }
 
             verifiedItems.push({
-                medicineId: item.medicineId || null,
-                customName: item.customName || '',
+                medicineId: finalMedicineId,
+                supplierId: supplierId,
+                customName: customName,
                 qtySent: item.qtySent || 0,
                 qtySentLoose: item.qtySentLoose || 0,
                 qtyReceived: item.qtyReceived,
                 qtyReceivedLoose: item.qtyReceivedLoose,
                 isNonReturnable: item.isNonReturnable || false,
-                costPriceAtReturn: med?.costPrice || 0,
+                costPriceAtReturn: costPrice,
+                batchNumber: item.batchNumber || '',
                 // Items start as Pending handover
                 // Disposed items are excluded from handover automatically
                 handoverStatus: 'Pending',
                 handedOverAt: null
             });
 
-            if (item.qtySent !== item.qtyReceived) anyChanges = true;
+            if (item.qtySent !== item.qtyReceived || item.qtySentLoose !== item.qtyReceivedLoose) anyChanges = true;
         }
 
         expiryList.items = verifiedItems;
@@ -197,7 +234,8 @@ export const getPendingHandoverItems = async (req, res) => {
                 path: 'items.medicineId',
                 select: 'name barcode supplierId costPrice unitsPerBox',
                 populate: { path: 'supplierId', select: 'name' }
-            });
+            })
+            .populate('items.supplierId', 'name');
 
         // Flatten to individual pending items, group by supplier
         const supplierMap = {}; // { supplierId: { supplier, items[] } }
@@ -213,20 +251,20 @@ export const getPendingHandoverItems = async (req, res) => {
                 // If we ONLY want disposed, skip non-disposed
                 if (includeDisposed === 'true' && !item.isNonReturnable) continue;
 
-                if (!item.medicineId || !item.medicineId.supplierId) continue;
+                const supplier = item.supplierId || item.medicineId?.supplierId;
+                if (!supplier) continue;
                 
                 const hasBoxes = item.qtyReceived !== null && item.qtyReceived > 0;
                 const hasLoose = item.qtyReceivedLoose !== null && item.qtyReceivedLoose > 0;
                 if (!hasBoxes && !hasLoose) continue;
 
-                const supplier = item.medicineId.supplierId;
                 const sid = supplier._id.toString();
 
                 if (!supplierMap[sid]) {
                     supplierMap[sid] = { supplier, items: [] };
                 }
 
-                const units = item.medicineId.unitsPerBox || 1;
+                const units = item.medicineId?.unitsPerBox || 1;
                 const valBoxes = item.qtyReceived * item.costPriceAtReturn;
                 const valLoose = (item.qtyReceivedLoose || 0) * (item.costPriceAtReturn / units);
 
@@ -236,9 +274,9 @@ export const getPendingHandoverItems = async (req, res) => {
                     branchName: ret.branchId?.name || 'Unknown',
                     month: ret.month,
                     year: ret.year,
-                    medicineName: item.medicineId.name,
-                    medicineBarcode: item.medicineId.barcode,
-                    medicineId: item.medicineId._id,
+                    medicineName: item.medicineId?.name || item.customName || 'Unknown',
+                    medicineBarcode: item.medicineId?.barcode || '',
+                    medicineId: item.medicineId?._id || null,
                     qtyReceived: item.qtyReceived,
                     qtyReceivedLoose: item.qtyReceivedLoose || 0,
                     unitsPerBox: units,
@@ -496,6 +534,35 @@ export const deleteSupplierLedger = async (req, res) => {
         const adminUser = await User.findById(req.user._id);
         if (!password || !(await adminUser.matchPassword(password))) {
             return res.status(401).json({ message: 'Invalid Admin Password' });
+        }
+
+        // Reset all associated handed over items back to Pending
+        const returns = await ExpiryReturn.find({
+            month: ledger.month,
+            year: ledger.year,
+            status: 'Verified'
+        }).populate('items.medicineId');
+
+        for (const ret of returns) {
+            let changed = false;
+            for (const item of ret.items) {
+                const itemSupplierId = item.supplierId || item.medicineId?.supplierId;
+                if (itemSupplierId && itemSupplierId.toString() === ledger.supplierId.toString()) {
+                    if (item.handoverStatus === 'HandedOver') {
+                        item.handoverStatus = 'Pending';
+                        item.handedOverAt = null;
+                        item.expectedCompensation = 0;
+                        item.compensationStatus = 'Pending';
+                        item.compensatedAt = null;
+                        item.actualCompensation = 0;
+                        item.compensationReason = '';
+                        changed = true;
+                    }
+                }
+            }
+            if (changed) {
+                await ret.save();
+            }
         }
 
         await ledger.deleteOne();

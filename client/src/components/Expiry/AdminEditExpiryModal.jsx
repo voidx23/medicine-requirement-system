@@ -15,6 +15,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
     const [year, setYear] = useState(new Date().getFullYear());
     const [items, setItems] = useState([]);
     const [branchNote, setBranchNote] = useState('');
+    const [suppliers, setSuppliers] = useState([]);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -33,6 +34,18 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
     const highlightedRef = useRef(null);
 
     useEffect(() => {
+        const fetchSuppliers = async () => {
+            try {
+                const res = await api.get('/suppliers');
+                setSuppliers(res.data.filter(s => s.isActive !== false));
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        if (isOpen) fetchSuppliers();
+    }, [isOpen]);
+
+    useEffect(() => {
         if (expiryList && isOpen) {
             setMonth(expiryList.month);
             setYear(expiryList.year);
@@ -40,12 +53,15 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
             setItems(expiryList.items.map(i => ({
                 medicineId: i.medicineId?._id || i.medicineId || `custom_${(i.customName || '').toLowerCase()}`,
                 name: i.medicineId?.name || i.customName || 'Unknown',
-                barcode: i.medicineId?.barcode || '',
+                barcode: i.medicineId?.barcode || i.barcode || '',
                 qtySent: i.qtySent,
                 qtySentLoose: i.qtySentLoose || 0,
                 batchNumber: i.batchNumber || '',
                 isCustom: !!i.customName,
-                unitsPerBox: i.medicineId?.unitsPerBox || 1
+                unitsPerBox: i.medicineId?.unitsPerBox || i.unitsPerBox || 1,
+                supplierId: i.supplierId || '',
+                costPriceAtReturn: i.costPriceAtReturn || 0,
+                sellingPrice: i.sellingPrice || 0
             })));
         }
     }, [expiryList, isOpen]);
@@ -111,7 +127,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
         setItems(prev =>
             prev.some(i => i.medicineId === medicine._id)
                 ? prev.map(i => i.medicineId === medicine._id ? { ...i, qtySent: i.qtySent + 1 } : i)
-                : [...prev, { medicineId: medicine._id, name: medicine.name, barcode: medicine.barcode, qtySent: 1, qtySentLoose: 0, batchNumber: '', unitsPerBox: medicine.unitsPerBox || 1 }]
+                : [...prev, { medicineId: medicine._id, name: medicine.name, barcode: medicine.barcode || '', qtySent: 1, qtySentLoose: 0, batchNumber: '', unitsPerBox: medicine.unitsPerBox || 1, isCustom: false }]
         );
         setSearchTerm('');
         setSearchResults([]);
@@ -126,7 +142,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
         setItems(prev =>
             prev.some(i => i.medicineId === customKey)
                 ? prev.map(i => i.medicineId === customKey ? { ...i, qtySent: i.qtySent + 1 } : i)
-                : [...prev, { medicineId: customKey, name, barcode: '', qtySent: 1, qtySentLoose: 0, batchNumber: '', isCustom: true, unitsPerBox: 1 }]
+                : [...prev, { medicineId: customKey, name, barcode: '', qtySent: 1, qtySentLoose: 0, batchNumber: '', isCustom: true, unitsPerBox: 1, supplierId: '', costPriceAtReturn: 0, sellingPrice: 0 }]
         );
         setSearchTerm('');
         setSearchResults([]);
@@ -150,6 +166,10 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
         setItems(items.map(i => i.medicineId === id ? { ...i, batchNumber: newBatch } : i));
     };
 
+    const updateCustomField = (id, field, value) => {
+        setItems(items.map(i => i.medicineId === id ? { ...i, [field]: value } : i));
+    };
+
     const removeItem = (id) => setItems(items.filter(i => i.medicineId !== id));
 
     const handleSaveClick = (e) => {
@@ -168,10 +188,15 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                 branchNote,
                 items: items.map(i => ({
                     medicineId: i.isCustom ? undefined : i.medicineId,
-                    customName: i.isCustom ? i.name : undefined,
+                    customName: i.isCustom ? i.name.trim() : undefined,
                     qtySent: i.qtySent,
                     qtySentLoose: i.qtySentLoose || 0,
-                    batchNumber: i.batchNumber
+                    batchNumber: i.batchNumber,
+                    supplierId: i.isCustom ? i.supplierId || undefined : undefined,
+                    costPriceAtReturn: i.isCustom ? parseFloat(i.costPriceAtReturn) : undefined,
+                    sellingPrice: i.isCustom ? parseFloat(i.sellingPrice) : undefined,
+                    unitsPerBox: i.isCustom ? parseInt(i.unitsPerBox) : undefined,
+                    barcode: i.isCustom ? i.barcode.trim() : undefined
                 })),
                 password
             });
@@ -264,21 +289,101 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                     <div style={{ display: 'grid', gridTemplateColumns: '30px 1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.45rem 0.75rem', fontWeight: 700, fontSize: '0.72rem', color: '#64748b', borderBottom: '1px solid #e2e8f0', background: '#f1f5f9', position: 'sticky', top: 0, zIndex: 10 }}>
                         <div>#</div><div>Medicine</div><div style={{ textAlign: 'center' }}>Box</div><div style={{ textAlign: 'center' }}>Loose</div><div style={{ textAlign: 'center' }}>Batch</div><div />
                     </div>
-                    {items.map((item, idx) => (
-                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '30px 1fr 60px 60px 100px 36px', gap: '0.5rem', padding: '0.4rem 0.75rem', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
-                            <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{idx + 1}</div>
-                            <div style={{ fontSize: '0.82rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                            <input type="number" min="0" value={item.qtySent} onChange={e => updateQty(item.medicineId, e.target.value)}
-                                style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
-                            <input type="number" min="0" value={item.qtySentLoose} onChange={e => updateQtyLoose(item.medicineId, e.target.value)}
-                                style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
-                            <input type="text" placeholder="Batch" value={item.batchNumber} onChange={e => updateBatch(item.medicineId, e.target.value)}
-                                style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
-                            <button type="button" onClick={() => removeItem(item.medicineId)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
-                                <Trash2 size={14} />
-                            </button>
-                        </div>
-                    ))}
+                    {items.map((item, idx) => {
+                        const isCustom = item.isCustom;
+                        return (
+                            <div key={idx} style={{ 
+                                borderBottom: '1px solid #f1f5f9',
+                                padding: '0.5rem 0.75rem'
+                            }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '30px 1fr 60px 60px 100px 36px', gap: '0.5rem', alignItems: 'center' }}>
+                                    <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{idx + 1}</div>
+                                    <div>
+                                        {!isCustom ? (
+                                            <div style={{ fontSize: '0.82rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                                        ) : (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <span style={{ fontSize: '0.6rem', background: '#fde68a', color: '#92400e', padding: '1px 4px', borderRadius: '3px', fontWeight: 700 }}>CUSTOM</span>
+                                                <input 
+                                                    type="text"
+                                                    value={item.name}
+                                                    onChange={(e) => updateCustomField(item.medicineId, 'name', e.target.value)}
+                                                    placeholder="Edit Name"
+                                                    style={{ fontSize: '0.8rem', padding: '0.2rem', border: '1px solid #cbd5e1', borderRadius: '4px', width: '100%' }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <input type="number" min="0" value={item.qtySent} onChange={e => updateQty(item.medicineId, e.target.value)}
+                                        style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
+                                    <input type="number" min="0" value={item.qtySentLoose} onChange={e => updateQtyLoose(item.medicineId, e.target.value)}
+                                        style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
+                                    <input type="text" placeholder="Batch" value={item.batchNumber} onChange={e => updateBatch(item.medicineId, e.target.value)}
+                                        style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
+                                    <button type="button" onClick={() => removeItem(item.medicineId)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                                {isCustom && (
+                                    <div style={{ 
+                                        background: '#f8fafc',
+                                        border: '1px dashed #cbd5e1',
+                                        borderRadius: '6px',
+                                        padding: '0.5rem',
+                                        marginTop: '0.4rem',
+                                        marginLeft: '30px',
+                                        display: 'grid',
+                                        gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr',
+                                        gap: '0.4rem',
+                                        alignItems: 'center'
+                                    }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <select 
+                                                value={item.supplierId || ''} 
+                                                onChange={(e) => updateCustomField(item.medicineId, 'supplierId', e.target.value)}
+                                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.7rem', background: '#fff' }}
+                                            >
+                                                <option value="">Select Supplier</option>
+                                                {suppliers.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <input 
+                                                type="number" step="0.001" min="0" placeholder="Cost"
+                                                value={item.costPriceAtReturn || ''} 
+                                                onChange={(e) => updateCustomField(item.medicineId, 'costPriceAtReturn', e.target.value)}
+                                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.7rem' }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <input 
+                                                type="number" step="0.001" min="0" placeholder="Selling"
+                                                value={item.sellingPrice || ''} 
+                                                onChange={(e) => updateCustomField(item.medicineId, 'sellingPrice', e.target.value)}
+                                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.7rem' }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <input 
+                                                type="number" min="1" placeholder="Units/Box"
+                                                value={item.unitsPerBox || ''} 
+                                                onChange={(e) => updateCustomField(item.medicineId, 'unitsPerBox', e.target.value)}
+                                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.7rem', textAlign: 'center' }}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <input 
+                                                type="text" placeholder="Barcode"
+                                                value={item.barcode || ''} 
+                                                onChange={(e) => updateCustomField(item.medicineId, 'barcode', e.target.value)}
+                                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.7rem' }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div className="input-group">
