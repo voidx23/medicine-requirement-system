@@ -67,6 +67,7 @@ export const createTask = async (req, res) => {
                 assignments: [{ pharmacyId: donorBranchId, status: 'Pending' }],
                 transferDetails: {
                     items: items.map(it => ({
+                        _id: new mongoose.Types.ObjectId(),
                         medicineName: it.medicineName,
                         medicineId: it.medicineId || null,
                         requestedQty: it.requestedQty,
@@ -257,8 +258,20 @@ export const respondToTransfer = async (req, res) => {
         if (assignmentIndex === -1) return res.status(403).json({ message: 'You are not the donor for this transfer request' });
 
         // Update each item
-        responses.forEach(resItem => {
-            const item = task.transferDetails.items.id(resItem.itemId);
+        responses.forEach((resItem, idx) => {
+            let item = null;
+            if (resItem.itemId && mongoose.Types.ObjectId.isValid(resItem.itemId)) {
+                item = task.transferDetails.items.id(resItem.itemId);
+            }
+            if (!item) {
+                // Fallback to match by index or medicineName/medicineId
+                item = task.transferDetails.items.find((it, i) => {
+                    return (resItem.index !== undefined && i === resItem.index) ||
+                           (it.medicineName === resItem.medicineName) ||
+                           (it.medicineId && resItem.medicineId && it.medicineId.toString() === resItem.medicineId.toString());
+                });
+            }
+
             if (item && item.responseStatus === 'pending') {
                 item.responseStatus = resItem.action === 'accept' ? 'accepted' : 'rejected';
                 if (resItem.action === 'accept') item.responseQty = resItem.responseQty;

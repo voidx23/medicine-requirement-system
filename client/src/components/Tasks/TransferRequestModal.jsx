@@ -35,8 +35,15 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
     const { transferDetails: td, transferRole } = task;
     const isDonor = transferRole === 'donor';
     
+    // Ensure every item has a local unique ID and reference index
+    const items = td?.items?.map((it, idx) => ({
+        ...it,
+        _id: it._id || `item-index-${idx}`,
+        index: idx
+    })) || [];
+
     // Calculate if overall task is still pending or fully responded
-    const allItemsResponded = td?.items?.every(it => it.responseStatus !== 'pending');
+    const allItemsResponded = items.every(it => it.responseStatus !== 'pending');
     const alreadyResponded = allItemsResponded;
 
     const isCreatorOrSuperAdmin = user?.isSuperAdmin || task.createdBy?._id === user?._id || task.createdBy === user?._id;
@@ -47,7 +54,7 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
             [itemId]: { 
                 ...prev[itemId], 
                 action, 
-                qty: action === 'accept' ? (prev[itemId]?.qty || td.items.find(i => i._id === itemId).requestedQty) : '',
+                qty: action === 'accept' ? (prev[itemId]?.qty || items.find(i => i._id === itemId).requestedQty) : '',
                 reason: action === 'reject' ? (prev[itemId]?.reason || '') : ''
             }
         }));
@@ -62,13 +69,15 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
     };
 
     const handleSubmit = async () => {
-        const responsesArray = td.items
+        const responsesArray = items
             .filter(it => it.responseStatus === 'pending')
             .map(it => {
                 const res = itemResponses[it._id];
                 if (!res || !res.action) return null;
                 return {
-                    itemId: it._id,
+                    itemId: it._id.startsWith('item-index-') ? null : it._id,
+                    index: it.index,
+                    medicineName: it.medicineName,
                     action: res.action,
                     responseQty: Number(res.qty),
                     rejectionReason: res.reason
@@ -81,7 +90,7 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
         }
 
         // Check if all pending items have a response selected
-        const pendingItems = td.items.filter(it => it.responseStatus === 'pending');
+        const pendingItems = items.filter(it => it.responseStatus === 'pending');
         if (responsesArray.length < pendingItems.length) {
             showToast('Please provide a response for all items', 'warning');
             // return; // Allow partial if you want, but for now let's encourage full
@@ -101,8 +110,8 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
     };
 
     // Overall Status Logic
-    const anyAccepted = td?.items?.some(it => it.responseStatus === 'accepted');
-    const anyPending = td?.items?.some(it => it.responseStatus === 'pending');
+    const anyAccepted = items.some(it => it.responseStatus === 'accepted');
+    const anyPending = items.some(it => it.responseStatus === 'pending');
     
     let statusLabel = anyPending ? 'Partially Pending' : (anyAccepted ? 'Accepted' : 'Rejected');
     if (alreadyResponded && !anyAccepted) statusLabel = 'Rejected';
@@ -180,7 +189,7 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                                 </tr>
                             </thead>
                             <tbody>
-                                {td?.items?.map(it => (
+                                {items.map(it => (
                                     <tr key={it._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                         <td style={{ padding: '0.75rem' }}>{it.medicineName}</td>
                                         <td style={{ padding: '0.75rem', textAlign: 'center' }}>{it.requestedQty}</td>
@@ -211,7 +220,7 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                     {isDonor && !alreadyResponded && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Your Response</h3>
-                            {td.items.filter(it => it.responseStatus === 'pending').map(it => {
+                            {items.filter(it => it.responseStatus === 'pending').map(it => {
                                 const res = itemResponses[it._id] || {};
                                 return (
                                     <div key={it._id} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '12px', background: '#f8fafc' }}>
@@ -221,12 +230,14 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                                                 <button 
                                                     onClick={() => handleItemAction(it._id, 'accept')}
                                                     style={{ padding: '0.3rem 0.6rem', borderRadius: '6px', border: res.action === 'accept' ? '2px solid #22c55e' : '1px solid #cbd5e1', background: res.action === 'accept' ? '#f0fdf4' : 'white', color: res.action === 'accept' ? '#16a34a' : '#64748b', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                                                    type="button"
                                                 >
                                                     Accept
                                                 </button>
                                                 <button 
                                                     onClick={() => handleItemAction(it._id, 'reject')}
                                                     style={{ padding: '0.3rem 0.6rem', borderRadius: '6px', border: res.action === 'reject' ? '2px solid #ef4444' : '1px solid #cbd5e1', background: res.action === 'reject' ? '#fff1f2' : 'white', color: res.action === 'reject' ? '#dc2626' : '#64748b', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                                                    type="button"
                                                 >
                                                     Reject
                                                 </button>
@@ -259,6 +270,7 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                                 onClick={handleSubmit} 
                                 disabled={isSubmitting}
                                 style={{ marginTop: '0.5rem', padding: '0.9rem', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)' }}
+                                type="button"
                             >
                                 {isSubmitting ? 'Submitting...' : 'Send Response'}
                             </button>
@@ -266,10 +278,10 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                     )}
 
                     {/* Overall Rejection Reasons (if any) */}
-                    {alreadyResponded && td.items.some(it => it.responseStatus === 'rejected') && (
+                    {alreadyResponded && items.some(it => it.responseStatus === 'rejected') && (
                         <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '10px', padding: '1rem', fontSize: '0.85rem' }}>
                             <div style={{ fontWeight: 600, color: '#991b1b', marginBottom: '0.5rem' }}>Rejection Details:</div>
-                            {td.items.filter(it => it.responseStatus === 'rejected').map(it => (
+                            {items.filter(it => it.responseStatus === 'rejected').map(it => (
                                 <div key={it._id} style={{ marginBottom: '0.25rem', color: '#b91c1c' }}>
                                     • <strong>{it.medicineName}</strong>: {it.rejectionReason}
                                 </div>

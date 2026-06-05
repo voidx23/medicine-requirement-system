@@ -73,12 +73,6 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
         }
     }, [isOpen, editTask, isAdmin]);
 
-    useEffect(() => {
-        if (isOpen && (targetAudience === 'Specific' || taskType === 'transfer_request') && pharmacies.length === 0) {
-            fetchPharmacies();
-        }
-    }, [isOpen, targetAudience, taskType, fetchPharmacies, pharmacies.length]);
-
     const fetchPharmacies = useCallback(async () => {
         try {
             const { data } = await api.get('/branches');
@@ -87,6 +81,13 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, onSubmitTransfer, editTask
             console.error('Failed to fetch pharmacies', err);
         }
     }, []);
+
+    useEffect(() => {
+        if (isOpen && (targetAudience === 'Specific' || taskType === 'transfer_request') && pharmacies.length === 0) {
+            fetchPharmacies();
+        }
+    }, [isOpen, targetAudience, taskType, fetchPharmacies, pharmacies.length]);
+
 
     // Medicine autocomplete
     const handleMedicineInput = (val) => {
