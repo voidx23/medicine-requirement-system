@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Task from '../models/Task.js';
 import User from '../models/User.js';
 import Branch from '../models/Branch.js';
