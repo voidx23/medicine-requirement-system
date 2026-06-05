@@ -423,7 +423,8 @@ export const getLedgerDetails = async (req, res) => {
         const items = [];
         for (const ret of returns) {
             for (const item of ret.items) {
-                if (item.handoverStatus === 'HandedOver' && item.medicineId?.supplierId?.toString() === ledger.supplierId.toString()) {
+                const itemSupplierId = item.supplierId || item.medicineId?.supplierId;
+                if (item.handoverStatus === 'HandedOver' && itemSupplierId?.toString() === ledger.supplierId.toString()) {
                     items.push({
                         ...item.toObject(),
                         branchName: ret.branchId?.name,
@@ -498,8 +499,12 @@ export const deleteExpiryReturn = async (req, res) => {
         }
 
         // Only allow deleting Draft or Submitted (unverified) returns
+        // EXCEPT if it is verified but has no handed-over items
         if (expiryList.status === 'Verified') {
-            return res.status(400).json({ message: 'Cannot delete a verified expiry return' });
+            const hasHandedOver = expiryList.items.some(item => item.handoverStatus === 'HandedOver');
+            if (hasHandedOver) {
+                return res.status(400).json({ message: 'Cannot delete a verified expiry return that has already been handed over' });
+            }
         }
 
         const user = await req.user;

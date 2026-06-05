@@ -52,10 +52,18 @@ const AdminRoute = () => {
   return user && user.role === 'admin' ? <Outlet /> : <Navigate to="/pharmacist-dashboard" replace />;
 };
 
+const RootRedirect = () => {
+  const { user, loading } = useContext(AuthContext);
+  if (loading) return <div>Loading...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role === 'admin') return <Navigate to="/admin" replace />;
+  return <Navigate to="/pharmacist-dashboard" replace />;
+};
+
 const SuperAdminRoute = () => {
   const { user, loading } = useContext(AuthContext);
   if (loading) return <div>Loading...</div>;
-  return user && user.isSuperAdmin ? <Outlet /> : <Navigate to="/" replace />;
+  return user && user.isSuperAdmin ? <Outlet /> : <Navigate to="/admin" replace />;
 };
 
 const VersionPoller = () => {
@@ -159,13 +167,16 @@ const App = () => {
             {/* Public Route */}
             <Route path="/login" element={<Login />} />
 
+            {/* Root redirect */}
+            <Route path="/" element={<RootRedirect />} />
+
             {/* Protected Routes */}
             <Route element={<PrivateRoute />}>
                 
-                {/* Admin Routes */}
+                {/* Admin Routes (all under /admin) */}
                 <Route element={<AdminRoute />}>
                     <Route path="/setup-device" element={<SetupDevice />} />
-                    <Route path="/" element={<Layout />}>
+                    <Route path="/admin" element={<Layout />}>
                         <Route index element={<Dashboard />} />
                         {/* Modules protected by their own logic or shown if permitted */}
                         <Route path="tasks" element={<AdminTasks />} />

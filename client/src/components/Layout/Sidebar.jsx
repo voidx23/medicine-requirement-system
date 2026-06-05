@@ -57,7 +57,7 @@ const Sidebar = () => {
                         
                         notification.onclick = function() {
                             window.focus();
-                            navigate('/requests');
+                            navigate('/admin/requests');
                             this.close();
                         };
                     }
@@ -77,19 +77,19 @@ const Sidebar = () => {
   }, [user, navigate]);
 
   const rawLinks = [
-    { to: '/', icon: LayoutDashboard, label: 'Daily Requirement List', reqPerm: 'dashboard' },
-    { to: '/tasks', icon: CheckSquare, label: 'Tasks', reqPerm: 'tasks' },
-    { to: '/requests', icon: ClipboardList, label: 'Requests', badge: pendingRequestsCount, reqPerm: 'requests' },
-    { to: '/suppliers', icon: Truck, label: 'Suppliers', reqPerm: 'suppliers' },
-    { to: '/medicines', icon: Pill, label: 'Medicines', reqPerm: 'medicines' },
+    { to: '/admin', icon: LayoutDashboard, label: 'Daily Requirement List', reqPerm: 'dashboard' },
+    { to: '/admin/tasks', icon: CheckSquare, label: 'Tasks', reqPerm: 'tasks' },
+    { to: '/admin/requests', icon: ClipboardList, label: 'Requests', badge: pendingRequestsCount, reqPerm: 'requests' },
+    { to: '/admin/suppliers', icon: Truck, label: 'Suppliers', reqPerm: 'suppliers' },
+    { to: '/admin/medicines', icon: Pill, label: 'Medicines', reqPerm: 'medicines' },
     { 
       id: 'pharmacy-network', 
       icon: Users, 
       label: 'Pharmacy Network',
       superAdminOnly: true,
       subLinks: [
-        { to: '/branches', label: 'Branches' },
-        { to: '/pharmacists', label: 'Pharmacists' }
+        { to: '/admin/branches', label: 'Branches' },
+        { to: '/admin/pharmacists', label: 'Pharmacists' }
       ]
     },
     { 
@@ -98,7 +98,7 @@ const Sidebar = () => {
       label: 'Store Administration',
       superAdminOnly: true,
       subLinks: [
-        { to: '/store-staff', label: 'Store Staff' }
+        { to: '/admin/store-staff', label: 'Store Staff' }
       ]
     },
     { 
@@ -107,24 +107,24 @@ const Sidebar = () => {
       label: 'Expiry Management',
       reqPerm: 'expiry_returns',
       subLinks: [
-        { to: '/expiry-verification', label: 'Expiry Verification' },
-        { to: '/handover', label: 'Handover Prep' },
-        { to: '/reports/supplier-expiry', label: 'Supplier Ledger' }
+        { to: '/admin/expiry-verification', label: 'Expiry Verification' },
+        { to: '/admin/handover', label: 'Handover Prep' },
+        { to: '/admin/reports/supplier-expiry', label: 'Supplier Ledger' }
       ]
     },
-    { to: '/history', icon: History, label: 'Req History', reqPerm: 'history' },
+    { to: '/admin/history', icon: History, label: 'Req History', reqPerm: 'history' },
     { 
       id: 'reports-menu', 
       icon: FileText, 
       label: 'Reports',
       reqPerm: 'reports',
       subLinks: [
-        { to: '/reports', label: 'Requirement Report' },
-        { to: '/reports/audit', label: 'Medicine Audit' }
+        { to: '/admin/reports', label: 'Requirement Report' },
+        { to: '/admin/reports/audit', label: 'Medicine Audit' }
       ]
     },
-    { to: '/feedback', icon: MessageSquare, label: 'Feedback', superAdminOnly: true },
-    { to: '/updates', icon: GitBranch, label: 'Dev Updates', superAdminOnly: true },
+    { to: '/admin/feedback', icon: MessageSquare, label: 'Feedback', superAdminOnly: true },
+    { to: '/admin/updates', icon: GitBranch, label: 'Dev Updates', superAdminOnly: true },
   ];
 
   const links = rawLinks.filter(link => {
@@ -226,7 +226,7 @@ const Sidebar = () => {
                       <NavLink
                         key={subLink.to}
                         to={subLink.to}
-                        end={subLink.to === '/reports'} // Exact matching for /reports so it doesn't highlight both
+                        end={subLink.to === '/admin/reports'} // Exact matching for /admin/reports so it doesn't highlight both
                         style={({ isActive }) => ({
                           display: 'block',
                           padding: '0.5rem 0.75rem',

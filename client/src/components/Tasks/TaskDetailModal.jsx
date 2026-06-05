@@ -62,6 +62,7 @@ const TaskDetailModal = ({ task, onClose, onComplete, isAdminView, onEdit, onDel
     };
 
     return (
+        <>
         <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="modal-content" style={{ width: '90%', maxWidth: '600px', backgroundColor: 'white', borderRadius: '0.5rem', display: 'flex', flexDirection: 'column', maxHeight: '90vh' }}>
                 {/* Header */}
@@ -167,6 +168,7 @@ const TaskDetailModal = ({ task, onClose, onComplete, isAdminView, onEdit, onDel
                     )}
                 </div>
             </div>
+        </div>
 
             {/* Inject Admin Password Modal for Edit/Delete */}
             <PasswordConfirmModal
@@ -201,7 +203,7 @@ const TaskDetailModal = ({ task, onClose, onComplete, isAdminView, onEdit, onDel
                 onClose={() => setShowVerification(false)}
                 onVerified={handleVerifiedComplete}
             />
-        </div>
+        </>
     );
 };
 

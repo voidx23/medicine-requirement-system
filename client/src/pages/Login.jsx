@@ -21,7 +21,7 @@ const Login = () => {
         if (user) {
             // Check if there's a page they came from (e.g. /setup-device)
             const from = location.state?.from?.pathname;
-            const defaultDashboard = (user.role === 'admin') ? '/' : '/pharmacist-dashboard';
+            const defaultDashboard = (user.role === 'admin') ? '/admin' : '/pharmacist-dashboard';
             
             navigate(from || defaultDashboard, { replace: true });
         }

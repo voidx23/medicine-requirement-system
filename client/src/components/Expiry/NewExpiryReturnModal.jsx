@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Modal from '../UI/Modal';
 import Button from '../UI/Button';
 import StaffVerificationModal from '../UI/StaffVerificationModal';
+import PasswordConfirmModal from '../UI/PasswordConfirmModal';
 import api from '../../services/api';
 import { Search, Plus, Trash2, Scan, ScanLine, Edit2 } from 'lucide-react';
 
@@ -133,7 +134,7 @@ const ItemDetailsModal = ({ isOpen, onClose, onAdd, medicine }) => {
     );
 };
 
-const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], userId }) => {
+const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], userId, isAdminView = false }) => {
     const [month, setMonth] = useState(new Date().getMonth() + 1);
     const [year, setYear] = useState(new Date().getFullYear());
     const [items, setItems] = useState([]);
@@ -155,6 +156,7 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [verifyModalOpen, setVerifyModalOpen] = useState(false);
+    const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
@@ -343,7 +345,20 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
         e.preventDefault();
         if (items.length === 0) { setError('Please add at least one item.'); return; }
         setError(null);
-        setVerifyModalOpen(true);
+        if (isAdminView) {
+            setPasswordModalOpen(true);
+        } else {
+            setVerifyModalOpen(true);
+        }
+    };
+
+    const handleConfirmPassword = async (password) => {
+        const { data } = await api.post('/auth/verify-password', { password });
+        if (!data.isValid) {
+            throw new Error('Invalid Password');
+        }
+        await doSubmit('Store Admin');
+        setPasswordModalOpen(false);
     };
 
     const doSubmit = async (verifiedName) => {
@@ -607,6 +622,15 @@ const NewExpiryReturnModal = ({ isOpen, onClose, onSuccess, allMedicines = [], u
             isOpen={verifyModalOpen}
             onClose={() => setVerifyModalOpen(false)}
             onVerified={(name) => { setVerifyModalOpen(false); doSubmit(name); }}
+        />
+
+        <PasswordConfirmModal
+            isOpen={passwordModalOpen}
+            onClose={() => setPasswordModalOpen(false)}
+            onConfirm={handleConfirmPassword}
+            title="Verify Admin Action"
+            message="Please enter your admin password to submit this store expiry return."
+            confirmText="Submit Return"
         />
         </>
     );

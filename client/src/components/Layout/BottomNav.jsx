@@ -7,11 +7,11 @@ const BottomNav = () => {
   const { user, logout } = useContext(AuthContext);
 
   const adminLinks = [
-    { to: '/', icon: LayoutDashboard, label: 'Dash' },
-    { to: '/medicines', icon: Pill, label: 'Meds' },
-    { to: '/suppliers', icon: Users, label: 'Sups' },
-    { to: '/history', icon: History, label: 'Hist' },
-    { to: '/updates', icon: GitBranch, label: 'Dev' }
+    { to: '/admin', icon: LayoutDashboard, label: 'Dash' },
+    { to: '/admin/medicines', icon: Pill, label: 'Meds' },
+    { to: '/admin/suppliers', icon: Users, label: 'Sups' },
+    { to: '/admin/history', icon: History, label: 'Hist' },
+    { to: '/admin/updates', icon: GitBranch, label: 'Dev' }
   ];
 
   const pharmacistLinks = [

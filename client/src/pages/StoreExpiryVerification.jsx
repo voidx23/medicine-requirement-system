@@ -89,7 +89,7 @@ const ReturnCard = ({ ret, onVerify, onDelete, onEdit }) => {
                         {ret.items.length} items · {new Date(ret.submittedAt).toLocaleDateString()}
                     </p>
                     
-                    {ret.status === 'Submitted' && (
+                    {ret.status === 'Submitted' ? (
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <button
                                 onClick={e => { e.stopPropagation(); onEdit(ret); }}
@@ -107,6 +107,18 @@ const ReturnCard = ({ ret, onVerify, onDelete, onEdit }) => {
                                 Verify
                             </Button>
                         </div>
+                    ) : (
+                        ret.status === 'Verified' && !ret.items.some(item => item.handoverStatus === 'HandedOver') && (
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <button
+                                    onClick={e => { e.stopPropagation(); onDelete(ret._id); }}
+                                    style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '6px', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    title="Delete Verified Expiry Return"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+                        )
                     )}
                 </div>
             </div>
@@ -454,6 +466,7 @@ const StoreExpiryVerification = () => {
                     }}
                     allMedicines={allMedicines}
                     userId={user?._id}
+                    isAdminView={true}
                 />
             )}
         </div>

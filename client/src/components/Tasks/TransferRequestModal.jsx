@@ -114,6 +114,7 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
     }[anyPending ? 'pending' : (anyAccepted ? 'accepted' : 'rejected')];
 
     return (
+        <>
         <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200 }}>
             <div style={{
                 background: 'white', borderRadius: '16px', width: '90%', maxWidth: '520px',
@@ -277,6 +278,7 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                     )}
                 </div>
             </div>
+        </div>
 
             {/* Admin Password Confirm for Edit / Delete */}
             <PasswordConfirmModal
@@ -300,7 +302,7 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                     }
                 }}
             />
-        </div>
+        </>
     );
 };
 

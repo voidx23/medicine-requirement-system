@@ -2,8 +2,9 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Modal from '../UI/Modal';
 import Button from '../UI/Button';
 import PasswordConfirmModal from '../UI/PasswordConfirmModal';
+import EditCustomItemModal from './EditCustomItemModal';
 import api from '../../services/api';
-import { Search, Plus, Trash2, Scan, ScanLine, Edit3 } from 'lucide-react';
+import { Search, Plus, Trash2, Scan, ScanLine, Edit2 } from 'lucide-react';
 
 const MONTHS = [
     "January", "February", "March", "April", "May", "June",
@@ -29,6 +30,10 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
+    // Edit custom item modal state
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editingIdx, setEditingIdx] = useState(null);
 
     const searchInputRef = useRef(null);
     const highlightedRef = useRef(null);
@@ -166,11 +171,30 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
         setItems(items.map(i => i.medicineId === id ? { ...i, batchNumber: newBatch } : i));
     };
 
-    const updateCustomField = (id, field, value) => {
-        setItems(items.map(i => i.medicineId === id ? { ...i, [field]: value } : i));
+    const removeItem = (id) => setItems(items.filter(i => i.medicineId !== id));
+
+    const openEditModal = (idx) => {
+        setEditingIdx(idx);
+        setEditModalOpen(true);
     };
 
-    const removeItem = (id) => setItems(items.filter(i => i.medicineId !== id));
+    const handleEditSave = (updates) => {
+        if (editingIdx === null) return;
+        const newItems = [...items];
+        const oldKey = newItems[editingIdx].medicineId;
+        const newKey = `custom_${updates.name.toLowerCase()}`;
+        newItems[editingIdx] = {
+            ...newItems[editingIdx],
+            medicineId: newKey,
+            name: updates.name,
+            supplierId: updates.supplierId,
+            costPriceAtReturn: updates.costPriceAtReturn,
+            sellingPrice: updates.sellingPrice,
+            unitsPerBox: updates.unitsPerBox,
+            barcode: updates.barcode
+        };
+        setItems(newItems);
+    };
 
     const handleSaveClick = (e) => {
         e.preventDefault();
@@ -262,7 +286,7 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                                 value={searchTerm}
                                 onChange={e => handleSearchChange(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                style={{ width: '100%', padding: '0.65rem 1rem 0.65rem 2.25rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#fff', fontSize: '0.88rem' }}
+                                style={{ width: '100%', padding: '0.65rem 1rem 0.65rem 2.25rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#fff', fontSize: '0.88rem', boxSizing: 'border-box' }}
                             />
                             {searchTerm.trim() && (
                                 <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', marginTop: '4px', zIndex: 20, maxHeight: '200px', overflowY: 'auto' }}>
@@ -294,7 +318,8 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                         return (
                             <div key={idx} style={{ 
                                 borderBottom: '1px solid #f1f5f9',
-                                padding: '0.5rem 0.75rem'
+                                padding: '0.5rem 0.75rem',
+                                background: isCustom ? '#fffbeb' : 'transparent'
                             }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '30px 1fr 60px 60px 100px 36px', gap: '0.5rem', alignItems: 'center' }}>
                                     <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{idx + 1}</div>
@@ -302,85 +327,36 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                                         {!isCustom ? (
                                             <div style={{ fontSize: '0.82rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
                                         ) : (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                                                 <span style={{ fontSize: '0.6rem', background: '#fde68a', color: '#92400e', padding: '1px 4px', borderRadius: '3px', fontWeight: 700 }}>CUSTOM</span>
-                                                <input 
-                                                    type="text"
-                                                    value={item.name}
-                                                    onChange={(e) => updateCustomField(item.medicineId, 'name', e.target.value)}
-                                                    placeholder="Edit Name"
-                                                    style={{ fontSize: '0.8rem', padding: '0.2rem', border: '1px solid #cbd5e1', borderRadius: '4px', width: '100%' }}
-                                                />
+                                                <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>{item.name}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openEditModal(idx)}
+                                                    style={{
+                                                        display: 'inline-flex', alignItems: 'center', gap: '3px',
+                                                        padding: '1px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: 600,
+                                                        border: '1px solid #cbd5e1', background: '#f1f5f9', color: '#475569',
+                                                        cursor: 'pointer', transition: 'all 0.15s'
+                                                    }}
+                                                    title="Edit custom medicine details"
+                                                >
+                                                    <Edit2 size={10} />
+                                                    Edit
+                                                </button>
                                             </div>
                                         )}
                                     </div>
                                     <input type="number" min="0" value={item.qtySent} onChange={e => updateQty(item.medicineId, e.target.value)}
-                                        style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
+                                        style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem', boxSizing: 'border-box' }} />
                                     <input type="number" min="0" value={item.qtySentLoose} onChange={e => updateQtyLoose(item.medicineId, e.target.value)}
-                                        style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
+                                        style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem', boxSizing: 'border-box' }} />
                                     <input type="text" placeholder="Batch" value={item.batchNumber} onChange={e => updateBatch(item.medicineId, e.target.value)}
-                                        style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem' }} />
+                                        style={{ width: '100%', padding: '0.3rem', borderRadius: '4px', border: '1px solid #cbd5e1', textAlign: 'center', fontSize: '0.82rem', boxSizing: 'border-box' }} />
                                     <button type="button" onClick={() => removeItem(item.medicineId)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <Trash2 size={14} />
                                     </button>
                                 </div>
-                                {isCustom && (
-                                    <div style={{ 
-                                        background: '#f8fafc',
-                                        border: '1px dashed #cbd5e1',
-                                        borderRadius: '6px',
-                                        padding: '0.5rem',
-                                        marginTop: '0.4rem',
-                                        marginLeft: '30px',
-                                        display: 'grid',
-                                        gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr',
-                                        gap: '0.4rem',
-                                        alignItems: 'center'
-                                    }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                            <select 
-                                                value={item.supplierId || ''} 
-                                                onChange={(e) => updateCustomField(item.medicineId, 'supplierId', e.target.value)}
-                                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.7rem', background: '#fff' }}
-                                            >
-                                                <option value="">Select Supplier</option>
-                                                {suppliers.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
-                                            </select>
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                            <input 
-                                                type="number" step="0.001" min="0" placeholder="Cost"
-                                                value={item.costPriceAtReturn || ''} 
-                                                onChange={(e) => updateCustomField(item.medicineId, 'costPriceAtReturn', e.target.value)}
-                                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.7rem' }}
-                                            />
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                            <input 
-                                                type="number" step="0.001" min="0" placeholder="Selling"
-                                                value={item.sellingPrice || ''} 
-                                                onChange={(e) => updateCustomField(item.medicineId, 'sellingPrice', e.target.value)}
-                                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.7rem' }}
-                                            />
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                            <input 
-                                                type="number" min="1" placeholder="Units/Box"
-                                                value={item.unitsPerBox || ''} 
-                                                onChange={(e) => updateCustomField(item.medicineId, 'unitsPerBox', e.target.value)}
-                                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.7rem', textAlign: 'center' }}
-                                            />
-                                        </div>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                            <input 
-                                                type="text" placeholder="Barcode"
-                                                value={item.barcode || ''} 
-                                                onChange={(e) => updateCustomField(item.medicineId, 'barcode', e.target.value)}
-                                                style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.7rem' }}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         );
                     })}
@@ -403,6 +379,18 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
                 </div>
             </form>
         </Modal>
+
+        <EditCustomItemModal
+            isOpen={editModalOpen}
+            onClose={() => { setEditModalOpen(false); setEditingIdx(null); }}
+            item={editingIdx !== null ? {
+                ...items[editingIdx],
+                customName: items[editingIdx].name
+            } : null}
+            suppliers={suppliers}
+            onSave={handleEditSave}
+            showName={true}
+        />
 
         <PasswordConfirmModal
             isOpen={isPasswordModalOpen}

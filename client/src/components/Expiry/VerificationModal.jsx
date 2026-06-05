@@ -1,13 +1,19 @@
 import { useState, useEffect } from 'react';
 import Modal from '../UI/Modal';
 import Button from '../UI/Button';
+import EditCustomItemModal from './EditCustomItemModal';
 import api from '../../services/api';
+import { Edit2 } from 'lucide-react';
 
 const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
     const [items, setItems] = useState([]);
     const [storeNote, setStoreNote] = useState('');
     const [suppliers, setSuppliers] = useState([]);
     const [submitting, setSubmitting] = useState(false);
+
+    // Edit custom item modal state
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editingIdx, setEditingIdx] = useState(null);
 
     useEffect(() => {
         const fetchSuppliers = async () => {
@@ -56,9 +62,23 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
         setItems(newItems);
     };
 
-    const updateCustomField = (idx, field, value) => {
+    const openEditModal = (idx) => {
+        setEditingIdx(idx);
+        setEditModalOpen(true);
+    };
+
+    const handleEditSave = (updates) => {
+        if (editingIdx === null) return;
         const newItems = [...items];
-        newItems[idx] = { ...newItems[idx], [field]: value };
+        newItems[editingIdx] = {
+            ...newItems[editingIdx],
+            customName: updates.customName,
+            supplierId: updates.supplierId,
+            costPriceAtReturn: updates.costPriceAtReturn,
+            sellingPrice: updates.sellingPrice,
+            unitsPerBox: updates.unitsPerBox,
+            barcode: updates.barcode
+        };
         setItems(newItems);
     };
 
@@ -114,7 +134,11 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
 
     if (!expiryList) return null;
 
+    // Check if any custom items still need supplier assignment
+    const hasUnfilledCustom = items.some(i => !i.medicineId && !i.supplierId);
+
     return (
+        <>
         <Modal isOpen={isOpen} onClose={onClose} title={`Verify Box: ${expiryList.branchId?.name}`} maxWidth="800px">
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
                 
@@ -130,6 +154,7 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
                         {items.map((item, idx) => {
                             const isCustom = !item.medicineId;
                             const mismatch = item.qtyReceived !== item.qtySent || item.qtyReceivedLoose !== item.qtySentLoose;
+                            const needsSetup = isCustom && !item.supplierId;
                             return (
                                 <div key={idx} style={{ 
                                     borderBottom: idx !== items.length - 1 ? '1px solid #e2e8f0' : 'none',
@@ -151,19 +176,35 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
                                                     </div>
                                                 </>
                                             ) : (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <span style={{ fontSize: '0.65rem', background: '#fde68a', color: '#92400e', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>CUSTOM</span>
-                                                        <input 
-                                                            type="text"
-                                                            value={item.customName}
-                                                            onChange={(e) => updateCustomField(idx, 'customName', e.target.value)}
-                                                            placeholder="Edit Medicine Name"
-                                                            title="Edit Medicine Name"
-                                                            style={{ fontSize: '0.85rem', fontWeight: 600, padding: '0.2rem 0.4rem', border: '1px solid #cbd5e1', borderRadius: '4px', width: '100%', boxSizing: 'border-box' }}
-                                                        />
-                                                    </div>
-                                                    {item.batchNumber && <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 600 }}>Batch: {item.batchNumber}</div>}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                    <span style={{ fontSize: '0.65rem', background: '#fde68a', color: '#92400e', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>CUSTOM</span>
+                                                    <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-main)' }}>{item.customName || '—'}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openEditModal(idx)}
+                                                        style={{
+                                                            display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                                            padding: '2px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600,
+                                                            border: needsSetup ? '1px solid #f59e0b' : '1px solid #cbd5e1',
+                                                            background: needsSetup ? '#fef3c7' : '#f1f5f9',
+                                                            color: needsSetup ? '#b45309' : '#475569',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.15s',
+                                                            animation: needsSetup ? 'pulse 2s infinite' : 'none'
+                                                        }}
+                                                        title="Edit custom medicine details"
+                                                    >
+                                                        <Edit2 size={11} />
+                                                        {needsSetup ? 'Setup Required' : 'Edit'}
+                                                    </button>
+                                                    {item.batchNumber && (
+                                                        <span style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 600 }}>Batch: {item.batchNumber}</span>
+                                                    )}
+                                                    {item.supplierId && (
+                                                        <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#16a34a', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                                                            ✓ {suppliers.find(s => s._id === item.supplierId)?.name || 'Supplier set'}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -192,69 +233,6 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
                                             />
                                         </div>
                                     </div>
-
-                                    {isCustom && (
-                                        <div style={{ 
-                                            background: '#f8fafc',
-                                            border: '1px dashed #cbd5e1',
-                                            borderRadius: '6px',
-                                            padding: '0.75rem',
-                                            marginTop: '0.6rem',
-                                            marginLeft: '30px',
-                                            display: 'grid',
-                                            gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr',
-                                            gap: '0.5rem',
-                                            alignItems: 'center'
-                                        }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                                <label style={{ fontSize: '0.68rem', fontWeight: 600, color: '#64748b' }}>Supplier *</label>
-                                                <select 
-                                                    value={item.supplierId || ''} 
-                                                    onChange={(e) => updateCustomField(idx, 'supplierId', e.target.value)}
-                                                    style={{ padding: '0.35rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.75rem', background: '#fff' }}
-                                                >
-                                                    <option value="">Select Supplier</option>
-                                                    {suppliers.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
-                                                </select>
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                                <label style={{ fontSize: '0.68rem', fontWeight: 600, color: '#64748b' }}>Cost (OMR)</label>
-                                                <input 
-                                                    type="number" step="0.001" min="0" placeholder="0.000"
-                                                    value={item.costPriceAtReturn || ''} 
-                                                    onChange={(e) => updateCustomField(idx, 'costPriceAtReturn', e.target.value)}
-                                                    style={{ padding: '0.35rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.75rem' }}
-                                                />
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                                <label style={{ fontSize: '0.68rem', fontWeight: 600, color: '#64748b' }}>Selling (OMR)</label>
-                                                <input 
-                                                    type="number" step="0.001" min="0" placeholder="0.000"
-                                                    value={item.sellingPrice || ''} 
-                                                    onChange={(e) => updateCustomField(idx, 'sellingPrice', e.target.value)}
-                                                    style={{ padding: '0.35rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.75rem' }}
-                                                />
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                                <label style={{ fontSize: '0.68rem', fontWeight: 600, color: '#64748b' }}>Units/Box</label>
-                                                <input 
-                                                    type="number" min="1"
-                                                    value={item.unitsPerBox || ''} 
-                                                    onChange={(e) => updateCustomField(idx, 'unitsPerBox', e.target.value)}
-                                                    style={{ padding: '0.35rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.75rem', textAlign: 'center' }}
-                                                />
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                                                <label style={{ fontSize: '0.68rem', fontWeight: 600, color: '#64748b' }}>Barcode</label>
-                                                <input 
-                                                    type="text" placeholder="Optional"
-                                                    value={item.barcode || ''} 
-                                                    onChange={(e) => updateCustomField(idx, 'barcode', e.target.value)}
-                                                    style={{ padding: '0.35rem', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '0.75rem' }}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
                                 </div>
                             );
                         })}
@@ -271,6 +249,12 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
                     />
                 </div>
 
+                {hasUnfilledCustom && (
+                    <div style={{ padding: '0.65rem 1rem', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '0.82rem', color: '#92400e', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        ⚠️ Some custom items still need a supplier assigned. Click the <strong>"Setup Required"</strong> button to fill in their details.
+                    </div>
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
                     <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
                     <Button type="submit" disabled={submitting}>
@@ -279,6 +263,16 @@ const VerificationModal = ({ isOpen, onClose, onSuccess, expiryList }) => {
                 </div>
             </form>
         </Modal>
+
+        <EditCustomItemModal
+            isOpen={editModalOpen}
+            onClose={() => { setEditModalOpen(false); setEditingIdx(null); }}
+            item={editingIdx !== null ? items[editingIdx] : null}
+            suppliers={suppliers}
+            onSave={handleEditSave}
+            showName={true}
+        />
+        </>
     );
 };
 
