@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, Pill, History, GitBranch, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, PackageX, ArrowRightLeft } from 'lucide-react';
+import { LayoutDashboard, Users, Pill, History, GitBranch, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, PackageX, ArrowRightLeft, CalendarDays } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
 import { useContext, useState, useEffect, useRef } from 'react';
 import AuthContext from '../../context/AuthContext';
@@ -88,8 +88,7 @@ const Sidebar = () => {
       label: 'Pharmacy Network',
       superAdminOnly: true,
       subLinks: [
-        { to: '/admin/branches', label: 'Branches' },
-        { to: '/admin/pharmacists', label: 'Pharmacists' }
+        { to: '/admin/branches', label: 'Branches' }
       ]
     },
     { 
@@ -123,6 +122,7 @@ const Sidebar = () => {
         { to: '/admin/reports/audit', label: 'Medicine Audit' }
       ]
     },
+    { to: '/admin/duty-scheduler', icon: CalendarDays, label: 'Workforce Management', superAdminOnly: true },
     { to: '/admin/feedback', icon: MessageSquare, label: 'Feedback', superAdminOnly: true },
     { to: '/admin/updates', icon: GitBranch, label: 'Dev Updates', superAdminOnly: true },
   ];

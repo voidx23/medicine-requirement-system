@@ -27,6 +27,7 @@ import AdminTasks from './pages/AdminTasks';
 import StoreExpiryVerification from './pages/StoreExpiryVerification';
 import HandoverPreparation from './pages/HandoverPreparation';
 import SupplierExpiryReport from './pages/SupplierExpiryReport';
+import DutyScheduler from './pages/DutyScheduler';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -188,6 +189,7 @@ const App = () => {
                         <Route path="handover" element={<HandoverPreparation />} />
                         <Route path="reports/supplier-expiry" element={<SupplierExpiryReport />} />
                         <Route path="reports" element={<Reports />} />
+                        <Route path="duty-scheduler" element={<DutyScheduler />} />
                         <Route path="reports/audit" element={<MedicineAudit />} />
 
                         {/* Super Admin ONLY routes */}

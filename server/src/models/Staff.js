@@ -18,6 +18,14 @@ const staffSchema = mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    designation: {
+        type: String,
+        default: 'General Pharma'
+    },
+    rating: {
+        type: Number,
+        default: 5.0
     }
 }, {
     timestamps: true

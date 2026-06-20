@@ -181,7 +181,6 @@ const AdminEditExpiryModal = ({ isOpen, onClose, onSuccess, allMedicines = [], e
     const handleEditSave = (updates) => {
         if (editingIdx === null) return;
         const newItems = [...items];
-        const oldKey = newItems[editingIdx].medicineId;
         const newKey = `custom_${updates.name.toLowerCase()}`;
         newItems[editingIdx] = {
             ...newItems[editingIdx],

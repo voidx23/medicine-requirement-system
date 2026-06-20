@@ -14,6 +14,7 @@ import storeStaffRoutes from './routes/storeStaffRoutes.js';
 import branchRoutes from './routes/branchRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import expiryRoutes from './routes/expiryRoutes.js';
+import dutyScheduleRoutes from './routes/dutyScheduleRoutes.js';
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/store-staff', storeStaffRoutes);
 app.use('/api/branches', branchRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/expiry', expiryRoutes);
+app.use('/api/duty-schedules', dutyScheduleRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {

@@ -30,18 +30,22 @@ const getStaff = async (req, res) => {
 // @route   POST /api/staff
 // @access  Private (Admin only ideally, but we'll allow flexible for now)
 const addStaff = async (req, res) => {
-    const { name, pin } = req.body;
+    const { name, pin, designation, rating } = req.body;
 
     try {
         const staff = await Staff.create({
             name,
             pin,
+            designation,
+            rating,
             branches: [] // Start with empty branches
         });
 
         res.status(201).json({
             _id: staff._id,
             name: staff.name,
+            designation: staff.designation,
+            rating: staff.rating,
             branches: staff.branches
         });
     } catch (error) {
@@ -53,7 +57,7 @@ const addStaff = async (req, res) => {
 // @route   PUT /api/staff/:id
 // @access  Private (Admin)
 const updateStaff = async (req, res) => {
-    const { name, pin } = req.body;
+    const { name, pin, designation, rating } = req.body;
 
     try {
         const staff = await Staff.findById(req.params.id);
@@ -64,12 +68,16 @@ const updateStaff = async (req, res) => {
 
         if (name) staff.name = name;
         if (pin) staff.pin = pin;
+        if (designation !== undefined) staff.designation = designation;
+        if (rating !== undefined) staff.rating = rating;
 
         await staff.save();
 
         res.json({
             _id: staff._id,
             name: staff.name,
+            designation: staff.designation,
+            rating: staff.rating,
             branches: staff.branches
         });
     } catch (error) {
