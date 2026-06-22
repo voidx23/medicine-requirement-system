@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect, forwardRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import {
   CalendarDays, ChevronLeft, ChevronRight, Plus, X, Edit2, Trash2,
   UserPlus, Users, TrendingUp, Sun, Sunset, Search,
@@ -53,7 +55,8 @@ const mapRealPharmacist = (staff, index) => {
     defaultBranchObj: staff.defaultBranch || null,
     defaultShiftType: staff.defaultShiftType || '',
     defaultFromTime: staff.defaultFromTime || '',
-    defaultToTime: staff.defaultToTime || ''
+    defaultToTime: staff.defaultToTime || '',
+    defaultOffDay: staff.defaultOffDay || ''
   };
 };
 
@@ -121,7 +124,15 @@ const DAY_NAMES_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 // ─── Main Component ──────────────────────────────────────────────────────────
 const DutyScheduler = () => {
   const today = new Date();
-  const [viewMode, setViewMode] = useState('monthly');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const viewMode = (tabParam === 'staffs' || tabParam === 'pharmacists') ? 'pharmacists' 
+                    : ['monthly', 'weekly', 'matrix'].includes(tabParam) ? tabParam 
+                    : 'monthly';
+
+  const setViewMode = (mode) => {
+    setSearchParams({ tab: mode === 'pharmacists' ? 'staffs' : mode });
+  };
   const [currentDate, setCurrentDate] = useState(today);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -1666,6 +1677,7 @@ const ManagePharmacistsView = ({ pharmacists, branches, onRefresh }) => {
   const [newStaffDefaultShift, setNewStaffDefaultShift] = useState('');
   const [newStaffDefaultFrom, setNewStaffDefaultFrom] = useState('');
   const [newStaffDefaultTo, setNewStaffDefaultTo] = useState('');
+  const [newStaffOffDay, setNewStaffOffDay] = useState('');
 
   // Editing staff states
   const [editingStaffId, setEditingStaffId] = useState('');
@@ -1685,6 +1697,7 @@ const ManagePharmacistsView = ({ pharmacists, branches, onRefresh }) => {
   const [editStaffDefaultShift, setEditStaffDefaultShift] = useState('');
   const [editStaffDefaultFrom, setEditStaffDefaultFrom] = useState('');
   const [editStaffDefaultTo, setEditStaffDefaultTo] = useState('');
+  const [editStaffOffDay, setEditStaffOffDay] = useState('');
 
   const handleFileChange = (e, setPic) => {
     const file = e.target.files[0];
@@ -1716,7 +1729,8 @@ const ManagePharmacistsView = ({ pharmacists, branches, onRefresh }) => {
         defaultBranch: newStaffDefaultBranch || undefined,
         defaultShiftType: newStaffDefaultShift || undefined,
         defaultFromTime: newStaffDefaultFrom || undefined,
-        defaultToTime: newStaffDefaultTo || undefined
+        defaultToTime: newStaffDefaultTo || undefined,
+        defaultOffDay: newStaffOffDay || undefined
       };
       await api.post('/staff', payload);
       setIsAddModalOpen(false);
@@ -1738,6 +1752,7 @@ const ManagePharmacistsView = ({ pharmacists, branches, onRefresh }) => {
       setNewStaffDefaultShift('');
       setNewStaffDefaultFrom('');
       setNewStaffDefaultTo('');
+      setNewStaffOffDay('');
 
       await onRefresh();
       alert('Pharmacist Registered Successfully');
@@ -1764,6 +1779,7 @@ const ManagePharmacistsView = ({ pharmacists, branches, onRefresh }) => {
     setEditStaffDefaultShift(staff.defaultShiftType || '');
     setEditStaffDefaultFrom(staff.defaultFromTime || '');
     setEditStaffDefaultTo(staff.defaultToTime || '');
+    setEditStaffOffDay(staff.defaultOffDay || '');
     setIsEditModalOpen(true);
   };
 
@@ -1785,7 +1801,8 @@ const ManagePharmacistsView = ({ pharmacists, branches, onRefresh }) => {
         defaultBranch: editStaffDefaultBranch || null,
         defaultShiftType: editStaffDefaultShift,
         defaultFromTime: editStaffDefaultFrom,
-        defaultToTime: editStaffDefaultTo
+        defaultToTime: editStaffDefaultTo,
+        defaultOffDay: editStaffOffDay
       };
       if (editStaffPin) payload.pin = editStaffPin;
       await api.put(`/staff/${editingStaffId}`, payload);
@@ -1807,6 +1824,7 @@ const ManagePharmacistsView = ({ pharmacists, branches, onRefresh }) => {
       setEditStaffDefaultShift('');
       setEditStaffDefaultFrom('');
       setEditStaffDefaultTo('');
+      setEditStaffOffDay('');
       await onRefresh();
       alert('Pharmacist Updated Successfully');
     } catch (error) {
@@ -1885,7 +1903,21 @@ const ManagePharmacistsView = ({ pharmacists, branches, onRefresh }) => {
                 <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{p.designation}</td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 600 }}>{p.rating} ★</td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  {p.defaultBranchObj?.name || 'Flexible'}
+                  <div>{p.defaultBranchObj?.name || 'Flexible'}</div>
+                  {p.defaultOffDay && (
+                    <span style={{
+                      display: 'inline-block',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      background: 'rgba(239,68,68,0.08)',
+                      color: '#dc2626',
+                      padding: '1px 5px',
+                      borderRadius: '4px',
+                      marginTop: '3px'
+                    }}>
+                      Off: {p.defaultOffDay}
+                    </span>
+                  )}
                 </td>
                 <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
                   <span style={{
@@ -1922,133 +1954,148 @@ const ManagePharmacistsView = ({ pharmacists, branches, onRefresh }) => {
       </div>
 
       {/* Add Modal */}
-      {isAddModalOpen && (
+      {isAddModalOpen && createPortal(
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000
         }}>
-          <div className="glass-panel" style={{ width: '640px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: '#fff', borderRadius: '14px', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="glass-panel" style={{ width: '850px', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', background: '#fff', borderRadius: '14px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
             <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>Register New Staff</h3>
             
-            <form onSubmit={handleAddStaff} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-                {/* Left Column */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#f3f4f6', border: '1.5px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                      {newStaffProfilePic ? (
-                        <img src={newStaffProfilePic} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                      ) : (
-                        <Users size={22} color="#9ca3af" />
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Profile Photo</span>
+            <form onSubmit={handleAddStaff} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              {/* Row 1: Basic Info */}
+              <div style={{ display: 'grid', gridTemplateColumns: '170px 1.5fr 1fr 1.2fr 80px', gap: '0.85rem', alignItems: 'end' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f3f4f6', border: '1.5px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                    {newStaffProfilePic ? (
+                      <img src={newStaffProfilePic} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                    ) : (
+                      <Users size={18} color="#9ca3af" />
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)' }}>Profile Photo</span>
+                    <label style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      background: 'rgba(99, 102, 241, 0.1)',
+                      color: 'var(--primary)',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      textAlign: 'center'
+                    }}>
+                      Upload
                       <input
                         type="file"
                         accept="image/*"
                         onChange={e => handleFileChange(e, setNewStaffProfilePic)}
-                        style={{ fontSize: '0.72rem' }}
+                        style={{ display: 'none' }}
                       />
-                    </div>
+                    </label>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Name</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Name</span>
+                  <input
+                    type="text" required placeholder="e.g. Sarah Connor"
+                    value={newStaffName} onChange={e => setNewStaffName(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>PIN Code</span>
+                  <input
+                    type="password" required placeholder="PIN Code"
+                    value={newStaffPin} onChange={e => setNewStaffPin(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Designation</span>
+                  <input
+                    type="text" placeholder="e.g. Senior Pharmacist"
+                    value={newStaffDesignation} onChange={e => setNewStaffDesignation(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Rating</span>
+                  <input
+                    type="number" step="0.1" min="1" max="5" required placeholder="4.8"
+                    value={newStaffRating} onChange={e => setNewStaffRating(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Document Details */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', background: 'rgba(0,0,0,0.015)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                {/* Column 1: License */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 750, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>License Details</span>
+                  <input
+                    type="text" placeholder="License Number"
+                    value={newStaffLicenseNum} onChange={e => setNewStaffLicenseNum(e.target.value)}
+                    style={{ padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Expiry</span>
                     <input
-                      type="text" required placeholder="e.g. Sarah Connor"
-                      value={newStaffName} onChange={e => setNewStaffName(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>PIN Code</span>
-                    <input
-                      type="password" required placeholder="4-6 digit numeric PIN"
-                      value={newStaffPin} onChange={e => setNewStaffPin(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Designation</span>
-                    <input
-                      type="text" placeholder="e.g. Senior Pharmacist"
-                      value={newStaffDesignation} onChange={e => setNewStaffDesignation(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Rating</span>
-                    <input
-                      type="number" step="0.1" min="1" max="5" required placeholder="e.g. 4.8"
-                      value={newStaffRating} onChange={e => setNewStaffRating(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
+                      type="date"
+                      value={newStaffLicenseExpiry} onChange={e => setNewStaffLicenseExpiry(e.target.value)}
+                      style={{ flex: 1, padding: '0.3rem 0.45rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
                     />
                   </div>
                 </div>
 
-                {/* Right Column */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>License Number</span>
-                    <input
-                      type="text" placeholder="License Number"
-                      value={newStaffLicenseNum} onChange={e => setNewStaffLicenseNum(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>License Expiry Date</span>
-                    <input
-                      type="date"
-                      value={newStaffLicenseExpiry} onChange={e => setNewStaffLicenseExpiry(e.target.value)}
-                      style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Passport Number</span>
-                    <input
-                      type="text" placeholder="Passport Number"
-                      value={newStaffPassportNum} onChange={e => setNewStaffPassportNum(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Passport Expiry Date</span>
+                {/* Column 2: Passport */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 750, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Passport Details</span>
+                  <input
+                    type="text" placeholder="Passport Number"
+                    value={newStaffPassportNum} onChange={e => setNewStaffPassportNum(e.target.value)}
+                    style={{ padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Expiry</span>
                     <input
                       type="date"
                       value={newStaffPassportExpiry} onChange={e => setNewStaffPassportExpiry(e.target.value)}
-                      style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
+                      style={{ flex: 1, padding: '0.3rem 0.45rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
                     />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>ID Card / National ID Number</span>
-                    <input
-                      type="text" placeholder="ID Number"
-                      value={newStaffIdCardNum} onChange={e => setNewStaffIdCardNum(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>ID Expiry Date</span>
+                </div>
+
+                {/* Column 3: National ID */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 750, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>ID Card Details</span>
+                  <input
+                    type="text" placeholder="ID Number"
+                    value={newStaffIdCardNum} onChange={e => setNewStaffIdCardNum(e.target.value)}
+                    style={{ padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Expiry</span>
                     <input
                       type="date"
                       value={newStaffIdCardExpiry} onChange={e => setNewStaffIdCardExpiry(e.target.value)}
-                      style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
+                      style={{ flex: 1, padding: '0.3rem 0.45rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Fixed Schedule Settings (Full Width) */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(99,102,241,0.03)', border: '1px solid rgba(99,102,241,0.1)', padding: '0.85rem', borderRadius: '10px' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fixed Schedule Settings (Defaults)</span>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+              {/* Row 3: Fixed Schedule Settings */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', background: 'rgba(99,102,241,0.02)', border: '1px solid rgba(99,102,241,0.08)', padding: '0.65rem 0.85rem', borderRadius: '10px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 750, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>Fixed Schedule Settings (Defaults)</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.9fr 1.1fr 1.2fr', gap: '0.75rem', alignItems: 'end' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Branch</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Branch</span>
                     <select
                       value={newStaffDefaultBranch} onChange={e => setNewStaffDefaultBranch(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.85rem', outline: 'none' }}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.8rem', outline: 'none' }}
                     >
                       <option value="">Flexible (None)</option>
                       {branches.map(b => (
@@ -2057,184 +2104,216 @@ const ManagePharmacistsView = ({ pharmacists, branches, onRefresh }) => {
                     </select>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Shift</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Shift</span>
                     <select
                       value={newStaffDefaultShift} onChange={e => setNewStaffDefaultShift(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.85rem', outline: 'none' }}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.8rem', outline: 'none' }}
                     >
                       <option value="">None</option>
                       <option value="morning">Morning</option>
                       <option value="evening">Evening</option>
                     </select>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>From</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Off Day</span>
+                    <select
+                      value={newStaffOffDay} onChange={e => setNewStaffOffDay(e.target.value)}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.8rem', outline: 'none' }}
+                    >
+                      <option value="">None (Flexible)</option>
+                      <option value="Monday">Monday</option>
+                      <option value="Tuesday">Tuesday</option>
+                      <option value="Wednesday">Wednesday</option>
+                      <option value="Thursday">Thursday</option>
+                      <option value="Friday">Friday</option>
+                      <option value="Saturday">Saturday</option>
+                      <option value="Sunday">Sunday</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>From</span>
                       <input
                         type="time" value={newStaffDefaultFrom} onChange={e => setNewStaffDefaultFrom(e.target.value)}
-                        style={{ padding: '0.35rem 0.45rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '0.3rem 0.4rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
                       />
                     </div>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>To</span>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>To</span>
                       <input
                         type="time" value={newStaffDefaultTo} onChange={e => setNewStaffDefaultTo(e.target.value)}
-                        style={{ padding: '0.35rem 0.45rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '0.3rem 0.4rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Remarks Textarea */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Remarks & Performance Issues</span>
-                <textarea
-                  placeholder="Record any warnings, remarks, or specific scheduling restrictions here..."
-                  value={newStaffRemarks} onChange={e => setNewStaffRemarks(e.target.value)}
-                  rows={2}
-                  style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem', fontFamily: 'inherit', resize: 'vertical' }}
-                />
-              </div>
-
-              {/* Submit Buttons */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button type="button" onClick={() => setIsAddModalOpen(false)} style={{ padding: '0.4rem 0.9rem', border: 'none', borderRadius: '6px', background: 'rgba(0,0,0,0.05)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>Cancel</button>
-                <button type="submit" style={{ padding: '0.4rem 1.1rem', border: 'none', borderRadius: '6px', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>Register</button>
+              {/* Row 4: Remarks & Actions */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem', alignItems: 'end' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Remarks & Performance Issues</span>
+                  <input
+                    type="text"
+                    placeholder="Record any warnings, remarks, or specific scheduling restrictions..."
+                    value={newStaffRemarks} onChange={e => setNewStaffRemarks(e.target.value)}
+                    style={{ padding: '0.4rem 0.65rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button type="button" onClick={() => setIsAddModalOpen(false)} style={{ padding: '0.45rem 1rem', border: 'none', borderRadius: '6px', background: 'rgba(0,0,0,0.05)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>Cancel</button>
+                  <button type="submit" style={{ padding: '0.45rem 1.25rem', border: 'none', borderRadius: '6px', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>Register</button>
+                </div>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Edit Modal */}
-      {isEditModalOpen && (
+      {isEditModalOpen && createPortal(
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000
         }}>
-          <div className="glass-panel" style={{ width: '640px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: '#fff', borderRadius: '14px', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="glass-panel" style={{ width: '850px', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', background: '#fff', borderRadius: '14px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
             <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>Edit Staff Member</h3>
             
-            <form onSubmit={handleUpdateStaff} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
-                {/* Left Column */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#f3f4f6', border: '1.5px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                      {editStaffProfilePic ? (
-                        <img src={editStaffProfilePic} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                      ) : (
-                        <Users size={22} color="#9ca3af" />
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Profile Photo</span>
+            <form onSubmit={handleUpdateStaff} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              {/* Row 1: Basic Info */}
+              <div style={{ display: 'grid', gridTemplateColumns: '170px 1.5fr 1fr 1.2fr 80px', gap: '0.85rem', alignItems: 'end' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f3f4f6', border: '1.5px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                    {editStaffProfilePic ? (
+                      <img src={editStaffProfilePic} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                    ) : (
+                      <Users size={18} color="#9ca3af" />
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)' }}>Profile Photo</span>
+                    <label style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      background: 'rgba(99, 102, 241, 0.1)',
+                      color: 'var(--primary)',
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      textAlign: 'center'
+                    }}>
+                      Upload
                       <input
                         type="file"
                         accept="image/*"
                         onChange={e => handleFileChange(e, setEditStaffProfilePic)}
-                        style={{ fontSize: '0.72rem' }}
+                        style={{ display: 'none' }}
                       />
-                    </div>
+                    </label>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Name</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Name</span>
+                  <input
+                    type="text" required placeholder="e.g. Sarah Connor"
+                    value={editStaffName} onChange={e => setEditStaffName(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Change PIN (Optional)</span>
+                  <input
+                    type="password" placeholder="Leave blank to keep current"
+                    value={editStaffPin} onChange={e => setEditStaffPin(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Designation</span>
+                  <input
+                    type="text" placeholder="e.g. Senior Pharmacist"
+                    value={editStaffDesignation} onChange={e => setEditStaffDesignation(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Rating</span>
+                  <input
+                    type="number" step="0.1" min="1" max="5" required placeholder="4.8"
+                    value={editStaffRating} onChange={e => setEditStaffRating(e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Document Details */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', background: 'rgba(0,0,0,0.015)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.05)' }}>
+                {/* Column 1: License */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 750, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>License Details</span>
+                  <input
+                    type="text" placeholder="License Number"
+                    value={editStaffLicenseNum} onChange={e => setEditStaffLicenseNum(e.target.value)}
+                    style={{ padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Expiry</span>
                     <input
-                      type="text" required placeholder="e.g. Sarah Connor"
-                      value={editStaffName} onChange={e => setEditStaffName(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Change PIN (Optional)</span>
-                    <input
-                      type="password" placeholder="Leave blank to keep current"
-                      value={editStaffPin} onChange={e => setEditStaffPin(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Designation</span>
-                    <input
-                      type="text" placeholder="e.g. Senior Pharmacist"
-                      value={editStaffDesignation} onChange={e => setEditStaffDesignation(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Rating</span>
-                    <input
-                      type="number" step="0.1" min="1" max="5" required placeholder="e.g. 4.8"
-                      value={editStaffRating} onChange={e => setEditStaffRating(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
+                      type="date"
+                      value={editStaffLicenseExpiry} onChange={e => setEditStaffLicenseExpiry(e.target.value)}
+                      style={{ flex: 1, padding: '0.3rem 0.45rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
                     />
                   </div>
                 </div>
 
-                {/* Right Column */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>License Number</span>
-                    <input
-                      type="text" placeholder="License Number"
-                      value={editStaffLicenseNum} onChange={e => setEditStaffLicenseNum(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>License Expiry Date</span>
-                    <input
-                      type="date"
-                      value={editStaffLicenseExpiry} onChange={e => setEditStaffLicenseExpiry(e.target.value)}
-                      style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Passport Number</span>
-                    <input
-                      type="text" placeholder="Passport Number"
-                      value={editStaffPassportNum} onChange={e => setEditStaffPassportNum(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Passport Expiry Date</span>
+                {/* Column 2: Passport */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 750, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Passport Details</span>
+                  <input
+                    type="text" placeholder="Passport Number"
+                    value={editStaffPassportNum} onChange={e => setEditStaffPassportNum(e.target.value)}
+                    style={{ padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Expiry</span>
                     <input
                       type="date"
                       value={editStaffPassportExpiry} onChange={e => setEditStaffPassportExpiry(e.target.value)}
-                      style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
+                      style={{ flex: 1, padding: '0.3rem 0.45rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
                     />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>ID Card / National ID Number</span>
-                    <input
-                      type="text" placeholder="ID Number"
-                      value={editStaffIdCardNum} onChange={e => setEditStaffIdCardNum(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>ID Expiry Date</span>
+                </div>
+
+                {/* Column 3: National ID */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 750, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>ID Card Details</span>
+                  <input
+                    type="text" placeholder="ID Number"
+                    value={editStaffIdCardNum} onChange={e => setEditStaffIdCardNum(e.target.value)}
+                    style={{ padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Expiry</span>
                     <input
                       type="date"
                       value={editStaffIdCardExpiry} onChange={e => setEditStaffIdCardExpiry(e.target.value)}
-                      style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem' }}
+                      style={{ flex: 1, padding: '0.3rem 0.45rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Fixed Schedule Settings (Full Width) */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(99,102,241,0.03)', border: '1px solid rgba(99,102,241,0.1)', padding: '0.85rem', borderRadius: '10px' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fixed Schedule Settings (Defaults)</span>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+              {/* Row 3: Fixed Schedule Settings */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', background: 'rgba(99,102,241,0.02)', border: '1px solid rgba(99,102,241,0.08)', padding: '0.65rem 0.85rem', borderRadius: '10px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 750, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>Fixed Schedule Settings (Defaults)</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.9fr 1.1fr 1.2fr', gap: '0.75rem', alignItems: 'end' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Branch</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Branch</span>
                     <select
                       value={editStaffDefaultBranch} onChange={e => setEditStaffDefaultBranch(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.85rem', outline: 'none' }}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.8rem', outline: 'none' }}
                     >
                       <option value="">Flexible (None)</option>
                       {branches.map(b => (
@@ -2243,54 +2322,71 @@ const ManagePharmacistsView = ({ pharmacists, branches, onRefresh }) => {
                     </select>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Shift</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Shift</span>
                     <select
                       value={editStaffDefaultShift} onChange={e => setEditStaffDefaultShift(e.target.value)}
-                      style={{ padding: '0.45rem 0.6rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.85rem', outline: 'none' }}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.8rem', outline: 'none' }}
                     >
                       <option value="">None</option>
                       <option value="morning">Morning</option>
                       <option value="evening">Evening</option>
                     </select>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>From</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Off Day</span>
+                    <select
+                      value={editStaffOffDay} onChange={e => setEditStaffOffDay(e.target.value)}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.8rem', outline: 'none' }}
+                    >
+                      <option value="">None (Flexible)</option>
+                      <option value="Monday">Monday</option>
+                      <option value="Tuesday">Tuesday</option>
+                      <option value="Wednesday">Wednesday</option>
+                      <option value="Thursday">Thursday</option>
+                      <option value="Friday">Friday</option>
+                      <option value="Saturday">Saturday</option>
+                      <option value="Sunday">Sunday</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>From</span>
                       <input
                         type="time" value={editStaffDefaultFrom} onChange={e => setEditStaffDefaultFrom(e.target.value)}
-                        style={{ padding: '0.35rem 0.45rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '0.3rem 0.4rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
                       />
                     </div>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>To</span>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>To</span>
                       <input
                         type="time" value={editStaffDefaultTo} onChange={e => setEditStaffDefaultTo(e.target.value)}
-                        style={{ padding: '0.35rem 0.45rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
+                        style={{ width: '100%', boxSizing: 'border-box', padding: '0.3rem 0.4rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Remarks Textarea */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>Remarks & Performance Issues</span>
-                <textarea
-                  placeholder="Record any warnings, remarks, or specific scheduling restrictions here..."
-                  value={editStaffRemarks} onChange={e => setEditStaffRemarks(e.target.value)}
-                  rows={2}
-                  style={{ padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.85rem', fontFamily: 'inherit', resize: 'vertical' }}
-                />
-              </div>
-
-              {/* Submit Buttons */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button type="button" onClick={() => setIsEditModalOpen(false)} style={{ padding: '0.4rem 0.9rem', border: 'none', borderRadius: '6px', background: 'rgba(0,0,0,0.05)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>Cancel</button>
-                <button type="submit" style={{ padding: '0.4rem 1.1rem', border: 'none', borderRadius: '6px', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>Save</button>
+              {/* Row 4: Remarks & Actions */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem', alignItems: 'end' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Remarks & Performance Issues</span>
+                  <input
+                    type="text"
+                    placeholder="Record any warnings, remarks, or specific scheduling restrictions..."
+                    value={editStaffRemarks} onChange={e => setEditStaffRemarks(e.target.value)}
+                    style={{ padding: '0.4rem 0.65rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button type="button" onClick={() => setIsEditModalOpen(false)} style={{ padding: '0.45rem 1rem', border: 'none', borderRadius: '6px', background: 'rgba(0,0,0,0.05)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>Cancel</button>
+                  <button type="submit" style={{ padding: '0.45rem 1.25rem', border: 'none', borderRadius: '6px', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>Save</button>
+                </div>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

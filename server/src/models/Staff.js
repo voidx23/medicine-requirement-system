@@ -71,6 +71,10 @@ const staffSchema = mongoose.Schema({
     defaultToTime: {
         type: String,
         default: ''
+    },
+    defaultOffDay: {
+        type: String,
+        default: ''
     }
 }, {
     timestamps: true

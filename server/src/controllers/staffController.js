@@ -37,7 +37,7 @@ const addStaff = async (req, res) => {
         name, pin, designation, rating,
         profilePicture, licenseNumber, licenseExpiry,
         passportNumber, passportExpiry, idCardNumber, idCardExpiry,
-        remarks, defaultBranch, defaultShiftType, defaultFromTime, defaultToTime
+        remarks, defaultBranch, defaultShiftType, defaultFromTime, defaultToTime, defaultOffDay
     } = req.body;
 
     try {
@@ -58,6 +58,7 @@ const addStaff = async (req, res) => {
             defaultShiftType,
             defaultFromTime,
             defaultToTime,
+            defaultOffDay,
             branches: [] // Start with empty branches
         });
 
@@ -75,7 +76,7 @@ const updateStaff = async (req, res) => {
         name, pin, designation, rating,
         profilePicture, licenseNumber, licenseExpiry,
         passportNumber, passportExpiry, idCardNumber, idCardExpiry,
-        remarks, defaultBranch, defaultShiftType, defaultFromTime, defaultToTime
+        remarks, defaultBranch, defaultShiftType, defaultFromTime, defaultToTime, defaultOffDay
     } = req.body;
 
     try {
@@ -101,6 +102,7 @@ const updateStaff = async (req, res) => {
         if (defaultShiftType !== undefined) staff.defaultShiftType = defaultShiftType;
         if (defaultFromTime !== undefined) staff.defaultFromTime = defaultFromTime;
         if (defaultToTime !== undefined) staff.defaultToTime = defaultToTime;
+        if (defaultOffDay !== undefined) staff.defaultOffDay = defaultOffDay;
 
         await staff.save();
 

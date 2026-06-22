@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, Pill, History, GitBranch, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, PackageX, ArrowRightLeft, CalendarDays } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
 import { useContext, useState, useEffect, useRef } from 'react';
@@ -76,6 +76,8 @@ const Sidebar = () => {
       return () => clearInterval(intervalId);
   }, [user, navigate]);
 
+  const location = useLocation();
+  
   const rawLinks = [
     { to: '/admin', icon: LayoutDashboard, label: 'Daily Requirement List', reqPerm: 'dashboard' },
     { to: '/admin/tasks', icon: CheckSquare, label: 'Tasks', reqPerm: 'tasks' },
@@ -83,11 +85,13 @@ const Sidebar = () => {
     { to: '/admin/suppliers', icon: Truck, label: 'Suppliers', reqPerm: 'suppliers' },
     { to: '/admin/medicines', icon: Pill, label: 'Medicines', reqPerm: 'medicines' },
     { 
-      id: 'pharmacy-network', 
-      icon: Users, 
-      label: 'Pharmacy Network',
+      id: 'workforce-management', 
+      icon: CalendarDays, 
+      label: 'Workforce Management',
       superAdminOnly: true,
       subLinks: [
+        { to: '/admin/duty-scheduler', label: 'Duty Scheduler' },
+        { to: '/admin/duty-scheduler?tab=staffs', label: 'Staffs' },
         { to: '/admin/branches', label: 'Branches' }
       ]
     },
@@ -122,7 +126,6 @@ const Sidebar = () => {
         { to: '/admin/reports/audit', label: 'Medicine Audit' }
       ]
     },
-    { to: '/admin/duty-scheduler', icon: CalendarDays, label: 'Workforce Management', superAdminOnly: true },
     { to: '/admin/feedback', icon: MessageSquare, label: 'Feedback', superAdminOnly: true },
     { to: '/admin/updates', icon: GitBranch, label: 'Dev Updates', superAdminOnly: true },
   ];
@@ -138,10 +141,27 @@ const Sidebar = () => {
       return true; // dashboard/superAdmin logic handled above
   });
 
-  const [isReportsOpen, setIsReportsOpen] = useState(false);
-  const [isNetworkOpen, setIsNetworkOpen] = useState(false);
-  const [isStoreAdminOpen, setIsStoreAdminOpen] = useState(false);
-  const [isExpiryOpen, setIsExpiryOpen] = useState(false);
+  const [isReportsOpen, setIsReportsOpen] = useState(location.pathname.startsWith('/admin/reports'));
+  const [isWorkforceOpen, setIsWorkforceOpen] = useState(
+    location.pathname.includes('/admin/duty-scheduler') || 
+    location.pathname.includes('/admin/branches')
+  );
+  const [isStoreAdminOpen, setIsStoreAdminOpen] = useState(location.pathname.startsWith('/admin/store-staff'));
+  const [isExpiryOpen, setIsExpiryOpen] = useState(
+    location.pathname.startsWith('/admin/expiry-verification') || 
+    location.pathname.startsWith('/admin/handover')
+  );
+
+  const isSubActive = (subTo) => {
+    const currentPath = location.pathname + location.search;
+    if (subTo.includes('?')) {
+      return currentPath === subTo;
+    }
+    if (subTo === '/admin/duty-scheduler') {
+      return location.pathname === '/admin/duty-scheduler' && !location.search.includes('tab=staffs') && !location.search.includes('tab=pharmacists');
+    }
+    return location.pathname === subTo;
+  };
 
   return (
     <aside style={{
@@ -183,13 +203,13 @@ const Sidebar = () => {
           if (link.subLinks) {
             let isOpen = false;
             if (link.id === 'reports-menu') isOpen = isReportsOpen;
-            else if (link.id === 'pharmacy-network') isOpen = isNetworkOpen;
+            else if (link.id === 'workforce-management') isOpen = isWorkforceOpen;
             else if (link.id === 'store-administration') isOpen = isStoreAdminOpen;
             else if (link.id === 'expiry-management') isOpen = isExpiryOpen;
 
             const toggleOpen = () => {
                 if (link.id === 'reports-menu') setIsReportsOpen(!isReportsOpen);
-                else if (link.id === 'pharmacy-network') setIsNetworkOpen(!isNetworkOpen);
+                else if (link.id === 'workforce-management') setIsWorkforceOpen(!isWorkforceOpen);
                 else if (link.id === 'store-administration') setIsStoreAdminOpen(!isStoreAdminOpen);
                 else if (link.id === 'expiry-management') setIsExpiryOpen(!isExpiryOpen);
             };
@@ -227,17 +247,20 @@ const Sidebar = () => {
                         key={subLink.to}
                         to={subLink.to}
                         end={subLink.to === '/admin/reports'} // Exact matching for /admin/reports so it doesn't highlight both
-                        style={({ isActive }) => ({
-                          display: 'block',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '6px',
-                          textDecoration: 'none',
-                          color: isActive ? 'var(--primary)' : 'var(--text-muted)',
-                          backgroundColor: isActive ? 'var(--primary-light)' : 'transparent',
-                          fontWeight: isActive ? 600 : 400,
-                          fontSize: '0.9rem',
-                          transition: 'all 0.2s ease'
-                        })}
+                        style={() => {
+                          const active = isSubActive(subLink.to);
+                          return {
+                            display: 'block',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '6px',
+                            textDecoration: 'none',
+                            color: active ? 'var(--primary)' : 'var(--text-muted)',
+                            backgroundColor: active ? 'var(--primary-light)' : 'transparent',
+                            fontWeight: active ? 600 : 400,
+                            fontSize: '0.9rem',
+                            transition: 'all 0.2s ease'
+                          };
+                        }}
                       >
                         {subLink.label}
                       </NavLink>
