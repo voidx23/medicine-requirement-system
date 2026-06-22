@@ -19,7 +19,10 @@ const getStaff = async (req, res) => {
             query.branches = req.query.branchId;
         }
 
-        const staff = await Staff.find(query).sort({ name: 1 }).populate('branches', 'name');
+        const staff = await Staff.find(query)
+            .sort({ name: 1 })
+            .populate('branches', 'name')
+            .populate('defaultBranch', 'name');
         res.json(staff);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
@@ -30,7 +33,12 @@ const getStaff = async (req, res) => {
 // @route   POST /api/staff
 // @access  Private (Admin only ideally, but we'll allow flexible for now)
 const addStaff = async (req, res) => {
-    const { name, pin, designation, rating } = req.body;
+    const {
+        name, pin, designation, rating,
+        profilePicture, licenseNumber, licenseExpiry,
+        passportNumber, passportExpiry, idCardNumber, idCardExpiry,
+        remarks, defaultBranch, defaultShiftType, defaultFromTime, defaultToTime
+    } = req.body;
 
     try {
         const staff = await Staff.create({
@@ -38,16 +46,22 @@ const addStaff = async (req, res) => {
             pin,
             designation,
             rating,
+            profilePicture,
+            licenseNumber,
+            licenseExpiry,
+            passportNumber,
+            passportExpiry,
+            idCardNumber,
+            idCardExpiry,
+            remarks,
+            defaultBranch: defaultBranch || undefined,
+            defaultShiftType,
+            defaultFromTime,
+            defaultToTime,
             branches: [] // Start with empty branches
         });
 
-        res.status(201).json({
-            _id: staff._id,
-            name: staff.name,
-            designation: staff.designation,
-            rating: staff.rating,
-            branches: staff.branches
-        });
+        res.status(201).json(staff);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
@@ -57,7 +71,12 @@ const addStaff = async (req, res) => {
 // @route   PUT /api/staff/:id
 // @access  Private (Admin)
 const updateStaff = async (req, res) => {
-    const { name, pin, designation, rating } = req.body;
+    const {
+        name, pin, designation, rating,
+        profilePicture, licenseNumber, licenseExpiry,
+        passportNumber, passportExpiry, idCardNumber, idCardExpiry,
+        remarks, defaultBranch, defaultShiftType, defaultFromTime, defaultToTime
+    } = req.body;
 
     try {
         const staff = await Staff.findById(req.params.id);
@@ -70,16 +89,27 @@ const updateStaff = async (req, res) => {
         if (pin) staff.pin = pin;
         if (designation !== undefined) staff.designation = designation;
         if (rating !== undefined) staff.rating = rating;
+        if (profilePicture !== undefined) staff.profilePicture = profilePicture;
+        if (licenseNumber !== undefined) staff.licenseNumber = licenseNumber;
+        if (licenseExpiry !== undefined) staff.licenseExpiry = licenseExpiry;
+        if (passportNumber !== undefined) staff.passportNumber = passportNumber;
+        if (passportExpiry !== undefined) staff.passportExpiry = passportExpiry;
+        if (idCardNumber !== undefined) staff.idCardNumber = idCardNumber;
+        if (idCardExpiry !== undefined) staff.idCardExpiry = idCardExpiry;
+        if (remarks !== undefined) staff.remarks = remarks;
+        if (defaultBranch !== undefined) staff.defaultBranch = defaultBranch || null;
+        if (defaultShiftType !== undefined) staff.defaultShiftType = defaultShiftType;
+        if (defaultFromTime !== undefined) staff.defaultFromTime = defaultFromTime;
+        if (defaultToTime !== undefined) staff.defaultToTime = defaultToTime;
 
         await staff.save();
 
-        res.json({
-            _id: staff._id,
-            name: staff.name,
-            designation: staff.designation,
-            rating: staff.rating,
-            branches: staff.branches
-        });
+        // Populate relationships before returning
+        const updatedStaff = await Staff.findById(staff._id)
+            .populate('branches', 'name')
+            .populate('defaultBranch', 'name');
+
+        res.json(updatedStaff);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
     }
