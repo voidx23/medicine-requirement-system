@@ -7,7 +7,10 @@ import Branch from '../models/Branch.js';
 // @access  Private
 const getStaff = async (req, res) => {
     try {
-        let query = { isActive: true };
+        let query = {};
+        if (req.query.all !== 'true') {
+            query.isActive = true;
+        }
         
         // If it's a branch, only show their own staff
         if (req.user.role === 'branch') {
@@ -35,9 +38,10 @@ const getStaff = async (req, res) => {
 const addStaff = async (req, res) => {
     const {
         name, pin, designation, rating,
-        profilePicture, licenseNumber, licenseExpiry,
-        passportNumber, passportExpiry, idCardNumber, idCardExpiry,
-        remarks, defaultBranch, defaultShiftType, defaultFromTime, defaultToTime, defaultOffDay
+        profilePicture, licenseNumber, licenseExpiry, licenseNotifyDays,
+        passportNumber, passportExpiry, passportNotifyDays, idCardNumber, idCardExpiry, idCardNotifyDays,
+        remarks, defaultBranch, defaultShiftType, defaultFromTime, defaultToTime, defaultOffDay,
+        employeeId, joiningDate, employmentType, status, performanceIssues
     } = req.body;
 
     try {
@@ -49,16 +53,25 @@ const addStaff = async (req, res) => {
             profilePicture,
             licenseNumber,
             licenseExpiry,
+            licenseNotifyDays,
             passportNumber,
             passportExpiry,
+            passportNotifyDays,
             idCardNumber,
             idCardExpiry,
+            idCardNotifyDays,
             remarks,
             defaultBranch: defaultBranch || undefined,
             defaultShiftType,
             defaultFromTime,
             defaultToTime,
             defaultOffDay,
+            employeeId,
+            joiningDate,
+            employmentType,
+            status,
+            isActive: status === undefined ? true : (status === 'Active'),
+            performanceIssues: performanceIssues || [],
             branches: [] // Start with empty branches
         });
 
@@ -74,9 +87,10 @@ const addStaff = async (req, res) => {
 const updateStaff = async (req, res) => {
     const {
         name, pin, designation, rating,
-        profilePicture, licenseNumber, licenseExpiry,
-        passportNumber, passportExpiry, idCardNumber, idCardExpiry,
-        remarks, defaultBranch, defaultShiftType, defaultFromTime, defaultToTime, defaultOffDay
+        profilePicture, licenseNumber, licenseExpiry, licenseNotifyDays,
+        passportNumber, passportExpiry, passportNotifyDays, idCardNumber, idCardExpiry, idCardNotifyDays,
+        remarks, defaultBranch, defaultShiftType, defaultFromTime, defaultToTime, defaultOffDay,
+        employeeId, joiningDate, employmentType, status, performanceIssues
     } = req.body;
 
     try {
@@ -93,16 +107,27 @@ const updateStaff = async (req, res) => {
         if (profilePicture !== undefined) staff.profilePicture = profilePicture;
         if (licenseNumber !== undefined) staff.licenseNumber = licenseNumber;
         if (licenseExpiry !== undefined) staff.licenseExpiry = licenseExpiry;
+        if (licenseNotifyDays !== undefined) staff.licenseNotifyDays = licenseNotifyDays;
         if (passportNumber !== undefined) staff.passportNumber = passportNumber;
         if (passportExpiry !== undefined) staff.passportExpiry = passportExpiry;
+        if (passportNotifyDays !== undefined) staff.passportNotifyDays = passportNotifyDays;
         if (idCardNumber !== undefined) staff.idCardNumber = idCardNumber;
         if (idCardExpiry !== undefined) staff.idCardExpiry = idCardExpiry;
+        if (idCardNotifyDays !== undefined) staff.idCardNotifyDays = idCardNotifyDays;
         if (remarks !== undefined) staff.remarks = remarks;
         if (defaultBranch !== undefined) staff.defaultBranch = defaultBranch || null;
         if (defaultShiftType !== undefined) staff.defaultShiftType = defaultShiftType;
         if (defaultFromTime !== undefined) staff.defaultFromTime = defaultFromTime;
         if (defaultToTime !== undefined) staff.defaultToTime = defaultToTime;
         if (defaultOffDay !== undefined) staff.defaultOffDay = defaultOffDay;
+        if (employeeId !== undefined) staff.employeeId = employeeId;
+        if (joiningDate !== undefined) staff.joiningDate = joiningDate;
+        if (employmentType !== undefined) staff.employmentType = employmentType;
+        if (performanceIssues !== undefined) staff.performanceIssues = performanceIssues;
+        if (status !== undefined) {
+            staff.status = status;
+            staff.isActive = (status === 'Active');
+        }
 
         await staff.save();
 

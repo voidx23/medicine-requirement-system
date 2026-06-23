@@ -38,6 +38,10 @@ const staffSchema = mongoose.Schema({
     licenseExpiry: {
         type: Date
     },
+    licenseNotifyDays: {
+        type: Number,
+        default: 30
+    },
     passportNumber: {
         type: String,
         default: ''
@@ -45,12 +49,20 @@ const staffSchema = mongoose.Schema({
     passportExpiry: {
         type: Date
     },
+    passportNotifyDays: {
+        type: Number,
+        default: 30
+    },
     idCardNumber: {
         type: String,
         default: ''
     },
     idCardExpiry: {
         type: Date
+    },
+    idCardNotifyDays: {
+        type: Number,
+        default: 30
     },
     remarks: {
         type: String,
@@ -75,7 +87,44 @@ const staffSchema = mongoose.Schema({
     defaultOffDay: {
         type: String,
         default: ''
-    }
+    },
+    employeeId: {
+        type: String,
+        default: ''
+    },
+    joiningDate: {
+        type: Date
+    },
+    employmentType: {
+        type: String,
+        enum: ['Full Time', 'Part Time', 'Temporary', 'Relief Pharmacist'],
+        default: 'Full Time'
+    },
+    status: {
+        type: String,
+        enum: ['Active', 'On Leave', 'Suspended', 'Resigned'],
+        default: 'Active'
+    },
+    performanceIssues: [{
+        issueType: {
+            type: String,
+            required: true,
+            default: 'General'
+        },
+        severity: {
+            type: String,
+            enum: ['Low', 'Medium', 'High'],
+            default: 'Medium'
+        },
+        date: {
+            type: Date,
+            default: Date.now
+        },
+        description: {
+            type: String,
+            required: true
+        }
+    }]
 }, {
     timestamps: true
 });

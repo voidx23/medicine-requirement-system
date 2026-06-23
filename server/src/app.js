@@ -24,7 +24,8 @@ app.get('/api/ping', (req, res) => {
 });
 
 // Middleware
-app.use(express.json()); // Body parser
+app.use(express.json({ limit: '2mb' })); // Body parser
+app.use(express.urlencoded({ limit: '2mb', extended: true }));
 app.use(cors()); // Enable CORS
 
 app.use('/api/auth', authRoutes);

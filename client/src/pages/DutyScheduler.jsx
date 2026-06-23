@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect, forwardRef } from 'react';
+import { useState, useRef, useEffect, forwardRef, Fragment } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { createPortal } from 'react-dom';
 import {
   CalendarDays, ChevronLeft, ChevronRight, Plus, X, Edit2, Trash2,
   UserPlus, Users, TrendingUp, Sun, Sunset, Search,
@@ -9,7 +8,7 @@ import {
 import api from '../services/api';
 
 
-// ─── Real Staff Mapping Helper ───────────────────────────────────────────────
+// â”€â”€â”€ Real Staff Mapping Helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const mapRealPharmacist = (staff, index) => {
   const nameParts = staff.name.split(' ');
   let initials = '';
@@ -80,6 +79,15 @@ function formatTime(t) {
   return `${hr}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
+// Format Date object to local YYYY-MM-DD string
+function formatDateKey(date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+
 // Generate initial shift assignments
 function generateMonthShifts(year, month, pharmacistsList) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -96,7 +104,7 @@ function generateMonthShifts(year, month, pharmacistsList) {
 function generateWeekShifts(weekDays, pharmacistsList) {
   const result = {};
   weekDays.forEach((date) => {
-    const key = date.toISOString().split('T')[0];
+    const key = formatDateKey(date);
     result[key] = {
       morning: null,
       evening: null
@@ -105,7 +113,7 @@ function generateWeekShifts(weekDays, pharmacistsList) {
   return result;
 }
 
-// ─── Helper Functions ────────────────────────────────────────────────────────
+// â”€â”€â”€ Helper Functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function getWeekDays(baseDate) {
   const day = baseDate.getDay();
@@ -121,17 +129,15 @@ function getWeekDays(baseDate) {
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAY_NAMES_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-// ─── Main Component ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const DutyScheduler = () => {
   const today = new Date();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
-  const viewMode = (tabParam === 'staffs' || tabParam === 'pharmacists') ? 'pharmacists' 
-                    : ['monthly', 'weekly', 'matrix'].includes(tabParam) ? tabParam 
-                    : 'monthly';
+  const viewMode = ['monthly', 'weekly', 'matrix'].includes(tabParam) ? tabParam : 'monthly';
 
   const setViewMode = (mode) => {
-    setSearchParams({ tab: mode === 'pharmacists' ? 'staffs' : mode });
+    setSearchParams({ tab: mode });
   };
   const [currentDate, setCurrentDate] = useState(today);
   const [searchQuery, setSearchQuery] = useState('');
@@ -270,14 +276,58 @@ const DutyScheduler = () => {
     }
   }, [year, month, branches, pharmacists]);
 
-  // Fallback for weekly views: initialize if empty
+  // Populate weekly views from monthly shifts on load or date change
   useEffect(() => {
-    if (!activeBranchId || pharmacists.length === 0) return;
+    if (pharmacists.length === 0 || branches.length === 0) return;
+    
     setBranchWeekShifts(prev => {
-      if (prev[activeBranchId]) return prev;
-      return { ...prev, [activeBranchId]: generateWeekShifts(weekDays, pharmacists) };
+      const updatedWeekShifts = { ...prev };
+      branches.forEach(b => {
+        const bId = b._id;
+        const monthShifts = branchMonthShifts[bId] || {};
+        const weekShifts = {};
+        
+        weekDays.forEach(d => {
+          const dateStr = formatDateKey(d);
+          const dYear = d.getFullYear();
+          const dMonth = d.getMonth();
+          const dDay = d.getDate();
+          
+          if (dYear === year && dMonth === month) {
+            weekShifts[dateStr] = monthShifts[dDay] || { morning: null, evening: null };
+          } else {
+            weekShifts[dateStr] = (prev[bId] && prev[bId][dateStr]) || { morning: null, evening: null };
+          }
+        });
+        updatedWeekShifts[bId] = weekShifts;
+      });
+      return updatedWeekShifts;
     });
-  }, [viewMode, currentDate, activeBranchId, pharmacists]);
+
+    setBranchWeekRemarks(prev => {
+      const updatedWeekRemarks = { ...prev };
+      branches.forEach(b => {
+        const bId = b._id;
+        const monthRemarks = branchMonthRemarks[bId] || {};
+        const weekRemarks = {};
+        
+        weekDays.forEach(d => {
+          const dateStr = formatDateKey(d);
+          const dYear = d.getFullYear();
+          const dMonth = d.getMonth();
+          const dDay = d.getDate();
+          
+          if (dYear === year && dMonth === month) {
+            weekRemarks[dateStr] = monthRemarks[dDay] || '';
+          } else {
+            weekRemarks[dateStr] = (prev[bId] && prev[bId][dateStr]) || '';
+          }
+        });
+        updatedWeekRemarks[bId] = weekRemarks;
+      });
+      return updatedWeekRemarks;
+    });
+  }, [branchMonthShifts, branchMonthRemarks, currentDate, pharmacists, branches]);
 
   // Reassign popover state
   const [popover, setPopover] = useState(null);
@@ -407,6 +457,7 @@ const DutyScheduler = () => {
         }
       }));
     } else {
+      // Weekly view: update weekly shifts
       setBranchWeekShifts(prev => ({
         ...prev,
         [activeBranchId]: {
@@ -417,6 +468,25 @@ const DutyScheduler = () => {
           }
         }
       }));
+
+      // Also sync to monthly shifts in memory if it falls in the current month
+      const parts = key.split('-');
+      const dYear = parseInt(parts[0], 10);
+      const dMonth = parseInt(parts[1], 10) - 1;
+      const dDay = parseInt(parts[2], 10);
+
+      if (dYear === year && dMonth === month) {
+        setBranchMonthShifts(prev => ({
+          ...prev,
+          [activeBranchId]: {
+            ...(prev[activeBranchId] || {}),
+            [dDay]: {
+              ...((prev[activeBranchId] || {})[dDay] || {}),
+              [shiftType]: assignment
+            }
+          }
+        }));
+      }
     }
   };
 
@@ -449,7 +519,7 @@ const DutyScheduler = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, gap: '1.5rem' }}>
-      {/* ── Page Header ── */}
+      {/* â”€â”€ Page Header â”€â”€ */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.6rem', margin: 0 }}>
@@ -457,7 +527,7 @@ const DutyScheduler = () => {
             Duty Scheduler
           </h1>
           <p style={{ color: 'var(--text-muted)', marginTop: '0.3rem', fontSize: '0.9rem' }}>
-            Manage pharmacist duty assignments — {MONTH_NAMES[month]} {year}
+            Manage pharmacist duty assignments â€” {MONTH_NAMES[month]} {year}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -489,7 +559,7 @@ const DutyScheduler = () => {
 
           {/* View Toggle */}
           <div style={{ display: 'flex', background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '10px', padding: '3px' }}>
-            {['monthly', 'weekly', 'matrix', 'pharmacists'].map(mode => (
+            {['monthly', 'weekly', 'matrix'].map(mode => (
               <button
                 key={mode}
                 onClick={() => setViewMode(mode)}
@@ -505,7 +575,7 @@ const DutyScheduler = () => {
                   color: viewMode === mode ? 'white' : 'var(--text-muted)',
                 }}
               >
-                {mode === 'matrix' ? 'All Branches' : mode === 'pharmacists' ? 'Manage Staff' : mode.charAt(0).toUpperCase() + mode.slice(1)}
+                {mode === 'matrix' ? 'All Branches' : mode.charAt(0).toUpperCase() + mode.slice(1)}
               </button>
             ))}
           </div>
@@ -556,10 +626,10 @@ const DutyScheduler = () => {
       </div>
 
 
-      {/* ── Main Layout ── */}
+      {/* â”€â”€ Main Layout â”€â”€ */}
       <div style={{ display: 'flex', gap: '1.5rem', flex: 1, minHeight: 0 }}>
 
-        {/* ── Calendar / Grid Panel ── */}
+        {/* â”€â”€ Calendar / Grid Panel â”€â”€ */}
         <div className="glass-panel" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           {isLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '300px', gap: '0.75rem' }}>
@@ -585,10 +655,22 @@ const DutyScheduler = () => {
               shiftConfig={SHIFT_CONFIG}
               onOpenPopover={openPopover}
               remarks={weekRemarks}
-              onRemarkChange={(dateStr, text) => setBranchWeekRemarks(prev => ({
-                ...prev,
-                [activeBranchId]: { ...(prev[activeBranchId] || {}), [dateStr]: text }
-              }))}
+              onRemarkChange={(dateStr, text) => {
+                setBranchWeekRemarks(prev => ({
+                  ...prev,
+                  [activeBranchId]: { ...(prev[activeBranchId] || {}), [dateStr]: text }
+                }));
+                const parts = dateStr.split('-');
+                const dYear = parseInt(parts[0], 10);
+                const dMonth = parseInt(parts[1], 10) - 1;
+                const dDay = parseInt(parts[2], 10);
+                if (dYear === year && dMonth === month) {
+                  setBranchMonthRemarks(prev => ({
+                    ...prev,
+                    [activeBranchId]: { ...(prev[activeBranchId] || {}), [dDay]: text }
+                  }));
+                }
+              }}
             />
           ) : viewMode === 'matrix' ? (
             <MatrixView
@@ -604,25 +686,27 @@ const DutyScheduler = () => {
               }))}
             />
           ) : (
-            <ManagePharmacistsView
-              pharmacists={pharmacists}
-              branches={branches}
-              onRefresh={async () => {
-                const staffRes = await api.get('/staff');
-                const mappedPharmacists = staffRes.data.map((staff, idx) => mapRealPharmacist(staff, idx));
-                setPharmacists(mappedPharmacists);
-              }}
+            <MonthlyView
+              year={year} month={month} today={today}
+              shifts={monthShifts}
+              shiftConfig={SHIFT_CONFIG}
+              onOpenPopover={openPopover}
+              remarks={monthRemarks}
+              onRemarkChange={(day, text) => setBranchMonthRemarks(prev => ({
+                ...prev,
+                [activeBranchId]: { ...(prev[activeBranchId] || {}), [day]: text }
+              }))}
             />
           )}
         </div>
 
-        {/* ── Right Sidebar ── */}
+        {/* â”€â”€ Right Sidebar â”€â”€ */}
         <div style={{ width: '280px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Search */}
           <div className="glass-panel" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <Search size={16} color="var(--text-muted)" />
             <input
-              placeholder="Search staff…"
+              placeholder="Search staffâ€¦"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.88rem', color: 'var(--text-main)', width: '100%' }}
@@ -675,7 +759,7 @@ const DutyScheduler = () => {
         </div>
       </div>
 
-      {/* ── Notes & Remarks Panel ── */}
+      {/* â”€â”€ Notes & Remarks Panel â”€â”€ */}
       <div className="glass-panel" style={{ padding: '1.25rem 1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.85rem' }}>
           <FileText size={17} color="var(--primary)" />
@@ -689,7 +773,7 @@ const DutyScheduler = () => {
         <textarea
           value={notes}
           onChange={e => setNotes(e.target.value)}
-          placeholder={`Add scheduling notes, shift swaps, special instructions, or remarks for ${MONTH_NAMES[month]} ${year}…`}
+          placeholder={`Add scheduling notes, shift swaps, special instructions, or remarks for ${MONTH_NAMES[month]} ${year}â€¦`}
           rows={4}
           style={{
             width: '100%',
@@ -716,7 +800,7 @@ const DutyScheduler = () => {
         </div>
       </div>
 
-      {/* ── Reassign Popover ── */}
+      {/* â”€â”€ Reassign Popover â”€â”€ */}
       {popover && (
         <ReassignPopover
           ref={popoverRef}
@@ -750,6 +834,19 @@ const DutyScheduler = () => {
                 branchData[popover.key] = dayData;
                 return { ...prev, [targetBranchId]: branchData };
               });
+              const parts = popover.key.split('-');
+              const dYear = parseInt(parts[0], 10);
+              const dMonth = parseInt(parts[1], 10) - 1;
+              const dDay = parseInt(parts[2], 10);
+              if (dYear === year && dMonth === month) {
+                setBranchMonthShifts(prev => {
+                  const branchData = { ...(prev[targetBranchId] || {}) };
+                  const dayData = { ...(branchData[dDay] || {}) };
+                  delete dayData[shiftType];
+                  branchData[dDay] = dayData;
+                  return { ...prev, [targetBranchId]: branchData };
+                });
+              }
             }
             setPopover(null);
           }}
@@ -760,7 +857,7 @@ const DutyScheduler = () => {
   );
 };
 
-// ─── Monthly Calendar View ────────────────────────────────────────────────────
+// â”€â”€â”€ Monthly Calendar View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MonthlyView = ({ year, month, today, shifts, shiftConfig, onOpenPopover, remarks, onRemarkChange }) => {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startOffset = new Date(year, month, 1).getDay();
@@ -774,7 +871,7 @@ const MonthlyView = ({ year, month, today, shifts, shiftConfig, onOpenPopover, r
           <div key={d} style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', borderRight: '1px solid rgba(0,0,0,0.05)' }}>{d}</div>
         ))}
       </div>
-      {/* Calendar grid — increased row height */}
+      {/* Calendar grid â€” increased row height */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gridAutoRows: 'minmax(140px,1fr)', flex: 1, overflowY: 'auto' }}>
         {Array.from({ length: startCol }, (_, i) => (
           <div key={`empty-${i}`} style={{ borderRight: '1px solid rgba(0,0,0,0.05)', borderBottom: '1px solid rgba(0,0,0,0.05)', background: 'rgba(0,0,0,0.015)' }} />
@@ -783,11 +880,15 @@ const MonthlyView = ({ year, month, today, shifts, shiftConfig, onOpenPopover, r
           const day = i + 1;
           const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
           const dayShifts = shifts[day] || {};
+          const cellDate = new Date(year, month, day);
+          cellDate.setHours(23, 59, 59, 999);
+          const isPast = cellDate < today;
           return (
             <CalendarCell
               key={day}
               day={day}
               isToday={isToday}
+              isPast={isPast}
               shifts={dayShifts}
               shiftConfig={shiftConfig}
               onOpenPopover={onOpenPopover}
@@ -801,7 +902,7 @@ const MonthlyView = ({ year, month, today, shifts, shiftConfig, onOpenPopover, r
   );
 };
 
-const CalendarCell = ({ day, isToday, shifts, shiftConfig, onOpenPopover, remark, onRemarkChange }) => {
+const CalendarCell = ({ day, isToday, shifts, shiftConfig, onOpenPopover, remark, onRemarkChange, isPast }) => {
   const [hovered, setHovered] = useState(false);
 
   const handleAddClick = (e) => {
@@ -827,9 +928,10 @@ const CalendarCell = ({ day, isToday, shifts, shiftConfig, onOpenPopover, remark
         flexDirection: 'column',
         gap: '4px',
         cursor: 'default',
-        background: isToday ? 'rgba(99,102,241,0.04)' : hovered ? 'rgba(0,0,0,0.015)' : 'transparent',
+        background: isPast ? 'rgba(0,0,0,0.015)' : isToday ? 'rgba(99,102,241,0.04)' : hovered ? 'rgba(0,0,0,0.015)' : 'transparent',
         transition: 'background 0.15s',
-        position: 'relative'
+        position: 'relative',
+        opacity: isPast ? 0.75 : 1
       }}
     >
       {/* Day number */}
@@ -842,7 +944,7 @@ const CalendarCell = ({ day, isToday, shifts, shiftConfig, onOpenPopover, remark
           background: isToday ? 'var(--primary)' : 'transparent',
           color: isToday ? 'white' : 'var(--text-muted)',
         }}>{day}</span>
-        {hovered && (
+        {hovered && !isPast && (
           <button
             onClick={handleAddClick}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '1px', color: 'var(--text-muted)', opacity: 0.7, display: 'flex' }}
@@ -861,13 +963,15 @@ const CalendarCell = ({ day, isToday, shifts, shiftConfig, onOpenPopover, remark
             pharmacist={p.pharmacist}
             config={{ ...cfg, time: `${formatTime(p.fromTime)} - ${formatTime(p.toTime)}` }}
             onEdit={(e) => onOpenPopover(e, day, type, p)}
+            isPast={isPast}
           />
         );
       })}
       {/* Remarks section */}
       <input
         type="text"
-        placeholder="Add note..."
+        disabled={isPast}
+        placeholder={isPast ? "" : "Add note..."}
         value={remark}
         onChange={(e) => onRemarkChange(day, e.target.value)}
         style={{
@@ -876,7 +980,7 @@ const CalendarCell = ({ day, isToday, shifts, shiftConfig, onOpenPopover, remark
           borderRadius: '4px',
           padding: '2px 4px',
           fontSize: '0.65rem',
-          background: 'rgba(255,255,255,0.4)',
+          background: isPast ? 'transparent' : 'rgba(255,255,255,0.4)',
           color: 'var(--text-main)',
           outline: 'none',
           marginTop: 'auto',
@@ -897,7 +1001,7 @@ const CalendarCell = ({ day, isToday, shifts, shiftConfig, onOpenPopover, remark
   );
 };
 
-const ShiftPill = ({ pharmacist, config, onEdit }) => (
+const ShiftPill = ({ pharmacist, config, onEdit, isPast }) => (
   <div
     style={{
       display: 'flex',
@@ -910,13 +1014,14 @@ const ShiftPill = ({ pharmacist, config, onEdit }) => (
       fontSize: '0.72rem',
       fontWeight: 600,
       color: config.color,
-      cursor: 'pointer',
+      cursor: isPast ? 'default' : 'pointer',
       overflow: 'hidden',
       transition: 'all 0.15s',
       minHeight: '28px',
+      opacity: isPast ? 0.8 : 1
     }}
-    onClick={onEdit}
-    title={`${pharmacist.name} — ${config.label} (${config.time})`}
+    onClick={isPast ? undefined : onEdit}
+    title={isPast ? `${pharmacist.name} — ${config.label} (${config.time}) [Past Shift]` : `${pharmacist.name} — ${config.label} (${config.time})`}
   >
     {/* Avatar circle */}
     <div style={{
@@ -937,74 +1042,123 @@ const ShiftPill = ({ pharmacist, config, onEdit }) => (
   </div>
 );
 
-// ─── Weekly Grid View ────────────────────────────────────────────────────────
+// ─── Weekly Grid View ──────────────────────────────────────────────────────────
 const WeeklyView = ({ weekDays, shifts, today, shiftConfig, onOpenPopover, remarks, onRemarkChange }) => {
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = formatDateKey(today);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      {/* Grid header */}
-      <div style={{ display: 'grid', gridTemplateColumns: '110px repeat(7,1fr)', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
-        <div style={{ padding: '0.6rem', textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', borderRight: '1px solid rgba(0,0,0,0.06)' }}>Shift</div>
-        {weekDays.map((d, i) => {
-          const dateStr = d.toISOString().split('T')[0];
-          const isToday = dateStr === todayStr;
-          const isWeekend = i >= 5;
-          return (
-            <div key={dateStr} style={{ padding: '0.5rem', textAlign: 'center', borderRight: i < 6 ? '1px solid rgba(0,0,0,0.06)' : 'none' }}>
-              <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', color: isWeekend ? '#dc2626' : 'var(--text-muted)' }}>{DAY_NAMES_SHORT[i]}</div>
-              <div style={{
-                fontSize: '1.1rem', fontWeight: 800,
-                color: isToday ? 'var(--primary)' : isWeekend ? '#dc2626' : 'var(--text-main)',
-                background: isToday ? 'rgba(99,102,241,0.1)' : 'transparent',
-                borderRadius: '50%', width: '32px', height: '32px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto'
-              }}>{d.getDate()}</div>
-            </div>
-          );
-        })}
-      </div>
-      {/* Grid rows */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        {Object.entries(shiftConfig).map(([shiftType, cfg]) => (
-          <div key={shiftType} style={{ display: 'grid', gridTemplateColumns: '110px repeat(7,1fr)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-            {/* Shift label */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0.75rem 0.5rem', background: cfg.bg, borderRight: '1px solid rgba(0,0,0,0.06)', minHeight: '130px', gap: '4px' }}>
-              <cfg.Icon size={18} color={cfg.color} />
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: cfg.color }}>{cfg.label}</span>
-            </div>
-            {/* Day cells */}
-            {weekDays.map((d, i) => {
-              const dateStr = d.toISOString().split('T')[0];
-              const dayShifts = shifts[dateStr] || {};
-              const pharma = dayShifts[shiftType];
-              return (
-                <WeekCell
-                  key={dateStr}
-                  isLast={i === 6}
-                  pharmacist={pharma?.pharmacist}
-                  config={pharma ? { ...cfg, time: `${formatTime(pharma.fromTime)} - ${formatTime(pharma.toTime)}` } : cfg}
-                  onEdit={(e) => onOpenPopover(e, dateStr, shiftType, pharma)}
-                />
-              );
-            })}
-          </div>
-        ))}
-        {/* Weekly Remarks Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '110px repeat(7,1fr)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0.5rem', background: 'rgba(0,0,0,0.02)', borderRight: '1px solid rgba(0,0,0,0.06)', minHeight: '50px', gap: '4px' }}>
-            <FileText size={15} color="var(--text-muted)" />
-            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Remarks</span>
+      {/* Scrollable Container for both vertical & horizontal scrolling */}
+      <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '110px repeat(7, minmax(max-content, 1fr))',
+          minWidth: 'fit-content'
+        }}>
+          {/* Sticky Grid header cells */}
+          <div style={{ 
+            padding: '0.6rem', textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, 
+            color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', 
+            borderRight: '1px solid rgba(0,0,0,0.06)', borderBottom: '1px solid rgba(0,0,0,0.08)',
+            position: 'sticky', top: 0, left: 0, zIndex: 11, background: 'var(--panel-bg, #fff)' 
+          }}>
+            Shift
           </div>
           {weekDays.map((d, i) => {
-            const dateStr = d.toISOString().split('T')[0];
-            const remark = remarks[dateStr] || '';
+            const dateStr = formatDateKey(d);
+            const isToday = dateStr === todayStr;
+            const isWeekend = i >= 5;
             return (
-              <div key={dateStr} style={{ borderRight: i < 6 ? '1px solid rgba(0,0,0,0.06)' : 'none', padding: '0.4rem', display: 'flex', alignItems: 'center' }}>
+              <div key={dateStr} style={{ 
+                padding: '0.5rem', textAlign: 'center', 
+                borderRight: i < 6 ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                borderBottom: '1px solid rgba(0,0,0,0.08)',
+                position: 'sticky', top: 0, zIndex: 10, background: 'var(--panel-bg, #fff)'
+              }}>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', color: isWeekend ? '#dc2626' : 'var(--text-muted)' }}>{DAY_NAMES_SHORT[i]}</div>
+                <div style={{
+                  fontSize: '1.1rem', fontWeight: 800,
+                  color: isToday ? 'var(--primary)' : isWeekend ? '#dc2626' : 'var(--text-main)',
+                  background: isToday ? 'rgba(99,102,241,0.1)' : 'transparent',
+                  borderRadius: '50%', width: '32px', height: '32px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto'
+                }}>{d.getDate()}</div>
+              </div>
+            );
+          })}
+
+          {/* Grid rows (Shift Labels & WeekCells) */}
+          {Object.entries(shiftConfig).map(([shiftType, cfg]) => (
+            <Fragment key={shiftType}>
+              {/* Shift label (sticky to left) */}
+              <div style={{ 
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+                padding: '0.75rem 0.5rem', background: 'var(--panel-bg, #fff)', 
+                borderRight: '1px solid rgba(0,0,0,0.06)', borderBottom: '1px solid rgba(0,0,0,0.06)',
+                minHeight: '130px', gap: '4px',
+                position: 'sticky', left: 0, zIndex: 9
+              }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: cfg.bg, zIndex: 1 }} />
+                <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <cfg.Icon size={18} color={cfg.color} />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: cfg.color }}>{cfg.label}</span>
+                </div>
+              </div>
+              {/* Day cells */}
+              {weekDays.map((d, i) => {
+                const dateStr = formatDateKey(d);
+                const dayShifts = shifts[dateStr] || {};
+                const pharma = dayShifts[shiftType];
+                const cellDate = new Date(d);
+                cellDate.setHours(23, 59, 59, 999);
+                const isPast = cellDate < today;
+                return (
+                  <WeekCell
+                    key={dateStr}
+                    isLast={i === 6}
+                    isPast={isPast}
+                    pharmacist={pharma?.pharmacist}
+                    config={pharma ? { ...cfg, time: `${formatTime(pharma.fromTime)} - ${formatTime(pharma.toTime)}` } : cfg}
+                    onEdit={(e) => onOpenPopover(e, dateStr, shiftType, pharma)}
+                  />
+                );
+              })}
+            </Fragment>
+          ))}
+
+          {/* Weekly Remarks Row */}
+          {/* Remarks Label (sticky to left) */}
+          <div style={{ 
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
+            padding: '0.5rem', background: 'var(--panel-bg, #fff)', 
+            borderRight: '1px solid rgba(0,0,0,0.06)', borderBottom: '1px solid rgba(0,0,0,0.06)',
+            minHeight: '50px', gap: '4px',
+            position: 'sticky', left: 0, zIndex: 9
+          }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.02)', zIndex: 1 }} />
+            <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+              <FileText size={15} color="var(--text-muted)" />
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Remarks</span>
+            </div>
+          </div>
+          {weekDays.map((d, i) => {
+            const dateStr = formatDateKey(d);
+            const remark = remarks[dateStr] || '';
+            const cellDate = new Date(d);
+            cellDate.setHours(23, 59, 59, 999);
+            const isPast = cellDate < today;
+            return (
+              <div key={dateStr} style={{ 
+                borderRight: i < 6 ? '1px solid rgba(0,0,0,0.06)' : 'none', 
+                borderBottom: '1px solid rgba(0,0,0,0.06)',
+                padding: '0.4rem', display: 'flex', alignItems: 'center', 
+                opacity: isPast ? 0.75 : 1, minWidth: '130px' 
+              }}>
                 <input
                   type="text"
-                  placeholder="Add note..."
+                  placeholder={isPast ? "" : "Add note..."}
+                  disabled={isPast}
                   value={remark}
                   onChange={(e) => onRemarkChange(dateStr, e.target.value)}
                   style={{
@@ -1037,7 +1191,7 @@ const WeeklyView = ({ weekDays, shifts, today, shiftConfig, onOpenPopover, remar
   );
 };
 
-const WeekCell = ({ isLast, pharmacist, config, onEdit }) => {
+const WeekCell = ({ isLast, pharmacist, config, onEdit, isPast }) => {
   const [hovered, setHovered] = useState(false);
 
   if (!pharmacist) {
@@ -1047,19 +1201,29 @@ const WeekCell = ({ isLast, pharmacist, config, onEdit }) => {
         onMouseLeave={() => setHovered(false)}
         style={{
           borderRight: isLast ? 'none' : '1px solid rgba(0,0,0,0.06)',
+          borderBottom: '1px solid rgba(0,0,0,0.06)',
           padding: '0.5rem',
           minHeight: '130px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          cursor: 'pointer',
-          background: hovered ? 'rgba(0,0,0,0.02)' : 'transparent',
-          transition: 'background 0.15s'
+          cursor: isPast ? 'default' : 'pointer',
+          background: isPast ? 'rgba(0,0,0,0.02)' : hovered ? 'rgba(0,0,0,0.02)' : 'transparent',
+          transition: 'background 0.15s',
+          opacity: isPast ? 0.6 : 1,
+          minWidth: '130px'
         }}
+        onClick={isPast ? undefined : onEdit}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', border: '1.5px dashed rgba(0,0,0,0.15)', borderRadius: '8px', padding: '0.75rem', width: '100%' }}>
-          <UserPlus size={16} color="var(--text-muted)" />
-          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500 }}>Unassigned</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', border: isPast ? '1.5px dashed rgba(0,0,0,0.08)' : '1.5px dashed rgba(0,0,0,0.15)', borderRadius: '8px', padding: '0.75rem', width: '100%' }}>
+          {isPast ? (
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500 }}>No Shift</span>
+          ) : (
+            <>
+              <UserPlus size={16} color="var(--text-muted)" />
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500 }}>Unassigned</span>
+            </>
+          )}
         </div>
       </div>
     );
@@ -1071,10 +1235,13 @@ const WeekCell = ({ isLast, pharmacist, config, onEdit }) => {
       onMouseLeave={() => setHovered(false)}
       style={{
         borderRight: isLast ? 'none' : '1px solid rgba(0,0,0,0.06)',
+        borderBottom: '1px solid rgba(0,0,0,0.06)',
         padding: '0.5rem',
         minHeight: '130px',
-        background: hovered ? config.bg : 'transparent',
+        background: hovered && !isPast ? config.bg : 'transparent',
         transition: 'background 0.15s',
+        opacity: isPast ? 0.8 : 1,
+        minWidth: '130px'
       }}
     >
       <div style={{
@@ -1087,6 +1254,7 @@ const WeekCell = ({ isLast, pharmacist, config, onEdit }) => {
         flexDirection: 'column',
         justifyContent: 'space-between',
         gap: '6px',
+        minWidth: 0
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
           <div style={{
@@ -1096,25 +1264,27 @@ const WeekCell = ({ isLast, pharmacist, config, onEdit }) => {
             fontSize: '0.65rem', fontWeight: 800, color: config.color, flexShrink: 0
           }}>{pharmacist.initials}</div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pharmacist.name}</div>
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pharmacist.name.replace('Dr. ', '')}</div>
             <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pharmacist.designation}</div>
             <div style={{ fontSize: '0.62rem', color: config.color, fontWeight: 700, marginTop: '2px' }}>{config.time}</div>
           </div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <button
-          onClick={onEdit}
-          style={{ alignSelf: 'flex-end', background: 'none', border: 'none', cursor: 'pointer', padding: '3px', borderRadius: '5px', display: 'flex', color: config.color, opacity: hovered ? 1 : 0.5, transition: 'opacity 0.15s' }}
-        >
-          <Edit2 size={13} />
-        </button>
+          {!isPast && (
+            <button
+              onClick={onEdit}
+              style={{ alignSelf: 'flex-end', background: 'none', border: 'none', cursor: 'pointer', padding: '3px', borderRadius: '5px', display: 'flex', color: config.color, opacity: hovered ? 1 : 0.5, transition: 'opacity 0.15s' }}
+            >
+              <Edit2 size={13} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 };
 
-// ─── Staff Card ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Staff Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const StaffCard = ({ pharmacist }) => {
   const [hovered, setHovered] = useState(false);
   return (
@@ -1163,14 +1333,14 @@ const StaffCard = ({ pharmacist }) => {
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-main)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pharmacist.name}</p>
-        <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0 }}>{pharmacist.designation} • {pharmacist.rating}★</p>
+        <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0 }}>{pharmacist.designation} â€¢ {pharmacist.rating}â˜…</p>
       </div>
       <GripVertical size={14} color="var(--text-muted)" style={{ opacity: 0.4 }} />
     </div>
   );
 };
 
-// ─── Stat Bar ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Stat Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const StatBar = ({ label, value }) => (
   <div style={{ marginBottom: '0.6rem' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
@@ -1183,7 +1353,7 @@ const StatBar = ({ label, value }) => (
   </div>
 );
 
-// ─── Matrix (All Branches) Grid View ──────────────────────────────────────────
+// â”€â”€â”€ Matrix (All Branches) Grid View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MatrixView = ({ year, month, today, branches, branchShifts, shiftConfig, onOpenPopover, remarks, onRemarkChange }) => {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -1238,6 +1408,9 @@ const MatrixView = ({ year, month, today, branches, branchShifts, shiftConfig, o
               const dateObj = new Date(year, month, day);
               const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
               const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+              const cellDate = new Date(year, month, day);
+              cellDate.setHours(23, 59, 59, 999);
+              const isPast = cellDate < today;
 
               return (
                 <tr
@@ -1290,6 +1463,7 @@ const MatrixView = ({ year, month, today, branches, branchShifts, shiftConfig, o
                         onOpenPopover={onOpenPopover}
                         remark={remark}
                         onRemarkChange={onRemarkChange}
+                        isPast={isPast}
                       />
                     );
                   })}
@@ -1303,7 +1477,7 @@ const MatrixView = ({ year, month, today, branches, branchShifts, shiftConfig, o
   );
 };
 
-const MatrixCell = ({ day, branchId, shifts, shiftConfig, onOpenPopover, remark, onRemarkChange }) => {
+const MatrixCell = ({ day, branchId, shifts, shiftConfig, onOpenPopover, remark, onRemarkChange, isPast }) => {
   const [hovered, setHovered] = useState(false);
 
   const handleAddClick = (e) => {
@@ -1327,7 +1501,8 @@ const MatrixCell = ({ day, branchId, shifts, shiftConfig, onOpenPopover, remark,
         height: '100%',
         minHeight: '100px',
         transition: 'background 0.15s',
-        background: hovered ? 'rgba(0,0,0,0.01)' : 'transparent'
+        background: isPast ? 'rgba(0,0,0,0.02)' : hovered ? 'rgba(0,0,0,0.01)' : 'transparent',
+        opacity: isPast ? 0.75 : 1
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', height: '100%' }}>
@@ -1341,13 +1516,14 @@ const MatrixCell = ({ day, branchId, shifts, shiftConfig, onOpenPopover, remark,
                 pharmacist={p.pharmacist}
                 config={{ ...cfg, time: `${formatTime(p.fromTime)} - ${formatTime(p.toTime)}` }}
                 onEdit={(e) => onOpenPopover(e, day, type, p, branchId)}
+                isPast={isPast}
               />
             );
           })}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: 'auto', paddingTop: '4px' }}>
-          {hovered && (
+          {hovered && !isPast && (
             <button
               onClick={handleAddClick}
               style={{
@@ -1370,7 +1546,8 @@ const MatrixCell = ({ day, branchId, shifts, shiftConfig, onOpenPopover, remark,
           )}
           <input
             type="text"
-            placeholder="Add note..."
+            placeholder={isPast ? "" : "Add note..."}
+            disabled={isPast}
             value={remark}
             onChange={(e) => onRemarkChange(branchId, day, e.target.value)}
             style={{
@@ -1401,7 +1578,7 @@ const MatrixCell = ({ day, branchId, shifts, shiftConfig, onOpenPopover, remark,
   );
 };
 
-// ─── Reassign Popover ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Reassign Popover â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ReassignPopover = forwardRef(({ popover, dayShifts, pharmacists, shiftConfig, allBranchesShifts, currentBranchId, branches, onReassign, onRemove, onClose }, ref) => {
   const { rect } = popover;
   const [activeShiftType, setActiveShiftType] = useState(popover.shiftType);
@@ -1654,743 +1831,6 @@ const ReassignPopover = forwardRef(({ popover, dayShifts, pharmacists, shiftConf
     </div>
   );
 });
-
-// ─── Manage Pharmacists View Sub-module ──────────────────────────────────────
-const ManagePharmacistsView = ({ pharmacists, branches, onRefresh }) => {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  // New staff states
-  const [newStaffName, setNewStaffName] = useState('');
-  const [newStaffPin, setNewStaffPin] = useState('');
-  const [newStaffDesignation, setNewStaffDesignation] = useState('');
-  const [newStaffRating, setNewStaffRating] = useState('5.0');
-  const [newStaffProfilePic, setNewStaffProfilePic] = useState('');
-  const [newStaffLicenseNum, setNewStaffLicenseNum] = useState('');
-  const [newStaffLicenseExpiry, setNewStaffLicenseExpiry] = useState('');
-  const [newStaffPassportNum, setNewStaffPassportNum] = useState('');
-  const [newStaffPassportExpiry, setNewStaffPassportExpiry] = useState('');
-  const [newStaffIdCardNum, setNewStaffIdCardNum] = useState('');
-  const [newStaffIdCardExpiry, setNewStaffIdCardExpiry] = useState('');
-  const [newStaffRemarks, setNewStaffRemarks] = useState('');
-  const [newStaffDefaultBranch, setNewStaffDefaultBranch] = useState('');
-  const [newStaffDefaultShift, setNewStaffDefaultShift] = useState('');
-  const [newStaffDefaultFrom, setNewStaffDefaultFrom] = useState('');
-  const [newStaffDefaultTo, setNewStaffDefaultTo] = useState('');
-  const [newStaffOffDay, setNewStaffOffDay] = useState('');
-
-  // Editing staff states
-  const [editingStaffId, setEditingStaffId] = useState('');
-  const [editStaffName, setEditStaffName] = useState('');
-  const [editStaffPin, setEditStaffPin] = useState('');
-  const [editStaffDesignation, setEditStaffDesignation] = useState('');
-  const [editStaffRating, setEditStaffRating] = useState('5.0');
-  const [editStaffProfilePic, setEditStaffProfilePic] = useState('');
-  const [editStaffLicenseNum, setEditStaffLicenseNum] = useState('');
-  const [editStaffLicenseExpiry, setEditStaffLicenseExpiry] = useState('');
-  const [editStaffPassportNum, setEditStaffPassportNum] = useState('');
-  const [editStaffPassportExpiry, setEditStaffPassportExpiry] = useState('');
-  const [editStaffIdCardNum, setEditStaffIdCardNum] = useState('');
-  const [editStaffIdCardExpiry, setEditStaffIdCardExpiry] = useState('');
-  const [editStaffRemarks, setEditStaffRemarks] = useState('');
-  const [editStaffDefaultBranch, setEditStaffDefaultBranch] = useState('');
-  const [editStaffDefaultShift, setEditStaffDefaultShift] = useState('');
-  const [editStaffDefaultFrom, setEditStaffDefaultFrom] = useState('');
-  const [editStaffDefaultTo, setEditStaffDefaultTo] = useState('');
-  const [editStaffOffDay, setEditStaffOffDay] = useState('');
-
-  const handleFileChange = (e, setPic) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPic(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAddStaff = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        name: newStaffName,
-        pin: newStaffPin,
-        designation: newStaffDesignation || undefined,
-        rating: newStaffRating ? parseFloat(newStaffRating) : undefined,
-        profilePicture: newStaffProfilePic || undefined,
-        licenseNumber: newStaffLicenseNum || undefined,
-        licenseExpiry: newStaffLicenseExpiry || undefined,
-        passportNumber: newStaffPassportNum || undefined,
-        passportExpiry: newStaffPassportExpiry || undefined,
-        idCardNumber: newStaffIdCardNum || undefined,
-        idCardExpiry: newStaffIdCardExpiry || undefined,
-        remarks: newStaffRemarks || undefined,
-        defaultBranch: newStaffDefaultBranch || undefined,
-        defaultShiftType: newStaffDefaultShift || undefined,
-        defaultFromTime: newStaffDefaultFrom || undefined,
-        defaultToTime: newStaffDefaultTo || undefined,
-        defaultOffDay: newStaffOffDay || undefined
-      };
-      await api.post('/staff', payload);
-      setIsAddModalOpen(false);
-      
-      // Reset new staff states
-      setNewStaffName('');
-      setNewStaffPin('');
-      setNewStaffDesignation('');
-      setNewStaffRating('5.0');
-      setNewStaffProfilePic('');
-      setNewStaffLicenseNum('');
-      setNewStaffLicenseExpiry('');
-      setNewStaffPassportNum('');
-      setNewStaffPassportExpiry('');
-      setNewStaffIdCardNum('');
-      setNewStaffIdCardExpiry('');
-      setNewStaffRemarks('');
-      setNewStaffDefaultBranch('');
-      setNewStaffDefaultShift('');
-      setNewStaffDefaultFrom('');
-      setNewStaffDefaultTo('');
-      setNewStaffOffDay('');
-
-      await onRefresh();
-      alert('Pharmacist Registered Successfully');
-    } catch (error) {
-      alert('Error registering pharmacist');
-    }
-  };
-
-  const handleEditStaff = (staff) => {
-    setEditingStaffId(staff.id || staff._id);
-    setEditStaffName(staff.name.replace('Dr. ', ''));
-    setEditStaffPin('');
-    setEditStaffDesignation(staff.designation || '');
-    setEditStaffRating(staff.rating !== undefined ? String(staff.rating) : '5.0');
-    setEditStaffProfilePic(staff.profilePicture || '');
-    setEditStaffLicenseNum(staff.licenseNumber || '');
-    setEditStaffLicenseExpiry(staff.licenseExpiry || '');
-    setEditStaffPassportNum(staff.passportNumber || '');
-    setEditStaffPassportExpiry(staff.passportExpiry || '');
-    setEditStaffIdCardNum(staff.idCardNumber || '');
-    setEditStaffIdCardExpiry(staff.idCardExpiry || '');
-    setEditStaffRemarks(staff.remarks || '');
-    setEditStaffDefaultBranch(staff.defaultBranch || '');
-    setEditStaffDefaultShift(staff.defaultShiftType || '');
-    setEditStaffDefaultFrom(staff.defaultFromTime || '');
-    setEditStaffDefaultTo(staff.defaultToTime || '');
-    setEditStaffOffDay(staff.defaultOffDay || '');
-    setIsEditModalOpen(true);
-  };
-
-  const handleUpdateStaff = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = { 
-        name: editStaffName,
-        designation: editStaffDesignation,
-        rating: editStaffRating ? parseFloat(editStaffRating) : 5.0,
-        profilePicture: editStaffProfilePic,
-        licenseNumber: editStaffLicenseNum,
-        licenseExpiry: editStaffLicenseExpiry || null,
-        passportNumber: editStaffPassportNum,
-        passportExpiry: editStaffPassportExpiry || null,
-        idCardNumber: editStaffIdCardNum,
-        idCardExpiry: editStaffIdCardExpiry || null,
-        remarks: editStaffRemarks,
-        defaultBranch: editStaffDefaultBranch || null,
-        defaultShiftType: editStaffDefaultShift,
-        defaultFromTime: editStaffDefaultFrom,
-        defaultToTime: editStaffDefaultTo,
-        defaultOffDay: editStaffOffDay
-      };
-      if (editStaffPin) payload.pin = editStaffPin;
-      await api.put(`/staff/${editingStaffId}`, payload);
-      setIsEditModalOpen(false);
-      setEditingStaffId('');
-      setEditStaffName('');
-      setEditStaffPin('');
-      setEditStaffDesignation('');
-      setEditStaffRating('5.0');
-      setEditStaffProfilePic('');
-      setEditStaffLicenseNum('');
-      setEditStaffLicenseExpiry('');
-      setEditStaffPassportNum('');
-      setEditStaffPassportExpiry('');
-      setEditStaffIdCardNum('');
-      setEditStaffIdCardExpiry('');
-      setEditStaffRemarks('');
-      setEditStaffDefaultBranch('');
-      setEditStaffDefaultShift('');
-      setEditStaffDefaultFrom('');
-      setEditStaffDefaultTo('');
-      setEditStaffOffDay('');
-      await onRefresh();
-      alert('Pharmacist Updated Successfully');
-    } catch (error) {
-      alert('Error updating pharmacist');
-    }
-  };
-
-  const handleDeleteStaff = async (id) => {
-    if (!window.confirm('Are you sure you want to permanently delete this pharmacist?')) return;
-    try {
-      await api.delete(`/staff/${id}`);
-      await onRefresh();
-    } catch (error) {
-      alert('Error deleting pharmacist');
-    }
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', padding: '1.25rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexShrink: 0 }}>
-        <div>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>Staff Directory</h2>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0.2rem 0 0 0' }}>Manage active pharmacists, credentials, and default schedules</p>
-        </div>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          style={{
-            padding: '0.5rem 1.1rem',
-            background: 'var(--primary)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            boxShadow: '0 4px 12px rgba(99,102,241,0.25)',
-            transition: 'background 0.2s'
-          }}
-          onMouseOver={e => e.currentTarget.style.background = '#4338ca'}
-          onMouseOut={e => e.currentTarget.style.background = 'var(--primary)'}
-        >
-          <Plus size={16} /> Register Staff
-        </button>
-      </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '10px', background: 'rgba(255,255,255,0.4)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-          <thead>
-            <tr style={{ borderBottom: '1.5px solid rgba(0,0,0,0.08)', background: 'rgba(255,255,255,0.6)', position: 'sticky', top: 0, zIndex: 1 }}>
-              <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 700 }}>#</th>
-              <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 700 }}>Name</th>
-              <th style={{ padding: '0.75rem 1rem', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 700 }}>Designation</th>
-              <th style={{ padding: '0.75rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 700 }}>Rating</th>
-              <th style={{ padding: '0.75rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 700 }}>Default Branch</th>
-              <th style={{ padding: '0.75rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 700 }}>Status</th>
-              <th style={{ padding: '0.75rem 1rem', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 700 }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pharmacists.map((p, idx) => (
-              <tr key={p.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', transition: 'background 0.15s' }}>
-                <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{idx + 1}</td>
-                <td style={{ padding: '0.75rem 1rem', fontWeight: 600 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {p.profilePicture ? (
-                      <img src={p.profilePicture} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} alt="" />
-                    ) : (
-                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: `${p.color}22`, border: `1.5px solid ${p.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.62rem', fontWeight: 800, color: p.color }}>{p.initials}</div>
-                    )}
-                    {p.name}
-                  </div>
-                </td>
-                <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{p.designation}</td>
-                <td style={{ padding: '0.75rem 1rem', textAlign: 'center', fontWeight: 600 }}>{p.rating} ★</td>
-                <td style={{ padding: '0.75rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <div>{p.defaultBranchObj?.name || 'Flexible'}</div>
-                  {p.defaultOffDay && (
-                    <span style={{
-                      display: 'inline-block',
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      background: 'rgba(239,68,68,0.08)',
-                      color: '#dc2626',
-                      padding: '1px 5px',
-                      borderRadius: '4px',
-                      marginTop: '3px'
-                    }}>
-                      Off: {p.defaultOffDay}
-                    </span>
-                  )}
-                </td>
-                <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
-                  <span style={{
-                    padding: '0.2rem 0.5rem',
-                    borderRadius: '6px',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    background: p.available ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-                    color: p.available ? '#16a34a' : '#dc2626'
-                  }}>
-                    {p.available ? 'Active' : 'Inactive'}
-                  </span>
-                </td>
-                <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
-                  <button
-                    onClick={() => handleEditStaff(p)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: 'var(--primary)', marginRight: '0.5rem' }}
-                    title="Edit Pharmacist"
-                  >
-                    <Edit2 size={15} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteStaff(p.id)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#ef4444' }}
-                    title="Delete Pharmacist"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Add Modal */}
-      {isAddModalOpen && createPortal(
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000
-        }}>
-          <div className="glass-panel" style={{ width: '850px', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', background: '#fff', borderRadius: '14px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>Register New Staff</h3>
-            
-            <form onSubmit={handleAddStaff} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {/* Row 1: Basic Info */}
-              <div style={{ display: 'grid', gridTemplateColumns: '170px 1.5fr 1fr 1.2fr 80px', gap: '0.85rem', alignItems: 'end' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f3f4f6', border: '1.5px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                    {newStaffProfilePic ? (
-                      <img src={newStaffProfilePic} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                    ) : (
-                      <Users size={18} color="#9ca3af" />
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)' }}>Profile Photo</span>
-                    <label style={{
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      background: 'rgba(99, 102, 241, 0.1)',
-                      color: 'var(--primary)',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      textAlign: 'center'
-                    }}>
-                      Upload
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={e => handleFileChange(e, setNewStaffProfilePic)}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Name</span>
-                  <input
-                    type="text" required placeholder="e.g. Sarah Connor"
-                    value={newStaffName} onChange={e => setNewStaffName(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>PIN Code</span>
-                  <input
-                    type="password" required placeholder="PIN Code"
-                    value={newStaffPin} onChange={e => setNewStaffPin(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Designation</span>
-                  <input
-                    type="text" placeholder="e.g. Senior Pharmacist"
-                    value={newStaffDesignation} onChange={e => setNewStaffDesignation(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Rating</span>
-                  <input
-                    type="number" step="0.1" min="1" max="5" required placeholder="4.8"
-                    value={newStaffRating} onChange={e => setNewStaffRating(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
-                  />
-                </div>
-              </div>
-
-              {/* Row 2: Document Details */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', background: 'rgba(0,0,0,0.015)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.05)' }}>
-                {/* Column 1: License */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 750, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>License Details</span>
-                  <input
-                    type="text" placeholder="License Number"
-                    value={newStaffLicenseNum} onChange={e => setNewStaffLicenseNum(e.target.value)}
-                    style={{ padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
-                  />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Expiry</span>
-                    <input
-                      type="date"
-                      value={newStaffLicenseExpiry} onChange={e => setNewStaffLicenseExpiry(e.target.value)}
-                      style={{ flex: 1, padding: '0.3rem 0.45rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
-                    />
-                  </div>
-                </div>
-
-                {/* Column 2: Passport */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 750, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Passport Details</span>
-                  <input
-                    type="text" placeholder="Passport Number"
-                    value={newStaffPassportNum} onChange={e => setNewStaffPassportNum(e.target.value)}
-                    style={{ padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
-                  />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Expiry</span>
-                    <input
-                      type="date"
-                      value={newStaffPassportExpiry} onChange={e => setNewStaffPassportExpiry(e.target.value)}
-                      style={{ flex: 1, padding: '0.3rem 0.45rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
-                    />
-                  </div>
-                </div>
-
-                {/* Column 3: National ID */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 750, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>ID Card Details</span>
-                  <input
-                    type="text" placeholder="ID Number"
-                    value={newStaffIdCardNum} onChange={e => setNewStaffIdCardNum(e.target.value)}
-                    style={{ padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
-                  />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Expiry</span>
-                    <input
-                      type="date"
-                      value={newStaffIdCardExpiry} onChange={e => setNewStaffIdCardExpiry(e.target.value)}
-                      style={{ flex: 1, padding: '0.3rem 0.45rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 3: Fixed Schedule Settings */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', background: 'rgba(99,102,241,0.02)', border: '1px solid rgba(99,102,241,0.08)', padding: '0.65rem 0.85rem', borderRadius: '10px' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 750, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>Fixed Schedule Settings (Defaults)</span>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.9fr 1.1fr 1.2fr', gap: '0.75rem', alignItems: 'end' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Branch</span>
-                    <select
-                      value={newStaffDefaultBranch} onChange={e => setNewStaffDefaultBranch(e.target.value)}
-                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.8rem', outline: 'none' }}
-                    >
-                      <option value="">Flexible (None)</option>
-                      {branches.map(b => (
-                        <option key={b._id} value={b._id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Shift</span>
-                    <select
-                      value={newStaffDefaultShift} onChange={e => setNewStaffDefaultShift(e.target.value)}
-                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.8rem', outline: 'none' }}
-                    >
-                      <option value="">None</option>
-                      <option value="morning">Morning</option>
-                      <option value="evening">Evening</option>
-                    </select>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Off Day</span>
-                    <select
-                      value={newStaffOffDay} onChange={e => setNewStaffOffDay(e.target.value)}
-                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.8rem', outline: 'none' }}
-                    >
-                      <option value="">None (Flexible)</option>
-                      <option value="Monday">Monday</option>
-                      <option value="Tuesday">Tuesday</option>
-                      <option value="Wednesday">Wednesday</option>
-                      <option value="Thursday">Thursday</option>
-                      <option value="Friday">Friday</option>
-                      <option value="Saturday">Saturday</option>
-                      <option value="Sunday">Sunday</option>
-                    </select>
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>From</span>
-                      <input
-                        type="time" value={newStaffDefaultFrom} onChange={e => setNewStaffDefaultFrom(e.target.value)}
-                        style={{ width: '100%', boxSizing: 'border-box', padding: '0.3rem 0.4rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
-                      />
-                    </div>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>To</span>
-                      <input
-                        type="time" value={newStaffDefaultTo} onChange={e => setNewStaffDefaultTo(e.target.value)}
-                        style={{ width: '100%', boxSizing: 'border-box', padding: '0.3rem 0.4rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 4: Remarks & Actions */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem', alignItems: 'end' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Remarks & Performance Issues</span>
-                  <input
-                    type="text"
-                    placeholder="Record any warnings, remarks, or specific scheduling restrictions..."
-                    value={newStaffRemarks} onChange={e => setNewStaffRemarks(e.target.value)}
-                    style={{ padding: '0.4rem 0.65rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button type="button" onClick={() => setIsAddModalOpen(false)} style={{ padding: '0.45rem 1rem', border: 'none', borderRadius: '6px', background: 'rgba(0,0,0,0.05)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>Cancel</button>
-                  <button type="submit" style={{ padding: '0.45rem 1.25rem', border: 'none', borderRadius: '6px', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>Register</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Edit Modal */}
-      {isEditModalOpen && createPortal(
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000
-        }}>
-          <div className="glass-panel" style={{ width: '850px', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', background: '#fff', borderRadius: '14px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800 }}>Edit Staff Member</h3>
-            
-            <form onSubmit={handleUpdateStaff} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {/* Row 1: Basic Info */}
-              <div style={{ display: 'grid', gridTemplateColumns: '170px 1.5fr 1fr 1.2fr 80px', gap: '0.85rem', alignItems: 'end' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#f3f4f6', border: '1.5px dashed rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                    {editStaffProfilePic ? (
-                      <img src={editStaffProfilePic} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                    ) : (
-                      <Users size={18} color="#9ca3af" />
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)' }}>Profile Photo</span>
-                    <label style={{
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      background: 'rgba(99, 102, 241, 0.1)',
-                      color: 'var(--primary)',
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      textAlign: 'center'
-                    }}>
-                      Upload
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={e => handleFileChange(e, setEditStaffProfilePic)}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Name</span>
-                  <input
-                    type="text" required placeholder="e.g. Sarah Connor"
-                    value={editStaffName} onChange={e => setEditStaffName(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Change PIN (Optional)</span>
-                  <input
-                    type="password" placeholder="Leave blank to keep current"
-                    value={editStaffPin} onChange={e => setEditStaffPin(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Designation</span>
-                  <input
-                    type="text" placeholder="e.g. Senior Pharmacist"
-                    value={editStaffDesignation} onChange={e => setEditStaffDesignation(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Rating</span>
-                  <input
-                    type="number" step="0.1" min="1" max="5" required placeholder="4.8"
-                    value={editStaffRating} onChange={e => setEditStaffRating(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.4rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
-                  />
-                </div>
-              </div>
-
-              {/* Row 2: Document Details */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', background: 'rgba(0,0,0,0.015)', padding: '0.75rem', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.05)' }}>
-                {/* Column 1: License */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 750, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>License Details</span>
-                  <input
-                    type="text" placeholder="License Number"
-                    value={editStaffLicenseNum} onChange={e => setEditStaffLicenseNum(e.target.value)}
-                    style={{ padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
-                  />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Expiry</span>
-                    <input
-                      type="date"
-                      value={editStaffLicenseExpiry} onChange={e => setEditStaffLicenseExpiry(e.target.value)}
-                      style={{ flex: 1, padding: '0.3rem 0.45rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
-                    />
-                  </div>
-                </div>
-
-                {/* Column 2: Passport */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 750, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>Passport Details</span>
-                  <input
-                    type="text" placeholder="Passport Number"
-                    value={editStaffPassportNum} onChange={e => setEditStaffPassportNum(e.target.value)}
-                    style={{ padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
-                  />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Expiry</span>
-                    <input
-                      type="date"
-                      value={editStaffPassportExpiry} onChange={e => setEditStaffPassportExpiry(e.target.value)}
-                      style={{ flex: 1, padding: '0.3rem 0.45rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
-                    />
-                  </div>
-                </div>
-
-                {/* Column 3: National ID */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 750, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>ID Card Details</span>
-                  <input
-                    type="text" placeholder="ID Number"
-                    value={editStaffIdCardNum} onChange={e => setEditStaffIdCardNum(e.target.value)}
-                    style={{ padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.8rem' }}
-                  />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Expiry</span>
-                    <input
-                      type="date"
-                      value={editStaffIdCardExpiry} onChange={e => setEditStaffIdCardExpiry(e.target.value)}
-                      style={{ flex: 1, padding: '0.3rem 0.45rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 3: Fixed Schedule Settings */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', background: 'rgba(99,102,241,0.02)', border: '1px solid rgba(99,102,241,0.08)', padding: '0.65rem 0.85rem', borderRadius: '10px' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 750, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>Fixed Schedule Settings (Defaults)</span>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.9fr 1.1fr 1.2fr', gap: '0.75rem', alignItems: 'end' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Branch</span>
-                    <select
-                      value={editStaffDefaultBranch} onChange={e => setEditStaffDefaultBranch(e.target.value)}
-                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.8rem', outline: 'none' }}
-                    >
-                      <option value="">Flexible (None)</option>
-                      {branches.map(b => (
-                        <option key={b._id} value={b._id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Shift</span>
-                    <select
-                      value={editStaffDefaultShift} onChange={e => setEditStaffDefaultShift(e.target.value)}
-                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.8rem', outline: 'none' }}
-                    >
-                      <option value="">None</option>
-                      <option value="morning">Morning</option>
-                      <option value="evening">Evening</option>
-                    </select>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>Default Off Day</span>
-                    <select
-                      value={editStaffOffDay} onChange={e => setEditStaffOffDay(e.target.value)}
-                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.35rem 0.5rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', background: 'white', fontSize: '0.8rem', outline: 'none' }}
-                    >
-                      <option value="">None (Flexible)</option>
-                      <option value="Monday">Monday</option>
-                      <option value="Tuesday">Tuesday</option>
-                      <option value="Wednesday">Wednesday</option>
-                      <option value="Thursday">Thursday</option>
-                      <option value="Friday">Friday</option>
-                      <option value="Saturday">Saturday</option>
-                      <option value="Sunday">Sunday</option>
-                    </select>
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>From</span>
-                      <input
-                        type="time" value={editStaffDefaultFrom} onChange={e => setEditStaffDefaultFrom(e.target.value)}
-                        style={{ width: '100%', boxSizing: 'border-box', padding: '0.3rem 0.4rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
-                      />
-                    </div>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)' }}>To</span>
-                      <input
-                        type="time" value={editStaffDefaultTo} onChange={e => setEditStaffDefaultTo(e.target.value)}
-                        style={{ width: '100%', boxSizing: 'border-box', padding: '0.3rem 0.4rem', borderRadius: '5px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.78rem' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Row 4: Remarks & Actions */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem', alignItems: 'end' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Remarks & Performance Issues</span>
-                  <input
-                    type="text"
-                    placeholder="Record any warnings, remarks, or specific scheduling restrictions..."
-                    value={editStaffRemarks} onChange={e => setEditStaffRemarks(e.target.value)}
-                    style={{ padding: '0.4rem 0.65rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.12)', outline: 'none', fontSize: '0.82rem' }}
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button type="button" onClick={() => setIsEditModalOpen(false)} style={{ padding: '0.45rem 1rem', border: 'none', borderRadius: '6px', background: 'rgba(0,0,0,0.05)', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>Cancel</button>
-                  <button type="submit" style={{ padding: '0.45rem 1.25rem', border: 'none', borderRadius: '6px', background: 'var(--primary)', color: 'white', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}>Save</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-};
 
 ReassignPopover.displayName = 'ReassignPopover';
 

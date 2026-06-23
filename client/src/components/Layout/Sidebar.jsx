@@ -91,7 +91,7 @@ const Sidebar = () => {
       superAdminOnly: true,
       subLinks: [
         { to: '/admin/duty-scheduler', label: 'Duty Scheduler' },
-        { to: '/admin/duty-scheduler?tab=staffs', label: 'Staffs' },
+        { to: '/admin/pharmacists', label: 'Staffs' },
         { to: '/admin/branches', label: 'Branches' }
       ]
     },
@@ -144,6 +144,7 @@ const Sidebar = () => {
   const [isReportsOpen, setIsReportsOpen] = useState(location.pathname.startsWith('/admin/reports'));
   const [isWorkforceOpen, setIsWorkforceOpen] = useState(
     location.pathname.includes('/admin/duty-scheduler') || 
+    location.pathname.includes('/admin/pharmacists') || 
     location.pathname.includes('/admin/branches')
   );
   const [isStoreAdminOpen, setIsStoreAdminOpen] = useState(location.pathname.startsWith('/admin/store-staff'));
@@ -156,9 +157,6 @@ const Sidebar = () => {
     const currentPath = location.pathname + location.search;
     if (subTo.includes('?')) {
       return currentPath === subTo;
-    }
-    if (subTo === '/admin/duty-scheduler') {
-      return location.pathname === '/admin/duty-scheduler' && !location.search.includes('tab=staffs') && !location.search.includes('tab=pharmacists');
     }
     return location.pathname === subTo;
   };
