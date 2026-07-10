@@ -1,6 +1,11 @@
+import { useContext } from 'react';
 import { Trash2, AlertCircle } from 'lucide-react';
+import AuthContext from '../../context/AuthContext';
 
 const RequirementList = ({ items, onRemove, onToggleUrgent }) => {
+  const { user } = useContext(AuthContext);
+  const canRemove = user?.isSuperAdmin || user?.permissions?.includes('remove_requirement_item') || user?.permissions?.includes('dashboard');
+  const canToggleUrgent = user?.isSuperAdmin || user?.permissions?.includes('toggle_requirement_urgency') || user?.permissions?.includes('dashboard');
   if (!items || items.length === 0) {
     return (
       <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -18,7 +23,9 @@ const RequirementList = ({ items, onRemove, onToggleUrgent }) => {
             <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>#</th>
             <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Medicine Name</th>
             <th style={{ padding: '1rem', textAlign: 'left', fontWeight: 600, color: 'var(--text-muted)' }}>Supplier</th>
-            <th style={{ padding: '1rem', textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)' }}>Actions</th>
+            {(canRemove || canToggleUrgent) && (
+              <th style={{ padding: '1rem', textAlign: 'right', fontWeight: 600, color: 'var(--text-muted)' }}>Actions</th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -64,60 +71,66 @@ const RequirementList = ({ items, onRemove, onToggleUrgent }) => {
                     {item.medicineId?.supplierId?.name || 'Unknown'}
                 </span>
               </td>
-              <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.25rem' }}>
-                <button 
-                    onClick={() => onToggleUrgent(item.medicineId?._id)}
-                    style={{ 
-                        background: 'transparent',
-                        border: 'none',
-                        color: item.isUrgent ? 'var(--danger)' : 'var(--text-muted)',
-                        cursor: 'pointer',
-                        padding: '0.5rem',
-                        borderRadius: '50%',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
-                    onMouseOver={(e) => {
-                        e.currentTarget.style.backgroundColor = item.isUrgent ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0, 0, 0, 0.05)';
-                    }}
-                    onMouseOut={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                    title={item.isUrgent ? "Mark as Normal" : "Mark as Very Important"}
-                >
-                    <AlertCircle size={18} fill={item.isUrgent ? 'var(--danger)' : 'none'} color={item.isUrgent ? 'white' : 'currentColor'} />
-                </button>
+              {(canRemove || canToggleUrgent) && (
+                <td style={{ padding: '1rem', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.25rem' }}>
+                  {canToggleUrgent && (
+                    <button 
+                        onClick={() => onToggleUrgent(item.medicineId?._id)}
+                        style={{ 
+                            background: 'transparent',
+                            border: 'none',
+                            color: item.isUrgent ? 'var(--danger)' : 'var(--text-muted)',
+                            cursor: 'pointer',
+                            padding: '0.5rem',
+                            borderRadius: '50%',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                        onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = item.isUrgent ? 'rgba(239, 68, 68, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+                        }}
+                        onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        title={item.isUrgent ? "Mark as Normal" : "Mark as Very Important"}
+                    >
+                        <AlertCircle size={18} fill={item.isUrgent ? 'var(--danger)' : 'none'} color={item.isUrgent ? 'white' : 'currentColor'} />
+                    </button>
+                  )}
 
-                <button 
-                    onClick={() => onRemove(item.medicineId?._id)}
-                    aria-label={`Remove ${item.medicineId?.name || 'item'} from list`}
-                    style={{ 
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'var(--text-muted)',
-                        cursor: 'pointer',
-                        padding: '0.5rem',
-                        borderRadius: '50%',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}
-                    onMouseOver={(e) => {
-                        e.currentTarget.style.color = 'var(--danger)';
-                        e.currentTarget.style.backgroundColor = '#fee2e2';
-                    }}
-                    onMouseOut={(e) => {
-                        e.currentTarget.style.color = 'var(--text-muted)';
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                    title="Remove item"
-                >
-                    <Trash2 size={18} />
-                </button>
-              </td>
+                  {canRemove && (
+                    <button 
+                        onClick={() => onRemove(item.medicineId?._id)}
+                        aria-label={`Remove ${item.medicineId?.name || 'item'} from list`}
+                        style={{ 
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'var(--text-muted)',
+                            cursor: 'pointer',
+                            padding: '0.5rem',
+                            borderRadius: '50%',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                        onMouseOver={(e) => {
+                            e.currentTarget.style.color = 'var(--danger)';
+                            e.currentTarget.style.backgroundColor = '#fee2e2';
+                        }}
+                        onMouseOut={(e) => {
+                            e.currentTarget.style.color = 'var(--text-muted)';
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                        title="Remove item"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                  )}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

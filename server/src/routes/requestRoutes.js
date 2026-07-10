@@ -1,6 +1,6 @@
 import express from 'express';
 import { submitRequest, getRequests, updateRequestStatus, getStats, deleteRequest, updateItemStatus, fulfillRequest, resetRequest, forwardItems, getMyPendingMedicines } from '../controllers/requestController.js';
-import { protect, admin, superAdmin } from '../middleware/authMiddleware.js';
+import { protect, admin, superAdmin, requirePermission } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -11,11 +11,11 @@ router.use(protect);
 router.get('/my-pending-medicines', getMyPendingMedicines);
 router.get('/stats', getStats);
 router.post('/submit', submitRequest);
-router.get('/', getRequests);
-router.put('/:id/status', admin, updateRequestStatus);
-router.put('/:id/items/:itemId/status', admin, updateItemStatus);
-router.put('/:id/fulfill', admin, fulfillRequest);
-router.put('/:id/reset', admin, resetRequest);
+router.get('/', requirePermission('view_requests'), getRequests);
+router.put('/:id/status', requirePermission('edit_requests'), updateRequestStatus);
+router.put('/:id/items/:itemId/status', requirePermission('fulfill_requests'), updateItemStatus);
+router.put('/:id/fulfill', requirePermission('fulfill_requests'), fulfillRequest);
+router.put('/:id/reset', requirePermission('edit_requests'), resetRequest);
 router.delete('/:id', protect, superAdmin, deleteRequest);
 router.post('/:id/forward', forwardItems);
 

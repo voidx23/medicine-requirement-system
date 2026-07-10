@@ -49,6 +49,10 @@ const requestSchema = mongoose.Schema({
     forwardingProcessed: {
         type: Boolean,
         default: false
+    },
+    wasProcessed: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true

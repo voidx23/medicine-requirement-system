@@ -15,6 +15,7 @@ import branchRoutes from './routes/branchRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import expiryRoutes from './routes/expiryRoutes.js';
 import dutyScheduleRoutes from './routes/dutyScheduleRoutes.js';
+// import purchaseRoutes from './routes/purchaseRoutes.js';
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.use('/api/branches', branchRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/expiry', expiryRoutes);
 app.use('/api/duty-schedules', dutyScheduleRoutes);
+// app.use('/api/purchasing', purchaseRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {

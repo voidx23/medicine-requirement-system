@@ -11,6 +11,9 @@ import { TaskCardSkeleton } from '../components/UI/Skeleton';
 
 const AdminTasks = () => {
     const { user } = useContext(AuthContext);
+    const canCreateTask = user?.isSuperAdmin || user?.permissions?.includes('create_tasks') || user?.permissions?.includes('tasks');
+    const canEditTask = user?.isSuperAdmin || user?.permissions?.includes('edit_tasks') || user?.permissions?.includes('tasks');
+    const canDeleteTask = user?.isSuperAdmin || user?.permissions?.includes('delete_tasks') || user?.permissions?.includes('tasks');
     const { showToast } = useNotification();
     
     const [tasks, setTasks] = useState([]);
@@ -97,6 +100,7 @@ const AdminTasks = () => {
     };
 
     const handleEditClick = (task) => {
+        setSelectedTask(null);
         setTaskToEdit(task);
         setIsCreateModalOpen(true);
     };
@@ -170,16 +174,18 @@ const AdminTasks = () => {
                     </div>
                 </div>
 
-                <Button 
-                    className="btn-primary" 
-                    icon={Plus} 
-                    onClick={() => {
-                        setTaskToEdit(null);
-                        setIsCreateModalOpen(true);
-                    }}
-                >
-                    Create New Task
-                </Button>
+                {canCreateTask && (
+                    <Button 
+                        className="btn-primary" 
+                        icon={Plus} 
+                        onClick={() => {
+                            setTaskToEdit(null);
+                            setIsCreateModalOpen(true);
+                        }}
+                    >
+                        Create New Task
+                    </Button>
+                )}
             </div>
 
             {/* Navigation Sections */}
@@ -253,13 +259,15 @@ const AdminTasks = () => {
                 </div>
             )}
 
-            <CreateTaskModal 
-                isOpen={isCreateModalOpen} 
-                onClose={() => { setIsCreateModalOpen(false); setTaskToEdit(null); }} 
-                onSubmit={handleSubmitTask} 
-                onSubmitTransfer={handleSubmitTransfer}
-                editTask={taskToEdit}
-            />
+            {(canCreateTask || canEditTask) && (
+                <CreateTaskModal 
+                    isOpen={isCreateModalOpen} 
+                    onClose={() => { setIsCreateModalOpen(false); setTaskToEdit(null); }} 
+                    onSubmit={handleSubmitTask} 
+                    onSubmitTransfer={handleSubmitTransfer}
+                    editTask={taskToEdit}
+                />
+            )}
 
             {selectedTask && (
                 <TaskDetailModal 
@@ -267,8 +275,8 @@ const AdminTasks = () => {
                     isAdminView={true} 
                     onClose={() => setSelectedTask(null)} 
                     onComplete={() => {}}
-                    onEdit={handleEditClick}
-                    onDelete={handleDeleteTask}
+                    onEdit={canEditTask ? handleEditClick : null}
+                    onDelete={canDeleteTask ? handleDeleteTask : null}
                     onResponded={() => { setSelectedTask(null); loadTasks(); }}
                 />
             )}

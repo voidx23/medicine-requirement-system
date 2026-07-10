@@ -65,13 +65,71 @@ export const superAdmin = (req, res, next) => {
     }
 };
 
+const LEGACY_MAPPING = {
+  view_requirements: ['dashboard'],
+  add_requirement_item: ['dashboard'],
+  remove_requirement_item: ['dashboard'],
+  toggle_requirement_urgency: ['dashboard'],
+  generate_requirement_pdf: ['dashboard', 'reports', 'history'],
+  
+  view_tasks: ['tasks'],
+  create_tasks: ['tasks'],
+  edit_tasks: ['tasks'],
+  delete_tasks: ['tasks'],
+  
+  view_requests: ['requests'],
+  fulfill_requests: ['requests'],
+  edit_requests: ['requests'],
+  forward_requests: ['requests'],
+  
+  view_order_history: ['history'],
+  delete_order_history: ['history'],
+  
+  view_reports_dashboard: ['reports'],
+  view_supplier_expiry_reports: ['reports'],
+  view_medicine_audit_logs: ['reports'],
+  
+  view_medicines: ['medicines', 'edit_medicines'],
+  edit_medicines: ['edit_medicines'],
+  delete_medicines: ['edit_medicines'],
+  bulk_update_medicine_pricing: ['edit_medicines'],
+  import_medicines_excel: ['import_excel'],
+  import_medicine_units_excel: ['import_excel'],
+  
+  view_suppliers: ['suppliers', 'edit_suppliers'],
+  edit_suppliers: ['edit_suppliers'],
+  delete_suppliers: ['edit_suppliers'],
+  import_suppliers_excel: ['import_excel'],
+  
+  view_expiry_returns: ['expiry_returns'],
+  verify_expiry_returns: ['expiry_returns'],
+  dispose_expiry_items: ['expiry_returns'],
+  edit_expiry_returns: ['expiry_returns'],
+  delete_expiry_returns: ['expiry_returns'],
+  process_handover: ['expiry_returns'],
+  view_supplier_ledgers: ['expiry_returns'],
+  log_supplier_compensation: ['expiry_returns'],
+  delete_supplier_ledgers: ['expiry_returns'],
+  
+  view_purchasing: [],
+  create_purchase_orders: [],
+  receive_purchase_orders: [],
+};
+
 export const requirePermission = (permission) => {
     return (req, res, next) => {
         if (req.user && req.user.role === 'admin' && req.user.isSuperAdmin) {
             return next();
         }
-        if (req.user && req.user.role === 'admin' && req.user.permissions && req.user.permissions.includes(permission)) {
-            return next();
+        if (req.user && req.user.role === 'admin' && req.user.permissions) {
+            if (req.user.permissions.includes(permission)) {
+                return next();
+            }
+            const legacyFallbacks = LEGACY_MAPPING[permission] || [];
+            const hasLegacyFallback = legacyFallbacks.some(legacyPerm => req.user.permissions.includes(legacyPerm));
+            if (hasLegacyFallback) {
+                return next();
+            }
         }
         res.status(403).json({ message: `Forbidden: Requires ${permission} permission` });
     };

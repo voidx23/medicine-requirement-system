@@ -1,6 +1,6 @@
 import { Edit2, Trash2, ScanBarcode, CheckCircle2, AlertCircle } from 'lucide-react';
 
-const MedicineList = ({ medicines, onEdit, onDelete, canEdit }) => {
+const MedicineList = ({ medicines, onEdit, onDelete, canEdit, canDelete }) => {
   if (!medicines || medicines.length === 0) {
     return (
       <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -53,24 +53,28 @@ const MedicineList = ({ medicines, onEdit, onDelete, canEdit }) => {
              </div>
           </div>
 
-          {canEdit && (
+          {(canEdit || canDelete) && (
               <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button 
-                  onClick={() => onEdit(medicine)}
-                  aria-label={`Edit ${medicine.name}`}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: '8px', borderRadius: '4px' }}
-                  title="Edit"
-                >
-                  <Edit2 size={18} />
-                </button>
-                <button
-                  onClick={() => onDelete(medicine._id)}
-                  aria-label={`Delete ${medicine.name}`}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: '8px', borderRadius: '4px' }}
+                {canEdit && (
+                  <button 
+                    onClick={() => onEdit(medicine)}
+                    aria-label={`Edit ${medicine.name}`}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--primary)', padding: '8px', borderRadius: '4px' }}
+                    title="Edit"
+                  >
+                    <Edit2 size={18} />
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    onClick={() => onDelete(medicine._id)}
+                    aria-label={`Delete ${medicine.name}`}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: '8px', borderRadius: '4px' }}
                     title="Delete"
-                >
-                  <Trash2 size={18} />
-                </button>
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
               </div>
           )}
         </div>

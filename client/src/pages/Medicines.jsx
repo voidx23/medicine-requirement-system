@@ -17,6 +17,7 @@ import { TableRowSkeleton } from '../components/UI/Skeleton';
 const Medicines = () => {
   const { user } = useContext(AuthContext);
   const canEdit = user?.isSuperAdmin || user?.permissions?.includes('edit_medicines');
+  const canDelete = user?.isSuperAdmin || user?.permissions?.includes('delete_medicines');
 
   const canImport = user?.isSuperAdmin || user?.permissions?.includes('import_excel');
   const { showConfirm, showToast } = useNotification();
@@ -224,6 +225,7 @@ const Medicines = () => {
         onEdit={handleEdit} 
         onDelete={handleDelete} 
         canEdit={canEdit}
+        canDelete={canDelete}
       />
       
       {loading && allMedicines.length === 0 && (

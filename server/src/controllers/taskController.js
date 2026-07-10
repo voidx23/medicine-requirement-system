@@ -18,6 +18,13 @@ export const createTask = async (req, res) => {
             return res.status(403).json({ message: 'Only admin can create general tasks' });
         }
 
+        // Permission check: if admin, require create_tasks permission
+        if (isAdmin && !req.user.isSuperAdmin) {
+            if (!req.user.permissions || (!req.user.permissions.includes('create_tasks') && !req.user.permissions.includes('tasks'))) {
+                return res.status(403).json({ message: 'Forbidden: Requires create_tasks permission' });
+            }
+        }
+
         // ── General Task ──────────────────────────────────────────────────
         if (type === 'general') {
             if (!title || !description || !targetAudience) {

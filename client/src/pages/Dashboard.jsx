@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import { Download, FileText, Loader2, PackageX } from 'lucide-react';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -10,8 +10,12 @@ import Modal from '../components/UI/Modal';
 
 import PDFOptionsModal from '../components/Dashboard/PDFOptionsModal';
 import { DashboardRowSkeleton } from '../components/UI/Skeleton';
+import AuthContext from '../context/AuthContext';
 
 const Dashboard = () => {
+  const { user } = useContext(AuthContext);
+  const canGeneratePDF = user?.isSuperAdmin || user?.permissions?.includes('generate_requirement_pdf') || user?.permissions?.includes('dashboard');
+  const canAddItem = user?.isSuperAdmin || user?.permissions?.includes('add_requirement_item') || user?.permissions?.includes('dashboard');
   const { showConfirm, showToast } = useNotification();
   const navigate = useNavigate();
   const [list, setList] = useState({ items: [] });
@@ -185,20 +189,24 @@ const Dashboard = () => {
                     <FileText size={18} />
                     <span style={{ fontWeight: 600 }}>{list.items.length} Items</span>
                 </div>
-                <Button 
-                    onClick={() => setPdfModalOpen(true)} 
-                    disabled={list.items.length === 0}
-                    icon={Download}
-                    aria-label="Generate PDF report of daily requirements"
-                >
-                    Generate PDF
-                </Button>
+                {canGeneratePDF && (
+                    <Button 
+                        onClick={() => setPdfModalOpen(true)} 
+                        disabled={list.items.length === 0}
+                        icon={Download}
+                        aria-label="Generate PDF report of daily requirements"
+                    >
+                        Generate PDF
+                    </Button>
+                )}
             </div>
         </div>
 
-        <div style={{ marginBottom: '1rem' }}>
-            <AddItem onAdd={handleAddItem} />
-        </div>
+        {canAddItem && (
+            <div style={{ marginBottom: '1rem' }}>
+                <AddItem onAdd={handleAddItem} />
+            </div>
+        )}
       </div>
 
       {/* Pending expiry widget */}

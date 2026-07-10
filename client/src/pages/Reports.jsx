@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Calendar, Filter, FileText, Download, Search, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import Loading from '../components/UI/Loading';
+import AuthContext from '../context/AuthContext';
 
 const Reports = () => {
+    const { user } = useContext(AuthContext);
+    const canGeneratePDF = user?.isSuperAdmin || user?.permissions?.includes('generate_requirement_pdf') || user?.permissions?.includes('reports');
     const [loading, setLoading] = useState(false);
     const [generatingPdf, setGeneratingPdf] = useState(false);
     const { showToast } = useNotification();
@@ -275,18 +278,20 @@ const Reports = () => {
                                 Found <strong>{reportData.totalItems}</strong> unique items for selected period
                             </div>
                         </div>
-                        <button 
-                            onClick={handleDownloadPDF}
-                            className="btn-primary"
-                            disabled={generatingPdf || reportData.totalItems === 0}
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--success)', borderColor: 'var(--success)' }}
-                        >
-                            {generatingPdf ? 'Generating...' : (
-                                <>
-                                    <Download size={18} /> Download PDF
-                                </>
-                            )}
-                        </button>
+                        {canGeneratePDF && (
+                            <button 
+                                onClick={handleDownloadPDF}
+                                className="btn-primary"
+                                disabled={generatingPdf || reportData.totalItems === 0}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--success)', borderColor: 'var(--success)' }}
+                            >
+                                {generatingPdf ? 'Generating...' : (
+                                    <>
+                                        <Download size={18} /> Download PDF
+                                    </>
+                                )}
+                            </button>
+                        )}
                     </div>
 
                     {/* Content */}

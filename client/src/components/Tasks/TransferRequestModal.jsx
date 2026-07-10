@@ -147,15 +147,19 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                         {/* Admin Edit / Delete */}
                         {isAdminView && isCreatorOrSuperAdmin && (
                             <>
-                                {alreadyResponded ? null : (
+                                {onEdit && !alreadyResponded && (
                                     <button onClick={() => setAuthAction('edit')} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3b82f6', padding: '0.25rem' }}>
                                         <Edit size={18} />
                                     </button>
                                 )}
-                                <button onClick={() => setAuthAction('delete')} title="Delete" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '0.25rem' }}>
-                                    <Trash2 size={18} />
-                                </button>
-                                <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 0.25rem' }} />
+                                {onDelete && (
+                                    <button onClick={() => setAuthAction('delete')} title="Delete" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '0.25rem' }}>
+                                        <Trash2 size={18} />
+                                    </button>
+                                )}
+                                {(onEdit || onDelete) && (
+                                    <div style={{ width: '1px', height: '20px', background: '#e2e8f0', margin: '0 0.25rem' }} />
+                                )}
                             </>
                         )}
                         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
@@ -306,8 +310,7 @@ const TransferRequestModal = ({ task, isOpen, onClose, onResponded, isAdminView,
                     const action = authAction;
                     setAuthAction(null);
                     if (action === 'edit') {
-                        onClose();
-                        setTimeout(() => onEdit(task), 100);
+                        onEdit(task);
                     } else {
                         onDelete(task._id);
                         onClose();

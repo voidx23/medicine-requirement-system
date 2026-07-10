@@ -28,6 +28,7 @@ import StoreExpiryVerification from './pages/StoreExpiryVerification';
 import HandoverPreparation from './pages/HandoverPreparation';
 import SupplierExpiryReport from './pages/SupplierExpiryReport';
 import DutyScheduler from './pages/DutyScheduler';
+// import Purchasing from './pages/Purchasing';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -65,6 +66,36 @@ const SuperAdminRoute = () => {
   const { user, loading } = useContext(AuthContext);
   if (loading) return <div>Loading...</div>;
   return user && user.isSuperAdmin ? <Outlet /> : <Navigate to="/admin" replace />;
+};
+
+const PermissionRoute = ({ permission }) => {
+  const { user, loading } = useContext(AuthContext);
+  if (loading) return <div>Loading...</div>;
+  
+  const LEGACY_MAPPING = {
+    view_requirements: ['dashboard'],
+    view_tasks: ['tasks'],
+    view_requests: ['requests'],
+    view_order_history: ['history'],
+    view_reports_dashboard: ['reports'],
+    view_medicines: ['medicines', 'edit_medicines'],
+    view_suppliers: ['suppliers', 'edit_suppliers'],
+    view_expiry_returns: ['expiry_returns'],
+    process_handover: ['expiry_returns'],
+    view_supplier_ledgers: ['expiry_returns'],
+    view_medicine_audit_logs: ['reports'],
+    generate_requirement_pdf: ['dashboard', 'reports', 'history']
+  };
+
+  const hasAccess = user && (
+    user.isSuperAdmin || 
+    (user.permissions && (
+      user.permissions.includes(permission) || 
+      (LEGACY_MAPPING[permission] || []).some(legacyPerm => user.permissions.includes(legacyPerm))
+    ))
+  );
+
+  return hasAccess ? <Outlet /> : <Navigate to="/admin" replace />;
 };
 
 const VersionPoller = () => {
@@ -178,26 +209,63 @@ const App = () => {
                 <Route element={<AdminRoute />}>
                     <Route path="/setup-device" element={<SetupDevice />} />
                     <Route path="/admin" element={<Layout />}>
-                        <Route index element={<Dashboard />} />
-                        {/* Modules protected by their own logic or shown if permitted */}
-                        <Route path="tasks" element={<AdminTasks />} />
-                        <Route path="requests" element={<AdminRequests />} />
-                        <Route path="suppliers" element={<Suppliers />} />
-                        <Route path="medicines" element={<Medicines />} />
-                        <Route path="history" element={<History />} />
-                        <Route path="expiry-verification" element={<StoreExpiryVerification />} />
-                        <Route path="handover" element={<HandoverPreparation />} />
-                        <Route path="reports/supplier-expiry" element={<SupplierExpiryReport />} />
-                        <Route path="reports" element={<Reports />} />
-                        <Route path="duty-scheduler" element={<DutyScheduler />} />
-                        <Route path="reports/audit" element={<MedicineAudit />} />
+                        <Route element={<PermissionRoute permission="view_requirements" />}>
+                            <Route index element={<Dashboard />} />
+                        </Route>
+                        {/* Modules protected by granular permissions */}
+                        <Route element={<PermissionRoute permission="view_tasks" />}>
+                            <Route path="tasks" element={<AdminTasks />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="view_requests" />}>
+                            <Route path="requests" element={<AdminRequests />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="view_suppliers" />}>
+                            <Route path="suppliers" element={<Suppliers />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="view_medicines" />}>
+                            <Route path="medicines" element={<Medicines />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="view_order_history" />}>
+                            <Route path="history" element={<History />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="view_expiry_returns" />}>
+                            <Route path="expiry-verification" element={<StoreExpiryVerification />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="process_handover" />}>
+                            <Route path="handover" element={<HandoverPreparation />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="view_supplier_ledgers" />}>
+                            <Route path="reports/supplier-expiry" element={<SupplierExpiryReport />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="view_reports_dashboard" />}>
+                            <Route path="reports" element={<Reports />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="view_duty_schedules" />}>
+                            <Route path="duty-scheduler" element={<DutyScheduler />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="view_medicine_audit_logs" />}>
+                            <Route path="reports/audit" element={<MedicineAudit />} />
+                        </Route>
+                        {/* 
+                        <Route element={<PermissionRoute permission="view_purchasing" />}>
+                            <Route path="purchasing" element={<Purchasing />} />
+                        </Route>
+                        */}
 
-                        {/* Super Admin ONLY routes */}
-                        <Route element={<SuperAdminRoute />}>
+                        {/* Delegated / Super Admin routes */}
+                        <Route element={<PermissionRoute permission="view_branches" />}>
                             <Route path="branches" element={<ManageBranches />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="view_pharmacists" />}>
                             <Route path="pharmacists" element={<ManagePharmacists />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="manage_store_staff_permissions" />}>
                             <Route path="store-staff" element={<ManageStoreStaff />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="view_user_feedback" />}>
                             <Route path="feedback" element={<AdminFeedback />} />
+                        </Route>
+                        <Route element={<PermissionRoute permission="view_dev_updates" />}>
                             <Route path="updates" element={<DevUpdates />} />
                         </Route>
                     </Route>

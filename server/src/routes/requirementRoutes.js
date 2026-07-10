@@ -1,18 +1,19 @@
 import express from 'express';
-// Import debugTime (needs to be added to import list above manually first? No, I should update import)
 import { getTodayRequirement, addItem, removeItem, generatePDF, getHistory, deleteHistory, getReportData, getMedicineAudit, toggleUrgent } from '../controllers/requirementController.js';
+import { protect, requirePermission } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.get('/history', getHistory);
-router.get('/today', getTodayRequirement);
-router.post('/add-item', addItem);
-router.delete('/item/:medicineId', removeItem);
-router.post('/generate-pdf', generatePDF);
-router.post('/report-data', getReportData); 
-router.delete('/history/:id', deleteHistory);
-router.get('/medicine-audit', getMedicineAudit);
-router.patch('/item/:medicineId/urgent', toggleUrgent);
+router.use(protect);
 
+router.get('/history', requirePermission('view_order_history'), getHistory);
+router.get('/today', requirePermission('view_requirements'), getTodayRequirement);
+router.post('/add-item', requirePermission('add_requirement_item'), addItem);
+router.delete('/item/:medicineId', requirePermission('remove_requirement_item'), removeItem);
+router.post('/generate-pdf', requirePermission('generate_requirement_pdf'), generatePDF);
+router.post('/report-data', requirePermission('view_reports_dashboard'), getReportData); 
+router.delete('/history/:id', requirePermission('delete_order_history'), deleteHistory);
+router.get('/medicine-audit', requirePermission('view_medicine_audit_logs'), getMedicineAudit);
+router.patch('/item/:medicineId/urgent', requirePermission('toggle_requirement_urgency'), toggleUrgent);
 
 export default router;

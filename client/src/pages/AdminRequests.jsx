@@ -181,7 +181,10 @@ const AdminRequests = () => {
             }
             
             setActionModal({ isOpen: false, type: 'delete', requestId: null });
-            fetchRequests(); // Refresh data
+            fetchRequests(); // Refresh active requests
+            if (activeTab === 'history') {
+                fetchHistory(); // Refresh history list as well
+            }
         } catch (error) {
              throw error; // Let modal handle error display
         }
@@ -191,9 +194,13 @@ const AdminRequests = () => {
 
     // Toggle item packed status LOCALLY
     const toggleItemPacked = (requestId, itemId) => {
+        const reqObj = requests.find(r => r._id === requestId) || historyRequests.find(r => r._id === requestId);
+        const itemObj = reqObj?.items?.find(it => it._id === itemId);
+        const dbStatus = itemObj?.status || 'pending';
+
         setPackingState(prev => {
             const requestState = prev[requestId] || {};
-            const currentStatus = requestState[itemId] || 'pending';
+            const currentStatus = requestState[itemId] !== undefined ? requestState[itemId] : dbStatus;
             const newStatus = currentStatus === 'packed' ? 'pending' : 'packed';
             
             return {
@@ -216,17 +223,21 @@ const AdminRequests = () => {
         if (!isConfirmed) return;
 
         try {
-            // Prepare items payload from current local state
+            // Prepare items payload from current local state and fallback to database values for untoggled items
+            const reqObj = requests.find(r => r._id === reqId) || historyRequests.find(r => r._id === reqId);
             const currentRequestState = packingState[reqId] || {};
-            const itemsToUpdate = Object.entries(currentRequestState).map(([itemId, status]) => ({
-                _id: itemId,
-                status
+            const itemsToUpdate = reqObj.items.map(item => ({
+                _id: item._id,
+                status: currentRequestState[item._id] !== undefined ? currentRequestState[item._id] : (item.status || 'pending')
             }));
 
             await api.put(`/requests/${reqId}/fulfill`, { items: itemsToUpdate });
             
             showToast('Fulfillment completed successfully', 'success');
             fetchRequests(); // Refresh to get updated status and lock UI
+            if (activeTab === 'history') {
+                fetchHistory(); // Refresh history list as well
+            }
         } catch (error) {
             console.error(error);
             showToast('Failed to complete fulfillment', 'error');
@@ -455,6 +466,16 @@ const AdminRequests = () => {
                                                             URGENT
                                                         </span>
                                                     )}
+                                                    {req.wasProcessed && (
+                                                        <span style={{ 
+                                                            fontSize: '0.65rem', background: '#d97706', color: 'white', 
+                                                            padding: '1px 6px', borderRadius: '4px', fontWeight: 700,
+                                                            letterSpacing: '0.5px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem'
+                                                        }}>
+                                                            <RotateCw size={10} color="white" />
+                                                            RE-OPENED FOR EDIT
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                                     <span>{new Date(req.createdAt).toLocaleString()}</span>
@@ -477,6 +498,25 @@ const AdminRequests = () => {
                                     {/* Expanded Content */}
                                     {expandedId === req._id && (
                                         <div style={{ padding: '0 1.5rem 1.5rem 1.5rem', borderTop: '1px solid var(--glass-border)' }}>
+                                            {req.wasProcessed && (
+                                                <div style={{ 
+                                                    marginTop: '1.2rem', 
+                                                    padding: '0.85rem 1.2rem', 
+                                                    background: 'rgba(217, 119, 6, 0.08)', 
+                                                    border: '1px solid rgba(217, 119, 6, 0.25)', 
+                                                    borderRadius: '10px', 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    gap: '0.75rem',
+                                                    color: '#b45309',
+                                                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+                                                }}>
+                                                    <RotateCw size={16} style={{ minWidth: '16px' }} />
+                                                    <span style={{ fontSize: '0.88rem', fontWeight: 550, lineHeight: 1.4 }}>
+                                                        <strong>Notice:</strong> This request list has already been processed before. It has been unlocked and re-opened for edits.
+                                                    </span>
+                                                </div>
+                                            )}
                                             <div style={{ marginTop: '1rem', width: '100%' }}>
                                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                                     <thead>
@@ -495,7 +535,7 @@ const AdminRequests = () => {
                                                             // For rejected/completed requests, rely purely on item.status
                                                             // For pending requests, use local state
                                                             const isInteractive = req.status === 'pending' || req.status === 'approved'; 
-                                                            const currentStatus = isInteractive ? (requestItemStates[item._id] || 'pending') : item.status;
+                                                            const currentStatus = isInteractive ? (requestItemStates[item._id] !== undefined ? requestItemStates[item._id] : (item.status || 'pending')) : item.status;
                                                             const isPacked = currentStatus === 'packed';
 
                                                             return (

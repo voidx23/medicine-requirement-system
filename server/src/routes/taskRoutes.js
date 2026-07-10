@@ -9,7 +9,7 @@ import {
     deleteTask,
     respondToTransfer,
 } from '../controllers/taskController.js';
-import { protect, admin } from '../middleware/authMiddleware.js';
+import { protect, admin, requirePermission } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -22,10 +22,10 @@ router.put('/:taskId/transfer-respond', protect, respondToTransfer);
 // createTask is protect (not admin) — controller enforces role per type
 router.route('/')
     .post(protect, createTask)
-    .get(protect, admin, getAdminTasks);
+    .get(protect, requirePermission('view_tasks'), getAdminTasks);
 
 router.route('/:id')
-    .put(protect, admin, updateTask)
-    .delete(protect, admin, deleteTask);
+    .put(protect, requirePermission('edit_tasks'), updateTask)
+    .delete(protect, requirePermission('delete_tasks'), deleteTask);
 
 export default router;

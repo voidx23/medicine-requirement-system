@@ -1,15 +1,15 @@
 import express from 'express';
-import { protect, superAdmin } from '../middleware/authMiddleware.js';
+import { protect, superAdmin, requirePermission } from '../middleware/authMiddleware.js';
 import { getStoreStaff, createStoreStaff, updateStoreStaff, deleteStoreStaff } from '../controllers/storeStaffController.js';
 
 const router = express.Router();
 
 router.route('/')
-    .get(protect, superAdmin, getStoreStaff)
-    .post(protect, superAdmin, createStoreStaff);
+    .get(protect, requirePermission('manage_store_staff_permissions'), getStoreStaff)
+    .post(protect, requirePermission('manage_store_staff_permissions'), createStoreStaff);
 
 router.route('/:id')
-    .put(protect, superAdmin, updateStoreStaff)
-    .delete(protect, superAdmin, deleteStoreStaff);
+    .put(protect, requirePermission('manage_store_staff_permissions'), updateStoreStaff)
+    .delete(protect, requirePermission('manage_store_staff_permissions'), deleteStoreStaff);
 
 export default router;

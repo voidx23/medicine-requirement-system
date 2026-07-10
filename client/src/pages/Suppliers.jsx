@@ -16,6 +16,7 @@ import Loading from '../components/UI/Loading';
 const Suppliers = () => {
   const { user } = useContext(AuthContext);
   const canEdit = user?.isSuperAdmin || user?.permissions?.includes('edit_suppliers');
+  const canDelete = user?.isSuperAdmin || user?.permissions?.includes('delete_suppliers');
   const canImport = user?.isSuperAdmin || user?.permissions?.includes('import_excel');
   const { showConfirm, showToast } = useNotification();
   const [suppliers, setSuppliers] = useState([]);
@@ -130,6 +131,7 @@ const Suppliers = () => {
           onDelete={handleDelete}
           onProductView={setViewingSupplier} 
           canEdit={canEdit}
+          canDelete={canDelete}
         />
       )}
 

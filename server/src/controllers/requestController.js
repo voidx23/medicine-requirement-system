@@ -199,6 +199,7 @@ export const updateItemStatus = async (req, res) => {
             request.status = 'unfulfilled';
         }
         
+        request.wasProcessed = true;
         await request.save();
         res.json(request);
     } catch (error) {
@@ -240,6 +241,7 @@ export const fulfillRequest = async (req, res) => {
             request.status = 'unfulfilled'; 
         }
 
+        request.wasProcessed = true;
         const updatedRequest = await request.save();
         res.json(updatedRequest);
     } catch (error) {
@@ -270,8 +272,9 @@ export const resetRequest = async (req, res) => {
              return res.status(401).json({ message: 'Invalid Admin Password' });
         }
 
-        // Unlock logic: Set status back to 'approved' so it becomes interactive
-        request.status = 'approved';
+        // Unlock logic: Set status back to 'pending' and flag as processed
+        request.status = 'pending';
+        request.wasProcessed = true;
         
         const updatedRequest = await request.save();
         res.json(updatedRequest);

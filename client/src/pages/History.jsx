@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Calendar, ChevronRight, Package, Tag, Trash2, Printer } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
@@ -6,8 +6,11 @@ import { HistoryCardSkeleton } from '../components/UI/Skeleton';
 import PDFOptionsModal from '../components/Dashboard/PDFOptionsModal';
 import PasswordModal from '../components/UI/PasswordModal';
 import HistoryDetailsModal from '../components/History/HistoryDetailsModal';
+import AuthContext from '../context/AuthContext';
 
 const History = () => {
+  const { user } = useContext(AuthContext);
+  const canGeneratePDF = user?.isSuperAdmin || user?.permissions?.includes('generate_requirement_pdf') || user?.permissions?.includes('history');
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -195,22 +198,24 @@ const History = () => {
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <button 
-                            onClick={(e) => { e.stopPropagation(); handlePrintClick(record); }}
-                            className="btn-icon"
-                            aria-label="Print requirement list"
-                            style={{ 
-                                color: 'var(--primary)', 
-                                padding: '0.5rem', 
-                                borderRadius: '8px', 
-                                border: '1px solid var(--primary-light)',
-                                background: 'white',
-                                cursor: 'pointer'
-                            }}
-                            title="Print PDF"
-                        >
-                        <Printer size={20} />
-                        </button>
+                        {canGeneratePDF && (
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); handlePrintClick(record); }}
+                                className="btn-icon"
+                                aria-label="Print requirement list"
+                                style={{ 
+                                    color: 'var(--primary)', 
+                                    padding: '0.5rem', 
+                                    borderRadius: '8px', 
+                                    border: '1px solid var(--primary-light)',
+                                    background: 'white',
+                                    cursor: 'pointer'
+                                }}
+                                title="Print PDF"
+                            >
+                            <Printer size={20} />
+                            </button>
+                        )}
                         
                         <button 
                         onClick={(e) => { e.stopPropagation(); handleVerifyDelete(record._id); }}

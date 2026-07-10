@@ -76,15 +76,19 @@ const TaskDetailModal = ({ task, onClose, onComplete, isAdminView, onEdit, onDel
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         {isAdminView && isCreatorOrSuperAdmin && (
                             <>
-                                {!isFullyCompleted && (
+                                {onEdit && !isFullyCompleted && (
                                     <button onClick={() => setAuthAction('edit')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3b82f6', padding: '0.25rem' }} title="Edit Task">
                                         <Edit size={20} />
                                     </button>
                                 )}
-                                <button onClick={() => setAuthAction('delete')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '0.25rem' }} title="Delete Task">
-                                    <Trash2 size={20} />
-                                </button>
-                                <div style={{ width: '1px', height: '24px', backgroundColor: '#e2e8f0', margin: '0 0.5rem' }}></div>
+                                {onDelete && (
+                                    <button onClick={() => setAuthAction('delete')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '0.25rem' }} title="Delete Task">
+                                        <Trash2 size={20} />
+                                    </button>
+                                )}
+                                {(onEdit || onDelete) && (
+                                    <div style={{ width: '1px', height: '24px', backgroundColor: '#e2e8f0', margin: '0 0.5rem' }}></div>
+                                )}
                             </>
                         )}
                         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '0.25rem' }}>
@@ -185,11 +189,8 @@ const TaskDetailModal = ({ task, onClose, onComplete, isAdminView, onEdit, onDel
                     const actionToTake = authAction;
                     setAuthAction(null); // Close password modal
                     
-                    // Important: close the detail modal before opening edit so they don't layer awkwardly
                     if (actionToTake === 'edit') {
-                        onClose();
-                        // Slight delay to allow DetailModal to close before EditModal opens
-                        setTimeout(() => onEdit(task), 100);
+                        onEdit(task);
                     } else {
                         onDelete(task._id);
                         onClose(); // Close detail view after delete

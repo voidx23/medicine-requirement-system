@@ -1,5 +1,5 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Pill, History, GitBranch, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, PackageX, ArrowRightLeft, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, Users, Pill, History, GitBranch, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, PackageX, ArrowRightLeft, CalendarDays, ShoppingCart } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
 import { useContext, useState, useEffect, useRef } from 'react';
 import AuthContext from '../../context/AuthContext';
@@ -78,68 +78,91 @@ const Sidebar = () => {
 
   const location = useLocation();
   
+  const hasPermission = (permission) => {
+    if (!user) return false;
+    if (user.isSuperAdmin) return true;
+    
+    const LEGACY_MAPPING = {
+      view_requirements: ['dashboard'],
+      view_tasks: ['tasks'],
+      view_requests: ['requests'],
+      view_order_history: ['history'],
+      view_reports_dashboard: ['reports'],
+      view_medicines: ['medicines', 'edit_medicines'],
+      view_suppliers: ['suppliers', 'edit_suppliers'],
+      view_expiry_returns: ['expiry_returns'],
+      process_handover: ['expiry_returns'],
+      view_supplier_ledgers: ['expiry_returns'],
+      view_medicine_audit_logs: ['reports'],
+      view_purchasing: []
+    };
+
+    if (user.permissions && user.permissions.includes(permission)) {
+      return true;
+    }
+    const legacyFallbacks = LEGACY_MAPPING[permission] || [];
+    return legacyFallbacks.some(legacyPerm => user.permissions && user.permissions.includes(legacyPerm));
+  };
+
   const rawLinks = [
-    { to: '/admin', icon: LayoutDashboard, label: 'Daily Requirement List', reqPerm: 'dashboard' },
-    { to: '/admin/tasks', icon: CheckSquare, label: 'Tasks', reqPerm: 'tasks' },
-    { to: '/admin/requests', icon: ClipboardList, label: 'Requests', badge: pendingRequestsCount, reqPerm: 'requests' },
-    { to: '/admin/suppliers', icon: Truck, label: 'Suppliers', reqPerm: 'suppliers' },
-    { to: '/admin/medicines', icon: Pill, label: 'Medicines', reqPerm: 'medicines' },
+    { to: '/admin', icon: LayoutDashboard, label: 'Daily Requirement List', reqPerm: 'view_requirements' },
+    { to: '/admin/tasks', icon: CheckSquare, label: 'Tasks', reqPerm: 'view_tasks' },
+    { to: '/admin/requests', icon: ClipboardList, label: 'Requests', badge: pendingRequestsCount, reqPerm: 'view_requests' },
+    // { to: '/admin/purchasing', icon: ShoppingCart, label: 'Purchasing', reqPerm: 'view_purchasing' },
+    { to: '/admin/suppliers', icon: Truck, label: 'Suppliers', reqPerm: 'view_suppliers' },
+    { to: '/admin/medicines', icon: Pill, label: 'Medicines', reqPerm: 'view_medicines' },
     { 
       id: 'workforce-management', 
       icon: CalendarDays, 
       label: 'Workforce Management',
-      superAdminOnly: true,
       subLinks: [
-        { to: '/admin/duty-scheduler', label: 'Duty Scheduler' },
-        { to: '/admin/pharmacists', label: 'Staffs' },
-        { to: '/admin/branches', label: 'Branches' }
+        { to: '/admin/duty-scheduler', label: 'Duty Scheduler', reqPerm: 'view_duty_schedules' },
+        { to: '/admin/pharmacists', label: 'Staffs', reqPerm: 'view_pharmacists' },
+        { to: '/admin/branches', label: 'Branches', reqPerm: 'view_branches' }
       ]
     },
     { 
       id: 'store-administration', 
       icon: Users, 
       label: 'Store Administration',
-      superAdminOnly: true,
       subLinks: [
-        { to: '/admin/store-staff', label: 'Store Staff' }
+        { to: '/admin/store-staff', label: 'Store Staff', reqPerm: 'manage_store_staff_permissions' }
       ]
     },
     { 
       id: 'expiry-management',
       icon: PackageX,
       label: 'Expiry Management',
-      reqPerm: 'expiry_returns',
       subLinks: [
-        { to: '/admin/expiry-verification', label: 'Expiry Verification' },
-        { to: '/admin/handover', label: 'Handover Prep' },
-        { to: '/admin/reports/supplier-expiry', label: 'Supplier Ledger' }
+        { to: '/admin/expiry-verification', label: 'Expiry Verification', reqPerm: 'view_expiry_returns' },
+        { to: '/admin/handover', label: 'Handover Prep', reqPerm: 'process_handover' },
+        { to: '/admin/reports/supplier-expiry', label: 'Supplier Ledger', reqPerm: 'view_supplier_ledgers' }
       ]
     },
-    { to: '/admin/history', icon: History, label: 'Req History', reqPerm: 'history' },
+    { to: '/admin/history', icon: History, label: 'Req History', reqPerm: 'view_order_history' },
     { 
       id: 'reports-menu', 
       icon: FileText, 
       label: 'Reports',
-      reqPerm: 'reports',
       subLinks: [
-        { to: '/admin/reports', label: 'Requirement Report' },
-        { to: '/admin/reports/audit', label: 'Medicine Audit' }
+        { to: '/admin/reports', label: 'Requirement Report', reqPerm: 'view_reports_dashboard' },
+        { to: '/admin/reports/audit', label: 'Medicine Audit', reqPerm: 'view_medicine_audit_logs' }
       ]
     },
-    { to: '/admin/feedback', icon: MessageSquare, label: 'Feedback', superAdminOnly: true },
-    { to: '/admin/updates', icon: GitBranch, label: 'Dev Updates', superAdminOnly: true },
+    { to: '/admin/feedback', icon: MessageSquare, label: 'Feedback', reqPerm: 'view_user_feedback' },
+    { to: '/admin/updates', icon: GitBranch, label: 'Dev Updates', reqPerm: 'view_dev_updates' },
   ];
 
-  const links = rawLinks.filter(link => {
-      if (link.superAdminOnly) {
-          return user?.isSuperAdmin;
+  const links = rawLinks.map(link => {
+      if (link.subLinks) {
+          const activeSubLinks = link.subLinks.filter(sub => hasPermission(sub.reqPerm));
+          if (activeSubLinks.length > 0) {
+              return { ...link, subLinks: activeSubLinks };
+          }
+          return null;
       }
-      if (!user?.isSuperAdmin && link.reqPerm) {
-          const perms = user?.permissions || [];
-          return perms.includes(link.reqPerm);
-      }
-      return true; // dashboard/superAdmin logic handled above
-  });
+      return hasPermission(link.reqPerm) ? link : null;
+  }).filter(Boolean);
 
   const [isReportsOpen, setIsReportsOpen] = useState(location.pathname.startsWith('/admin/reports'));
   const [isWorkforceOpen, setIsWorkforceOpen] = useState(
