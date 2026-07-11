@@ -8,7 +8,9 @@ const SupplierForm = ({ initialData, onSuccess, onCancel }) => {
     name: '',
     crNo: '',
     phone: '',
-    email: ''
+    email: '',
+    address: '',
+    contact: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -19,7 +21,9 @@ const SupplierForm = ({ initialData, onSuccess, onCancel }) => {
         name: initialData.name || '',
         crNo: initialData.crNo || '',
         phone: initialData.phone || '',
-        email: initialData.email || ''
+        email: initialData.email || '',
+        address: initialData.address || '',
+        contact: initialData.contact || ''
       });
     }
   }, [initialData]);
@@ -65,6 +69,13 @@ const SupplierForm = ({ initialData, onSuccess, onCancel }) => {
         value={formData.crNo}
         onChange={handleChange}
       />
+
+      <Input
+        id="contact"
+        label="Contact Person (Optional)"
+        value={formData.contact}
+        onChange={handleChange}
+      />
       
       <Input
         id="phone"
@@ -78,6 +89,13 @@ const SupplierForm = ({ initialData, onSuccess, onCancel }) => {
         label="Email"
         type="email"
         value={formData.email}
+        onChange={handleChange}
+      />
+
+      <Input
+        id="address"
+        label="Address (Optional)"
+        value={formData.address}
         onChange={handleChange}
       />
 

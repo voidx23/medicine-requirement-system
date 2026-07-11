@@ -2,25 +2,31 @@ import { useState, useEffect } from 'react';
 import Input from '../UI/Input';
 import Button from '../UI/Button';
 import api from '../../services/api';
+import { RotateCw } from 'lucide-react';
 
 const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
   const [formData, setFormData] = useState({
     name: '',
     barcode: '',
     supplierId: '',
+    divisionId: '',
     costPrice: '',
     sellingPrice: '',
-    unitsPerBox: ''
+    unitsPerBox: '',
+    unit: 'Box',
+    status: 'active'
   });
   const [suppliers, setSuppliers] = useState([]);
+  const [divisions, setDivisions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [divisionsLoading, setDivisionsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Fetch Suppliers on Mount
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
         const response = await api.get('/suppliers');
-        // Filter only active suppliers if needed, or backend handles it
         setSuppliers(response.data.filter(s => s.isActive !== false));
       } catch (err) {
         console.error('Failed to load suppliers', err);
@@ -30,21 +36,53 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
     fetchSuppliers();
   }, []);
 
+  // Fetch Divisions when Supplier changes
+  useEffect(() => {
+    const fetchDivisions = async () => {
+      if (!formData.supplierId) {
+        setDivisions([]);
+        setFormData(prev => ({ ...prev, divisionId: '' }));
+        return;
+      }
+      setDivisionsLoading(true);
+      try {
+        const response = await api.get(`/suppliers/${formData.supplierId}/divisions`);
+        setDivisions(response.data);
+        
+        // If initialData doesn't belong to this supplier, clear division selection
+        if (initialData && initialData.supplierId?._id === formData.supplierId && initialData.divisionId?._id) {
+          setFormData(prev => ({ ...prev, divisionId: initialData.divisionId?._id }));
+        } else {
+          setFormData(prev => ({ ...prev, divisionId: '' }));
+        }
+      } catch (err) {
+        console.error('Failed to load divisions', err);
+      } finally {
+        setDivisionsLoading(false);
+      }
+    };
+    fetchDivisions();
+  }, [formData.supplierId, initialData]);
+
+  // Load Initial Data
   useEffect(() => {
     if (initialData) {
       setFormData({
         name: initialData.name || '',
         barcode: initialData.barcode || '',
         supplierId: initialData.supplierId?._id || initialData.supplierId || '',
+        divisionId: initialData.divisionId?._id || initialData.divisionId || '',
         costPrice: initialData.costPrice || '',
         sellingPrice: initialData.sellingPrice || '',
-        unitsPerBox: initialData.unitsPerBox || ''
+        unitsPerBox: initialData.unitsPerBox || '',
+        unit: initialData.unit || 'Box',
+        status: initialData.status || (initialData.isActive === false ? 'inactive' : 'active')
       });
     }
   }, [initialData]);
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
+    setFormData(prev => ({ ...prev, [e.target.id]: e.target.value }));
   };
 
   const handleSubmit = async (e) => {
@@ -76,7 +114,7 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
       
       <Input
         id="name"
-        label="Medicine Name"
+        label="Medicine Name *"
         value={formData.name}
         onChange={handleChange}
         required
@@ -123,39 +161,89 @@ const MedicineForm = ({ initialData, onSuccess, onCancel }) => {
             placeholder="0.000"
           />
       </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <Input
+            id="unit"
+            label="Unit of Measure (Optional)"
+            value={formData.unit}
+            onChange={handleChange}
+            placeholder="e.g. Box, Bottle, Vial"
+          />
+          
+          <div className="flex flex-col gap-1">
+            <label 
+              htmlFor="status" 
+              style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-main)', marginBottom: '0.3rem', display: 'block' }}
+            >
+              Status
+            </label>
+            <select
+              id="status"
+              value={formData.status}
+              onChange={handleChange}
+              style={{
+                 width: '100%', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '8px',
+                 background: 'white', fontSize: '0.95rem'
+              }}
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+      </div>
       
-      <div className="flex flex-col gap-1 mb-4">
-        <label 
-          htmlFor="supplierId" 
-          style={{ 
-            fontSize: '0.9rem', 
-            fontWeight: 500, 
-            color: 'var(--text-main)',
-            marginBottom: '0.3rem',
-            display: 'block'
-          }}
-        >
-          Supplier
-        </label>
-        <select
-          id="supplierId"
-          value={formData.supplierId}
-          onChange={handleChange}
-          required
-          style={{
-             width: '100%',
-             padding: '0.6rem',
-             border: '1px solid #cbd5e1',
-             borderRadius: '8px',
-             background: 'white',
-             fontSize: '0.95rem'
-          }}
-        >
-          <option value="">Select a Supplier</option>
-          {suppliers.map(s => (
-            <option key={s._id} value={s._id}>{s.name} ({s.crNo})</option>
-          ))}
-        </select>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }} className="mb-4">
+        <div className="flex flex-col gap-1">
+          <label 
+            htmlFor="supplierId" 
+            style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-main)', marginBottom: '0.3rem', display: 'block' }}
+          >
+            Supplier *
+          </label>
+          <select
+            id="supplierId"
+            value={formData.supplierId}
+            onChange={handleChange}
+            required
+            style={{
+               width: '100%', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '8px',
+               background: 'white', fontSize: '0.95rem'
+            }}
+          >
+            <option value="">Select a Supplier</option>
+            {suppliers.map(s => (
+              <option key={s._id} value={s._id}>{s.name} ({s.crNo || 'No CR'})</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label 
+            htmlFor="divisionId" 
+            style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-main)', marginBottom: '0.3rem', display: 'block' }}
+          >
+            Division {divisionsLoading && <RotateCw className="spin" size={12} style={{ display: 'inline', marginLeft: '0.25rem' }} />}
+          </label>
+          <select
+            id="divisionId"
+            value={formData.divisionId}
+            onChange={handleChange}
+            disabled={!formData.supplierId || divisions.length === 0}
+            style={{
+               width: '100%', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '8px',
+               background: !formData.supplierId || divisions.length === 0 ? '#f1f5f9' : 'white', 
+               fontSize: '0.95rem'
+            }}
+          >
+            <option value="">
+              {!formData.supplierId ? 'Select a Supplier First' : (divisions.length === 0 ? 'No Divisions Found' : 'Select a Division')}
+            </option>
+            {divisions.map(d => (
+              <option key={d._id} value={d._id}>{d.divisionName}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>

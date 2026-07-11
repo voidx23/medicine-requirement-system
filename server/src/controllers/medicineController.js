@@ -19,7 +19,7 @@ export const getMedicines = async (req, res) => {
 
         const skip = (page - 1) * limit;
 
-        const { search, supplierId, filterType } = req.query;
+        const { search, supplierId, divisionId, filterType } = req.query;
 
         const keyword = search
             ? {
@@ -33,6 +33,10 @@ export const getMedicines = async (req, res) => {
 
         if(supplierId) {
             query.supplierId = supplierId;
+        }
+
+        if(divisionId) {
+            query.divisionId = divisionId;
         }
 
         if (filterType === 'unverified_units') {
@@ -54,6 +58,7 @@ export const getMedicines = async (req, res) => {
         // 2. Fetch paginated data
         const medicines = await Medicine.find(query)
             .populate('supplierId', 'name')
+            .populate('divisionId', 'divisionName')
             .collation({ locale: 'en', strength: 2 }) // Case-insensitive sort
             .sort({ name: 1 })
             .skip(skip)
@@ -74,7 +79,7 @@ export const getMedicines = async (req, res) => {
 // @route   POST /api/medicines
 export const addMedicine = async (req, res) => {
     try {
-        let { name, supplierId, barcode, supplierName, costPrice, sellingPrice } = req.body;
+        let { name, supplierId, barcode, supplierName, costPrice, sellingPrice, divisionId, unit, status } = req.body;
         name = String(name || '').trim();
         const barcodeVal = barcode !== undefined && barcode !== null ? String(barcode).trim() : '';
         
@@ -115,11 +120,16 @@ export const addMedicine = async (req, res) => {
             supplierId,
             barcode: barcodeVal,
             costPrice: Number(costPrice) || 0,
-            sellingPrice: Number(sellingPrice) || 0
+            sellingPrice: Number(sellingPrice) || 0,
+            divisionId: divisionId || undefined,
+            unit: unit || 'Box',
+            status: status || 'active'
         });
 
-        // Fetch again to populate supplier name immediately for frontend
-        const fullMedicine = await Medicine.findById(medicine._id).populate('supplierId', 'name');
+        // Fetch again to populate supplier and division name immediately for frontend
+        const fullMedicine = await Medicine.findById(medicine._id)
+            .populate('supplierId', 'name')
+            .populate('divisionId', 'divisionName');
 
         res.status(201).json(fullMedicine);
     } catch (error) {
@@ -131,7 +141,7 @@ export const addMedicine = async (req, res) => {
 // @route   PUT /api/medicines/:id
 export const updateMedicine = async (req, res) => {
     try {
-            const { name, barcode, supplierId, costPrice, sellingPrice, unitsPerBox } = req.body;
+            const { name, barcode, supplierId, costPrice, sellingPrice, unitsPerBox, divisionId, unit, status } = req.body;
             const medicine = await Medicine.findById(req.params.id);
     
             if (medicine) {
@@ -171,9 +181,20 @@ export const updateMedicine = async (req, res) => {
                     medicine.unitsPerBox = Number(unitsPerBox) || 1;
                     medicine.unitVerified = true;
                 }
+                if (divisionId !== undefined) {
+                    medicine.divisionId = divisionId || undefined;
+                }
+                if (unit !== undefined) {
+                    medicine.unit = unit || 'Box';
+                }
+                if (status !== undefined) {
+                    medicine.status = status;
+                }
             
             const updatedMedicine = await medicine.save();
-            const fullMedicine = await Medicine.findById(updatedMedicine._id).populate('supplierId', 'name');
+            const fullMedicine = await Medicine.findById(updatedMedicine._id)
+                .populate('supplierId', 'name')
+                .populate('divisionId', 'divisionName');
             res.json(fullMedicine);
         } else {
             res.status(404).json({ message: 'Medicine not found' });
