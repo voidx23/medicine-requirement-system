@@ -11,7 +11,12 @@ router.use(protect);
 router.get('/my-pending-medicines', getMyPendingMedicines);
 router.get('/stats', getStats);
 router.post('/submit', submitRequest);
-router.get('/', requirePermission('view_requests'), getRequests);
+router.get('/', (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        return requirePermission('view_requests')(req, res, next);
+    }
+    next();
+}, getRequests);
 router.put('/:id/status', requirePermission('edit_requests'), updateRequestStatus);
 router.put('/:id/items/:itemId/status', requirePermission('fulfill_requests'), updateItemStatus);
 router.put('/:id/fulfill', requirePermission('fulfill_requests'), fulfillRequest);
