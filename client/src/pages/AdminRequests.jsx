@@ -466,7 +466,7 @@ const AdminRequests = () => {
                                                             URGENT
                                                         </span>
                                                     )}
-                                                    {req.wasProcessed && (
+                                                    {req.wasProcessed && (req.status === 'pending' || req.status === 'approved') && (
                                                         <span style={{ 
                                                             fontSize: '0.65rem', background: '#d97706', color: 'white', 
                                                             padding: '1px 6px', borderRadius: '4px', fontWeight: 700,
@@ -492,13 +492,10 @@ const AdminRequests = () => {
                                             {req.status === 'completed' && <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>COMPLETED</span>}
                                             {req.status === 'rejected' && <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#991b1b', background: '#fee2e2', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>REJECTED</span>}
                                             {expandedId === req._id ? <ChevronUp size={20} color="var(--text-muted)"/> : <ChevronDown size={20} color="var(--text-muted)"/>}
-                                        </div>
-                                    </div>
-
-                                    {/* Expanded Content */}
+                        {/* Expanded Content */}
                                     {expandedId === req._id && (
                                         <div style={{ padding: '0 1.5rem 1.5rem 1.5rem', borderTop: '1px solid var(--glass-border)' }}>
-                                            {req.wasProcessed && (
+                                            {req.wasProcessed && (req.status === 'pending' || req.status === 'approved') && (
                                                 <div style={{ 
                                                     marginTop: '1.2rem', 
                                                     padding: '0.85rem 1.2rem', 

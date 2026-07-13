@@ -199,7 +199,6 @@ export const updateItemStatus = async (req, res) => {
             request.status = 'unfulfilled';
         }
         
-        request.wasProcessed = true;
         await request.save();
         res.json(request);
     } catch (error) {
@@ -238,10 +237,9 @@ export const fulfillRequest = async (req, res) => {
         } else if (packedItems > 0) {
             request.status = 'partially_fulfilled';
         } else {
-            request.status = 'unfulfilled'; 
+            request.status = 'unfulfilled';
         }
 
-        request.wasProcessed = true;
         const updatedRequest = await request.save();
         res.json(updatedRequest);
     } catch (error) {
