@@ -492,7 +492,9 @@ const AdminRequests = () => {
                                             {req.status === 'completed' && <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>COMPLETED</span>}
                                             {req.status === 'rejected' && <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#991b1b', background: '#fee2e2', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>REJECTED</span>}
                                             {expandedId === req._id ? <ChevronUp size={20} color="var(--text-muted)"/> : <ChevronDown size={20} color="var(--text-muted)"/>}
-                        {/* Expanded Content */}
+                                        </div>
+                                    </div>
+                                    {/* Expanded Content */}
                                     {expandedId === req._id && (
                                         <div style={{ padding: '0 1.5rem 1.5rem 1.5rem', borderTop: '1px solid var(--glass-border)' }}>
                                             {req.wasProcessed && (req.status === 'pending' || req.status === 'approved') && (
