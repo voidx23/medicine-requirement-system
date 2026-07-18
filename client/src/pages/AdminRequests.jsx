@@ -11,6 +11,7 @@ import { RequestCardSkeleton } from '../components/UI/Skeleton';
 const AdminRequests = () => {
     const { user } = useContext(AuthContext);
     const { showConfirm, showToast } = useNotification();
+    const canFulfill = user?.isSuperAdmin || user?.permissions?.includes('dashboard') || user?.permissions?.includes('fulfill_requests');
     const [requests, setRequests] = useState([]);
     const [historyRequests, setHistoryRequests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -521,11 +522,11 @@ const AdminRequests = () => {
                                                     <thead>
                                                         <tr style={{ textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.9rem', borderBottom: '1px solid #eee' }}>
                                                             <th style={{ padding: '0.75rem 0', width: '50px' }}>#</th>
-                                                            {req.status !== 'rejected' && (user?.isSuperAdmin || user?.permissions?.includes('dashboard')) && <th style={{ padding: '0.75rem 0', width: '50px' }}>Packed</th>}
+                                                            {req.status !== 'rejected' && canFulfill && <th style={{ padding: '0.75rem 0', width: '50px' }}>Packed</th>}
                                                             <th style={{ padding: '0.75rem 0' }}>Medicine</th>
                                                             <th style={{ padding: '0.75rem 0' }}>Supplier</th>
                                                             <th style={{ padding: '0.75rem 0' }}>Qty</th>
-                                                            {(user?.isSuperAdmin || user?.permissions?.includes('dashboard')) && <th style={{ padding: '0.75rem 0', textAlign: 'right' }}>Actions</th>}
+                                                            {canFulfill && <th style={{ padding: '0.75rem 0', textAlign: 'right' }}>Actions</th>}
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -546,7 +547,7 @@ const AdminRequests = () => {
                                                                     transition: 'background 0.3s ease'
                                                                 }}>
                                                                     <td style={{ padding: '0.75rem 0', color: 'var(--text-muted)' }}>{idx + 1}</td>
-                                                                    {req.status !== 'rejected' && (user?.isSuperAdmin || user?.permissions?.includes('dashboard')) && (
+                                                                    {req.status !== 'rejected' && canFulfill && (
                                                                         <td style={{ width: '40px', padding: '0.75rem 0' }}>
                                                                             <button
                                                                                 disabled={!isInteractive} 
@@ -584,7 +585,7 @@ const AdminRequests = () => {
                                                                     </td>
                                                                     <td style={{ padding: '0.75rem 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{item.medicineId?.supplierId?.name || 'Unknown'}</td>
                                                                     <td style={{ padding: '0.75rem 0', fontWeight: 'bold' }}>{item.quantity}</td>
-                                                                    {(user?.isSuperAdmin || user?.permissions?.includes('dashboard')) && (
+                                                                    {canFulfill && (
                                                                         <td style={{ padding: '0.75rem 0', textAlign: 'right' }}>
                                                                             {item.medicineId && (
                                                                                 <button
@@ -622,7 +623,7 @@ const AdminRequests = () => {
                                                 
                                                 {/* Action Buttons based on Status */}
                                                 {(req.status === 'pending' || req.status === 'approved') ? (
-                                                    (user?.isSuperAdmin || user?.permissions?.includes('dashboard')) && (
+                                                    canFulfill && (
                                                         <Button 
                                                             className="btn-primary" 
                                                             style={{ backgroundColor: '#10b981', borderColor: '#10b981' }} // Emerald green 
