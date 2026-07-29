@@ -1,0 +1,22 @@
+[
+  {
+    "_id": "6962df21e0dd0ac022a01f61",
+    "userId": "695065f504dae3686e8129b0",
+    "message": "feedback test 1",
+    "type": "feature",
+    "status": "new",
+    "createdAt": "2026-01-10T23:22:09.855Z",
+    "updatedAt": "2026-01-10T23:22:09.855Z",
+    "__v": 0
+  },
+  {
+    "_id": "6963b524a8f2da9881616779",
+    "userId": "695065f504dae3686e8129b0",
+    "message": "PLEASE IF IT IS POSSIBLE TO ADD BARCODE OPTION WILL BE GOOD.",
+    "type": "feature",
+    "status": "new",
+    "createdAt": "2026-01-11T14:35:16.467Z",
+    "updatedAt": "2026-01-11T14:35:16.467Z",
+    "__v": 0
+  }
+]

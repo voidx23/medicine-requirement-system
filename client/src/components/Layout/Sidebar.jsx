@@ -108,7 +108,7 @@ const Sidebar = () => {
     { to: '/admin', icon: LayoutDashboard, label: 'Daily Requirement List', reqPerm: 'view_requirements' },
     { to: '/admin/tasks', icon: CheckSquare, label: 'Tasks', reqPerm: 'view_tasks' },
     { to: '/admin/requests', icon: ClipboardList, label: 'Requests', badge: pendingRequestsCount, reqPerm: 'view_requests' },
-    // { to: '/admin/purchasing', icon: ShoppingCart, label: 'Purchasing', reqPerm: 'view_purchasing' },
+    { to: '/admin/purchasing', icon: ShoppingCart, label: 'Purchasing', reqPerm: 'view_purchasing' },
     { to: '/admin/suppliers', icon: Truck, label: 'Suppliers', reqPerm: 'view_suppliers' },
     { to: '/admin/medicines', icon: Pill, label: 'Medicines', reqPerm: 'view_medicines' },
     { 

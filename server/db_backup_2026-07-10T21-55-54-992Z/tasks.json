@@ -1,0 +1,1210 @@
+[
+  {
+    "_id": "69b9949227d64be232e96f9c",
+    "type": "transfer_request",
+    "title": "Transfer Request: PANA NATURAL COUGH SYRUP 128G → test branch",
+    "description": "Transfer of 10 unit(s) of PANA NATURAL COUGH SYRUP 128G requested.",
+    "priority": "Normal",
+    "createdBy": "6967976c6dd7b2ad67fa915c",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b2",
+        "status": "Rejected",
+        "completedAt": "2026-03-17T20:26:04.827Z",
+        "completedBy": "695065f504dae3686e8129b2"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd857",
+          "medicineName": "PANA NATURAL COUGH SYRUP 128G",
+          "medicineId": "6965f28cbd93f580a17166c5",
+          "requestedQty": 10,
+          "responseStatus": "rejected",
+          "responseQty": null,
+          "rejectionReason": "TESTING"
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b2",
+      "recipientBranchId": "6967976c6dd7b2ad67fa915c",
+      "respondedAt": "2026-03-17T20:26:04.827Z"
+    },
+    "createdAt": "2026-03-17T17:51:14.384Z",
+    "updatedAt": "2026-06-05T19:55:54.551Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b9b51027d64be232ea2345",
+    "type": "transfer_request",
+    "title": "Transfer Request: ULTRA MAGNESIUM 60S → admin",
+    "description": "Transfer of 1 unit(s) of ULTRA MAGNESIUM 60S requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695d11784827d00c00d0f1a5",
+        "status": "Rejected",
+        "completedAt": "2026-03-17T20:20:05.474Z",
+        "completedBy": "695d11784827d00c00d0f1a5"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd858",
+          "medicineName": "ULTRA MAGNESIUM 60S",
+          "medicineId": "6950d6f6f871b2b81009e883",
+          "requestedQty": 1,
+          "responseStatus": "rejected",
+          "responseQty": null,
+          "rejectionReason": "no stock"
+        }
+      ],
+      "donorBranchId": "695d11784827d00c00d0f1a5",
+      "recipientBranchId": "695d119f4827d00c00d0f1b1",
+      "respondedAt": "2026-03-17T20:20:05.474Z"
+    },
+    "createdAt": "2026-03-17T20:09:52.576Z",
+    "updatedAt": "2026-06-05T19:55:54.661Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b9c60f27d64be232ead873",
+    "type": "general",
+    "title": "Task section",
+    "description": "This is the task section in here you receive the latest request and other informations.",
+    "priority": "Low",
+    "dueDate": null,
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "All",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "comment": "[Signed by: Ranjith] Task Completed",
+        "completedAt": "2026-03-19T20:30:20.496Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      },
+      {
+        "pharmacyId": "695065f504dae3686e8129b2",
+        "status": "Completed",
+        "comment": "[Signed by: Muhammed KK] Task Completed",
+        "completedAt": "2026-04-05T15:32:12.898Z",
+        "completedBy": "695065f504dae3686e8129b2"
+      },
+      {
+        "pharmacyId": "6957d836b41d9e90275ef70f",
+        "status": "Completed",
+        "comment": "[Signed by: Renju] Task Completed",
+        "completedAt": "2026-03-23T05:42:51.059Z",
+        "completedBy": "6957d836b41d9e90275ef70f"
+      },
+      {
+        "pharmacyId": "695d11674827d00c00d0f19f",
+        "status": "Completed",
+        "comment": "[Signed by: Jisha] OK",
+        "completedAt": "2026-04-07T06:06:44.799Z",
+        "completedBy": "695d11674827d00c00d0f19f"
+      },
+      {
+        "pharmacyId": "695d11784827d00c00d0f1a5",
+        "status": "Completed",
+        "comment": "[Signed by: Nisam] Task Completed",
+        "completedAt": "2026-03-19T13:41:05.588Z",
+        "completedBy": "695d11784827d00c00d0f1a5"
+      },
+      {
+        "pharmacyId": "695d11924827d00c00d0f1ab",
+        "status": "Completed",
+        "comment": "[Signed by: Praveen] Task Completed",
+        "completedAt": "2026-03-18T11:59:44.960Z",
+        "completedBy": "695d11924827d00c00d0f1ab"
+      },
+      {
+        "pharmacyId": "695d119f4827d00c00d0f1b1",
+        "status": "Completed",
+        "comment": "[Signed by: Nahoor Meeran] Task Completed",
+        "completedAt": "2026-03-18T06:55:09.066Z",
+        "completedBy": "695d119f4827d00c00d0f1b1"
+      },
+      {
+        "pharmacyId": "695d11af4827d00c00d0f1b7",
+        "status": "Completed",
+        "comment": "[Signed by: Qasim] UNDERSTOOD",
+        "completedAt": "2026-04-07T05:27:00.021Z",
+        "completedBy": "695d11af4827d00c00d0f1b7"
+      },
+      {
+        "pharmacyId": "695d11b84827d00c00d0f1bf",
+        "status": "Pending"
+      },
+      {
+        "pharmacyId": "6967976c6dd7b2ad67fa915c",
+        "status": "Completed",
+        "comment": "[Signed by: Nihal] test\n",
+        "completedAt": "2026-04-04T17:46:12.401Z",
+        "completedBy": "6967976c6dd7b2ad67fa915c"
+      }
+    ],
+    "createdAt": "2026-03-17T21:22:23.920Z",
+    "updatedAt": "2026-04-07T06:06:44.801Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b9c8b027d64be232eae587",
+    "type": "transfer_request",
+    "title": "Transfer Request: GOLD MEDAL OIL 3ML → admin",
+    "description": "Transfer of 2 unit(s) of GOLD MEDAL OIL 3ML requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Rejected",
+        "completedAt": "2026-03-19T20:32:11.571Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd859",
+          "medicineName": "GOLD MEDAL OIL 3ML",
+          "medicineId": "69b9c85027d64be232eae55c",
+          "requestedQty": 2,
+          "responseStatus": "rejected",
+          "responseQty": null,
+          "rejectionReason": "nil stock"
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "695d11924827d00c00d0f1ab",
+      "respondedAt": "2026-03-19T20:32:11.571Z"
+    },
+    "createdAt": "2026-03-17T21:33:36.576Z",
+    "updatedAt": "2026-06-05T19:55:54.770Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b9c8c827d64be232eae593",
+    "type": "transfer_request",
+    "title": "Transfer Request: GOLD MEDAL OIL 3ML → admin",
+    "description": "Transfer of 2 unit(s) of GOLD MEDAL OIL 3ML requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Rejected",
+        "completedAt": "2026-03-19T20:31:47.303Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd85a",
+          "medicineName": "GOLD MEDAL OIL 3ML",
+          "medicineId": null,
+          "requestedQty": 2,
+          "responseStatus": "rejected",
+          "responseQty": null,
+          "rejectionReason": "0 stock"
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "695065f504dae3686e8129b2",
+      "respondedAt": "2026-03-19T20:31:47.303Z"
+    },
+    "createdAt": "2026-03-17T21:34:00.916Z",
+    "updatedAt": "2026-06-05T19:55:54.873Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b9c8f727d64be232eae59c",
+    "type": "transfer_request",
+    "title": "Transfer Request: GOLD MEDAL OIL 3ML → admin",
+    "description": "Transfer of 1 unit(s) of GOLD MEDAL OIL 3ML requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Rejected",
+        "completedAt": "2026-03-19T20:31:18.698Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd85b",
+          "medicineName": "GOLD MEDAL OIL 3ML",
+          "medicineId": "69b9c85027d64be232eae55c",
+          "requestedQty": 1,
+          "responseStatus": "rejected",
+          "responseQty": null,
+          "rejectionReason": "0"
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "695d119f4827d00c00d0f1b1",
+      "respondedAt": "2026-03-19T20:31:18.698Z"
+    },
+    "createdAt": "2026-03-17T21:34:47.316Z",
+    "updatedAt": "2026-06-05T19:55:54.975Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b9cf8d27d64be232eb00e4",
+    "type": "general",
+    "title": "Stock Audit Request",
+    "description": "Update physical stock of \"FRESH EYE LOOK LENS SOLN. 150ML\"",
+    "priority": "Urgent",
+    "dueDate": null,
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "All",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "comment": "[Signed by: Ranjith] 5",
+        "completedAt": "2026-03-19T20:29:58.389Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      },
+      {
+        "pharmacyId": "695065f504dae3686e8129b2",
+        "status": "Completed",
+        "comment": "[Signed by: Nadeem] 9 nos",
+        "completedAt": "2026-03-28T07:37:13.668Z",
+        "completedBy": "695065f504dae3686e8129b2"
+      },
+      {
+        "pharmacyId": "6957d836b41d9e90275ef70f",
+        "status": "Completed",
+        "comment": "[Signed by: Renju] 4",
+        "completedAt": "2026-03-21T20:10:55.492Z",
+        "completedBy": "6957d836b41d9e90275ef70f"
+      },
+      {
+        "pharmacyId": "695d11674827d00c00d0f19f",
+        "status": "Completed",
+        "comment": "[Signed by: Jisha] 5pices",
+        "completedAt": "2026-03-21T18:01:49.637Z",
+        "completedBy": "695d11674827d00c00d0f19f"
+      },
+      {
+        "pharmacyId": "695d11784827d00c00d0f1a5",
+        "status": "Completed",
+        "comment": "[Signed by: Nisam] 8",
+        "completedAt": "2026-03-19T13:36:59.962Z",
+        "completedBy": "695d11784827d00c00d0f1a5"
+      },
+      {
+        "pharmacyId": "695d11924827d00c00d0f1ab",
+        "status": "Completed",
+        "comment": "[Signed by: Praveen] Task Completed",
+        "completedAt": "2026-03-18T11:59:30.462Z",
+        "completedBy": "695d11924827d00c00d0f1ab"
+      },
+      {
+        "pharmacyId": "695d119f4827d00c00d0f1b1",
+        "status": "Completed",
+        "comment": "[Signed by: Nahoor Meeran] 10 PCS",
+        "completedAt": "2026-03-18T06:54:48.693Z",
+        "completedBy": "695d119f4827d00c00d0f1b1"
+      },
+      {
+        "pharmacyId": "695d11af4827d00c00d0f1b7",
+        "status": "Completed",
+        "comment": "[Signed by: Tuahid] 7pcs.",
+        "completedAt": "2026-04-04T20:32:07.448Z",
+        "completedBy": "695d11af4827d00c00d0f1b7"
+      },
+      {
+        "pharmacyId": "695d11b84827d00c00d0f1bf",
+        "status": "Pending"
+      },
+      {
+        "pharmacyId": "6967976c6dd7b2ad67fa915c",
+        "status": "Completed",
+        "comment": "[Signed by: Nihal] test",
+        "completedAt": "2026-04-04T17:45:48.932Z",
+        "completedBy": "6967976c6dd7b2ad67fa915c"
+      }
+    ],
+    "createdAt": "2026-03-17T22:02:53.562Z",
+    "updatedAt": "2026-04-04T20:32:07.449Z",
+    "__v": 0
+  },
+  {
+    "_id": "69ba8a8759ab6454a70c2932",
+    "type": "general",
+    "title": "Follow-up on FE Product Excel Sheet",
+    "description": "Kindly share an update on the FE product Excel sheet previously shared with Nakhal branch, including current status and any pending actions.",
+    "priority": "Normal",
+    "dueDate": null,
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695d119f4827d00c00d0f1b1",
+        "status": "Completed",
+        "comment": "[Signed by: Nahoor Meeran] Task Completed",
+        "completedAt": "2026-03-24T17:30:32.225Z",
+        "completedBy": "695d119f4827d00c00d0f1b1"
+      }
+    ],
+    "createdAt": "2026-03-18T11:20:39.707Z",
+    "updatedAt": "2026-03-24T17:30:32.225Z",
+    "__v": 0
+  },
+  {
+    "_id": "69c0f4c14efb6b7de2174117",
+    "type": "transfer_request",
+    "title": "Transfer Request: TYNOR ELITE ORTHO MEM. PILLOW  SOFT → admin",
+    "description": "Transfer of 1 unit(s) of TYNOR ELITE ORTHO MEM. PILLOW  SOFT requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "completedAt": "2026-03-25T15:26:38.068Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd85c",
+          "medicineName": "TYNOR ELITE ORTHO MEM. PILLOW  SOFT",
+          "medicineId": "69472c9379cfe06c422093ab",
+          "requestedQty": 1,
+          "responseStatus": "accepted",
+          "responseQty": 1,
+          "rejectionReason": null
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "695d11924827d00c00d0f1ab",
+      "respondedAt": "2026-03-25T15:26:38.068Z"
+    },
+    "createdAt": "2026-03-23T08:07:29.448Z",
+    "updatedAt": "2026-06-05T19:55:55.077Z",
+    "__v": 0
+  },
+  {
+    "_id": "69c0fba54efb6b7de2174c15",
+    "type": "transfer_request",
+    "title": "Transfer Request: LOTEVAN 5/160MG → admin",
+    "description": "Transfer of 1 unit(s) of LOTEVAN 5/160MG requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "completedAt": "2026-03-25T15:26:05.108Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd85d",
+          "medicineName": "LOTEVAN 5/160MG",
+          "medicineId": "695be6d9b92bbbf2d0e86b9f",
+          "requestedQty": 1,
+          "responseStatus": "accepted",
+          "responseQty": 1,
+          "rejectionReason": null
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "695d11af4827d00c00d0f1b7",
+      "respondedAt": "2026-03-25T15:26:05.107Z"
+    },
+    "createdAt": "2026-03-23T08:36:53.824Z",
+    "updatedAt": "2026-06-05T19:55:55.179Z",
+    "__v": 0
+  },
+  {
+    "_id": "69c2bb263eb5656ee8323aee",
+    "type": "transfer_request",
+    "title": "Transfer Request: SUPERORTHO LUMBAR SUPPORT XX L → admin",
+    "description": "Transfer of 1 unit(s) of SUPERORTHO LUMBAR SUPPORT XX L requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "completedAt": "2026-03-25T15:26:22.079Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd85e",
+          "medicineName": "SUPERORTHO LUMBAR SUPPORT XX L",
+          "medicineId": "69472c6779cfe06c4220903a",
+          "requestedQty": 1,
+          "responseStatus": "accepted",
+          "responseQty": 1,
+          "rejectionReason": null
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "695d11784827d00c00d0f1a5",
+      "respondedAt": "2026-03-25T15:26:22.079Z"
+    },
+    "createdAt": "2026-03-24T16:26:14.912Z",
+    "updatedAt": "2026-06-05T19:55:55.286Z",
+    "__v": 0
+  },
+  {
+    "_id": "69c502fdbf6dc89fdc5c948e",
+    "type": "general",
+    "title": "Medicine Supply Update",
+    "description": "the medicine supply has been postponed to this coming Saturday(28/03/2026). Please note the change and adjust your schedule accordingly. Ensure all necessary preparations are aligned with the updated delivery date.",
+    "priority": "High",
+    "dueDate": null,
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "All",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "comment": "[Signed by: ASIM MOHAMMED] Task Completed",
+        "completedAt": "2026-03-28T14:16:53.732Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      },
+      {
+        "pharmacyId": "695065f504dae3686e8129b2",
+        "status": "Completed",
+        "comment": "[Signed by: Muhammed KK] Task Completed",
+        "completedAt": "2026-04-05T15:31:53.905Z",
+        "completedBy": "695065f504dae3686e8129b2"
+      },
+      {
+        "pharmacyId": "6957d836b41d9e90275ef70f",
+        "status": "Completed",
+        "comment": "[Signed by: Rania] Task Completed",
+        "completedAt": "2026-03-29T05:37:05.459Z",
+        "completedBy": "6957d836b41d9e90275ef70f"
+      },
+      {
+        "pharmacyId": "695d11674827d00c00d0f19f",
+        "status": "Completed",
+        "comment": "[Signed by: Jisha] OK",
+        "completedAt": "2026-04-07T06:06:12.645Z",
+        "completedBy": "695d11674827d00c00d0f19f"
+      },
+      {
+        "pharmacyId": "695d11784827d00c00d0f1a5",
+        "status": "Completed",
+        "comment": "[Signed by: Nisam] mmmmmmmmm",
+        "completedAt": "2026-03-27T12:33:53.048Z",
+        "completedBy": "695d11784827d00c00d0f1a5"
+      },
+      {
+        "pharmacyId": "695d11924827d00c00d0f1ab",
+        "status": "Completed",
+        "comment": "[Signed by: Praveen] Task Completed",
+        "completedAt": "2026-04-04T14:05:10.835Z",
+        "completedBy": "695d11924827d00c00d0f1ab"
+      },
+      {
+        "pharmacyId": "695d119f4827d00c00d0f1b1",
+        "status": "Completed",
+        "comment": "[Signed by: Nahoor Meeran] Task Completed",
+        "completedAt": "2026-03-29T08:44:15.382Z",
+        "completedBy": "695d119f4827d00c00d0f1b1"
+      },
+      {
+        "pharmacyId": "695d11af4827d00c00d0f1b7",
+        "status": "Completed",
+        "comment": "[Signed by: Qasim] DONE BY TAUHID",
+        "completedAt": "2026-04-07T05:26:32.853Z",
+        "completedBy": "695d11af4827d00c00d0f1b7"
+      },
+      {
+        "pharmacyId": "695d11b84827d00c00d0f1bf",
+        "status": "Pending"
+      },
+      {
+        "pharmacyId": "6967976c6dd7b2ad67fa915c",
+        "status": "Completed",
+        "comment": "[Signed by: Nihal] test",
+        "completedAt": "2026-04-04T17:46:23.914Z",
+        "completedBy": "6967976c6dd7b2ad67fa915c"
+      }
+    ],
+    "createdAt": "2026-03-26T09:57:17.858Z",
+    "updatedAt": "2026-04-07T06:06:12.646Z",
+    "__v": 0
+  },
+  {
+    "_id": "69c5757c3023d8c4cefb209f",
+    "type": "transfer_request",
+    "title": "Transfer Request: CUPID LUBRICANT 82ML → admin",
+    "description": "Transfer of 2 unit(s) of CUPID LUBRICANT 82ML requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695d11924827d00c00d0f1ab",
+        "status": "Completed",
+        "completedAt": "2026-04-04T06:31:46.425Z",
+        "completedBy": "695d11924827d00c00d0f1ab"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd85f",
+          "medicineName": "CUPID LUBRICANT 82ML",
+          "medicineId": "69c573013023d8c4cefb1a60",
+          "requestedQty": 2,
+          "responseStatus": "accepted",
+          "responseQty": 2,
+          "rejectionReason": null
+        }
+      ],
+      "donorBranchId": "695d11924827d00c00d0f1ab",
+      "recipientBranchId": "695065f504dae3686e8129b0",
+      "respondedAt": "2026-04-04T06:31:46.425Z"
+    },
+    "createdAt": "2026-03-26T18:05:48.176Z",
+    "updatedAt": "2026-06-05T19:55:55.389Z",
+    "__v": 0
+  },
+  {
+    "_id": "69c575a53023d8c4cefb20b4",
+    "type": "transfer_request",
+    "title": "Transfer Request: CUPID LUBRICANT 82ML → admin",
+    "description": "Transfer of 1 unit(s) of CUPID LUBRICANT 82ML requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b2",
+        "status": "Completed",
+        "completedAt": "2026-04-06T21:46:34.244Z",
+        "completedBy": "695065f504dae3686e8129b2"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd860",
+          "medicineName": "CUPID LUBRICANT 82ML",
+          "medicineId": "69c573013023d8c4cefb1a60",
+          "requestedQty": 1,
+          "responseStatus": "accepted",
+          "responseQty": 1,
+          "rejectionReason": null
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b2",
+      "recipientBranchId": "695065f504dae3686e8129b0",
+      "respondedAt": "2026-04-06T21:46:34.244Z"
+    },
+    "createdAt": "2026-03-26T18:06:29.294Z",
+    "updatedAt": "2026-06-05T19:55:55.494Z",
+    "__v": 0
+  },
+  {
+    "_id": "69c96a0134a7dd21669971b1",
+    "type": "general",
+    "title": "Stock Status Request – Broncare Syrup (Batch 06/26)",
+    "description": "All branches: confirm stock status of Broncare Syrup (Batch 06/26) with quantity and expiry. Reply even if out of stock.",
+    "priority": "High",
+    "dueDate": null,
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "All",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "comment": "[Signed by: Ranjith] 9",
+        "completedAt": "2026-04-04T11:47:34.206Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      },
+      {
+        "pharmacyId": "695065f504dae3686e8129b2",
+        "status": "Completed",
+        "comment": "[Signed by: Nadeem] OUT OF STOCK",
+        "completedAt": "2026-04-05T09:03:05.606Z",
+        "completedBy": "695065f504dae3686e8129b2"
+      },
+      {
+        "pharmacyId": "6957d836b41d9e90275ef70f",
+        "status": "Completed",
+        "comment": "[Signed by: Renju] 6",
+        "completedAt": "2026-04-04T19:24:32.791Z",
+        "completedBy": "6957d836b41d9e90275ef70f"
+      },
+      {
+        "pharmacyId": "695d11674827d00c00d0f19f",
+        "status": "Completed",
+        "comment": "[Signed by: Jisha] 6 pieces exp 6/26",
+        "completedAt": "2026-03-31T05:09:12.108Z",
+        "completedBy": "695d11674827d00c00d0f19f"
+      },
+      {
+        "pharmacyId": "695d11784827d00c00d0f1a5",
+        "status": "Completed",
+        "comment": "[Signed by: Nisam] 12",
+        "completedAt": "2026-03-31T09:22:22.122Z",
+        "completedBy": "695d11784827d00c00d0f1a5"
+      },
+      {
+        "pharmacyId": "695d11924827d00c00d0f1ab",
+        "status": "Completed",
+        "comment": "[Signed by: Praveen] 6/26 2pcs\n8/28 12 pcs",
+        "completedAt": "2026-04-05T12:58:24.205Z",
+        "completedBy": "695d11924827d00c00d0f1ab"
+      },
+      {
+        "pharmacyId": "695d119f4827d00c00d0f1b1",
+        "status": "Completed",
+        "comment": "[Signed by: Nahoor Meeran] 6 PCS - 6/26",
+        "completedAt": "2026-03-30T07:41:08.669Z",
+        "completedBy": "695d119f4827d00c00d0f1b1"
+      },
+      {
+        "pharmacyId": "695d11af4827d00c00d0f1b7",
+        "status": "Completed",
+        "comment": "[Signed by: Tuahid] broncare syrup 06/26 , zero stock here",
+        "completedAt": "2026-04-04T20:35:39.161Z",
+        "completedBy": "695d11af4827d00c00d0f1b7"
+      },
+      {
+        "pharmacyId": "695d11b84827d00c00d0f1bf",
+        "status": "Pending"
+      },
+      {
+        "pharmacyId": "6967976c6dd7b2ad67fa915c",
+        "status": "Completed",
+        "comment": "[Signed by: Nihal] test",
+        "completedAt": "2026-04-04T17:45:58.678Z",
+        "completedBy": "6967976c6dd7b2ad67fa915c"
+      }
+    ],
+    "createdAt": "2026-03-29T18:05:53.499Z",
+    "updatedAt": "2026-04-05T12:58:24.206Z",
+    "__v": 0
+  },
+  {
+    "_id": "69cb6b2ae10bfb6111d462ef",
+    "type": "transfer_request",
+    "title": "Transfer Request: TYNOR INSOLE FULL SILICON XL → admin",
+    "description": "Transfer of 1 unit(s) of TYNOR INSOLE FULL SILICON XL requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b2",
+        "status": "Completed",
+        "completedAt": "2026-04-06T14:58:42.101Z",
+        "completedBy": "695065f504dae3686e8129b2"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd861",
+          "medicineName": "TYNOR INSOLE FULL SILICON XL",
+          "medicineId": "69472c9579cfe06c422093c8",
+          "requestedQty": 1,
+          "responseStatus": "accepted",
+          "responseQty": 1,
+          "rejectionReason": null
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b2",
+      "recipientBranchId": "695d119f4827d00c00d0f1b1",
+      "respondedAt": "2026-04-06T14:58:42.101Z"
+    },
+    "createdAt": "2026-03-31T06:35:22.887Z",
+    "updatedAt": "2026-06-05T19:55:55.596Z",
+    "__v": 0
+  },
+  {
+    "_id": "69d21a3fdce1286e60a4245a",
+    "type": "general",
+    "title": "Stock check: Gloves Large, Medium, Small",
+    "description": "Please check the physical quantity of glove (all sizes)\nyou can responde in this format\nLarge:\nMedium:\nSmall:",
+    "priority": "High",
+    "dueDate": null,
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "All",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "comment": "[Signed by: Remya] LARGE-3\nMEDIUM-2\nSMALL-5",
+        "completedAt": "2026-04-05T09:05:05.698Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      },
+      {
+        "pharmacyId": "695065f504dae3686e8129b2",
+        "status": "Completed",
+        "comment": "[Signed by: Nadeem] LARGE -3\nMEDIUM -3\nSMALL -3",
+        "completedAt": "2026-04-05T09:00:08.589Z",
+        "completedBy": "695065f504dae3686e8129b2"
+      },
+      {
+        "pharmacyId": "6957d836b41d9e90275ef70f",
+        "status": "Completed",
+        "comment": "[Signed by: Rania] l-5\nm-3\ns-2",
+        "completedAt": "2026-04-05T09:01:51.981Z",
+        "completedBy": "6957d836b41d9e90275ef70f"
+      },
+      {
+        "pharmacyId": "695d11674827d00c00d0f19f",
+        "status": "Completed",
+        "comment": "[Signed by: Jisha] LARGE     - 3\nMEDIUM - 2\nSMALL     - 5",
+        "completedAt": "2026-04-07T06:05:39.822Z",
+        "completedBy": "695d11674827d00c00d0f19f"
+      },
+      {
+        "pharmacyId": "695d11784827d00c00d0f1a5",
+        "status": "Completed",
+        "comment": "[Signed by: Nisam] small 3 box.\nmedium 2 box\nlarge 10 box",
+        "completedAt": "2026-04-05T09:10:31.715Z",
+        "completedBy": "695d11784827d00c00d0f1a5"
+      },
+      {
+        "pharmacyId": "695d11924827d00c00d0f1ab",
+        "status": "Completed",
+        "comment": "[Signed by: Praveen] Large: 4\nMedium: 3\nSmall: 1",
+        "completedAt": "2026-04-05T08:17:56.324Z",
+        "completedBy": "695d11924827d00c00d0f1ab"
+      },
+      {
+        "pharmacyId": "695d119f4827d00c00d0f1b1",
+        "status": "Completed",
+        "comment": "[Signed by: Nahoor Meeran] XL: 7 (VINYL GLOVES)\nLARGE: 4 (LATEX)\nMEDIUM: 0\nSMALL: 0",
+        "completedAt": "2026-04-05T08:33:09.027Z",
+        "completedBy": "695d119f4827d00c00d0f1b1"
+      },
+      {
+        "pharmacyId": "695d11af4827d00c00d0f1b7",
+        "status": "Completed",
+        "comment": "[Signed by: Qasim] LARGE: 4\nMEDIUM: 2\nSMALL: 3",
+        "completedAt": "2026-04-07T05:32:50.417Z",
+        "completedBy": "695d11af4827d00c00d0f1b7"
+      },
+      {
+        "pharmacyId": "695d11b84827d00c00d0f1bf",
+        "status": "Pending"
+      },
+      {
+        "pharmacyId": "6967976c6dd7b2ad67fa915c",
+        "status": "Completed",
+        "comment": "[Signed by: Nihal] TEST\n",
+        "completedAt": "2026-04-05T16:47:14.736Z",
+        "completedBy": "6967976c6dd7b2ad67fa915c"
+      }
+    ],
+    "createdAt": "2026-04-05T08:15:59.038Z",
+    "updatedAt": "2026-04-07T06:05:39.824Z",
+    "__v": 0
+  },
+  {
+    "_id": "69d221a5dce1286e60a598dc",
+    "type": "transfer_request",
+    "title": "Transfer Request: JANUMET XR 100/1000MG → Nihal",
+    "description": "Transfer of 1 unit(s) of JANUMET XR 100/1000MG requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "completedAt": "2026-04-07T11:37:15.074Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd862",
+          "medicineName": "JANUMET XR 100/1000MG",
+          "medicineId": "6947b6d687600c5e9fa99a99",
+          "requestedQty": 1,
+          "responseStatus": "accepted",
+          "responseQty": 1,
+          "rejectionReason": null
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "695065f504dae3686e8129b2",
+      "respondedAt": "2026-04-07T11:37:15.074Z"
+    },
+    "createdAt": "2026-04-05T08:47:33.179Z",
+    "updatedAt": "2026-06-05T19:55:55.701Z",
+    "__v": 0
+  },
+  {
+    "_id": "69d2223bdce1286e60a5c5e7",
+    "type": "transfer_request",
+    "title": "Transfer Request: JANUMET XR 50/1000MG → Nihal",
+    "description": "Transfer of 1 unit(s) of JANUMET XR 50/1000MG requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "completedAt": "2026-04-07T11:31:58.377Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd863",
+          "medicineName": "JANUMET XR 50/1000MG",
+          "medicineId": "6947b6d687600c5e9fa99a9b",
+          "requestedQty": 1,
+          "responseStatus": "accepted",
+          "responseQty": 1,
+          "rejectionReason": null
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "695065f504dae3686e8129b2",
+      "respondedAt": "2026-04-07T11:31:58.377Z"
+    },
+    "createdAt": "2026-04-05T08:50:03.712Z",
+    "updatedAt": "2026-06-05T19:55:55.803Z",
+    "__v": 0
+  },
+  {
+    "_id": "69d22499dce1286e60a67486",
+    "type": "transfer_request",
+    "title": "Transfer Request: POCARI SWEAT POWDER → Nihal",
+    "description": "Transfer of 1 unit(s) of POCARI SWEAT POWDER requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "completedAt": "2026-04-07T11:37:39.448Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd864",
+          "medicineName": "POCARI SWEAT POWDER",
+          "medicineId": "69502c90f2c320914ff8d980",
+          "requestedQty": 1,
+          "responseStatus": "accepted",
+          "responseQty": 1,
+          "rejectionReason": null
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "695065f504dae3686e8129b2",
+      "respondedAt": "2026-04-07T11:37:39.448Z"
+    },
+    "createdAt": "2026-04-05T09:00:09.474Z",
+    "updatedAt": "2026-06-05T19:55:55.906Z",
+    "__v": 0
+  },
+  {
+    "_id": "69d22986dce1286e60a8a24c",
+    "type": "transfer_request",
+    "title": "Transfer Request: AVENE CICALFATE + 40ML → Nihal",
+    "description": "Transfer of 2 unit(s) of AVENE CICALFATE + 40ML requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "completedAt": "2026-04-07T11:29:32.628Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd865",
+          "medicineName": "AVENE CICALFATE + 40ML",
+          "medicineId": null,
+          "requestedQty": 2,
+          "responseStatus": "accepted",
+          "responseQty": 2,
+          "rejectionReason": null
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "695065f504dae3686e8129b2",
+      "respondedAt": "2026-04-07T11:29:32.628Z"
+    },
+    "createdAt": "2026-04-05T09:21:10.320Z",
+    "updatedAt": "2026-06-05T19:55:56.009Z",
+    "__v": 0
+  },
+  {
+    "_id": "69d22c9cdce1286e60aa0330",
+    "type": "transfer_request",
+    "title": "Transfer Request: DIAVIT PLUS 30S → Nihal",
+    "description": "Transfer of 1 unit(s) of DIAVIT PLUS 30S requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "completedAt": "2026-04-07T11:28:51.279Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd866",
+          "medicineName": "DIAVIT PLUS 30S",
+          "medicineId": null,
+          "requestedQty": 1,
+          "responseStatus": "accepted",
+          "responseQty": 1,
+          "rejectionReason": null
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "6957d836b41d9e90275ef70f",
+      "respondedAt": "2026-04-07T11:28:51.279Z"
+    },
+    "createdAt": "2026-04-05T09:34:20.920Z",
+    "updatedAt": "2026-06-05T19:55:56.112Z",
+    "__v": 0
+  },
+  {
+    "_id": "69d2e199fcd12433637a60b9",
+    "type": "transfer_request",
+    "title": "Transfer Request: Panadol & 1 others → Nihal",
+    "description": "Transfer of 2 item(s) requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695d11af4827d00c00d0f1b7",
+        "status": "Rejected",
+        "completedAt": "2026-05-02T18:13:25.572Z",
+        "completedBy": "695d11af4827d00c00d0f1b7"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "medicineName": "Panadol",
+          "medicineId": null,
+          "requestedQty": 10,
+          "responseStatus": "rejected",
+          "_id": "69d2e199fcd12433637a60ba",
+          "rejectionReason": "TEST"
+        },
+        {
+          "medicineName": "Aspirin",
+          "medicineId": null,
+          "requestedQty": 5,
+          "responseStatus": "rejected",
+          "_id": "69d2e199fcd12433637a60bb",
+          "rejectionReason": "TEST"
+        }
+      ],
+      "donorBranchId": "695d11af4827d00c00d0f1b7",
+      "recipientBranchId": "695d11674827d00c00d0f19f",
+      "respondedAt": "2026-05-02T18:13:25.572Z"
+    },
+    "createdAt": "2026-04-05T22:26:33.977Z",
+    "updatedAt": "2026-06-05T19:55:56.213Z",
+    "__v": 0
+  },
+  {
+    "_id": "69d3f72c91579adad5324123",
+    "type": "transfer_request",
+    "title": "Transfer Request: TRESIBA FLEXTOUCH INJECTION 100IU/ML → Nihal",
+    "description": "Transfer of 1 unit(s) of TRESIBA FLEXTOUCH INJECTION 100IU/ML requested.",
+    "priority": "Normal",
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "completedAt": "2026-06-05T20:09:31.636Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      }
+    ],
+    "transferDetails": {
+      "items": [
+        {
+          "_id": "6a2329caa8f4cb9589dfd869",
+          "medicineName": "TRESIBA FLEXTOUCH INJECTION 100IU/ML",
+          "medicineId": "69b7ef3ef45d2b1412ee4a4d",
+          "requestedQty": 1,
+          "responseStatus": "accepted",
+          "responseQty": 1,
+          "rejectionReason": null
+        }
+      ],
+      "donorBranchId": "695065f504dae3686e8129b0",
+      "recipientBranchId": "695065f504dae3686e8129b2",
+      "respondedAt": "2026-06-05T20:09:31.635Z"
+    },
+    "createdAt": "2026-04-06T18:10:52.889Z",
+    "updatedAt": "2026-06-05T20:09:31.648Z",
+    "__v": 0
+  },
+  {
+    "_id": "69d4c1ae91579adad53d51a0",
+    "type": "general",
+    "title": "EXPIRY RETURN",
+    "description": "FAMODAR.T COMPLETE RETURN TO NEXT WALEED SUPPLY",
+    "priority": "High",
+    "dueDate": null,
+    "createdBy": "69d037be1edce3f7fd5b0a9d",
+    "targetAudience": "Specific",
+    "assignments": [
+      {
+        "pharmacyId": "695d11af4827d00c00d0f1b7",
+        "status": "Completed",
+        "comment": "[Signed by: Qasim] Task Completed",
+        "completedAt": "2026-04-21T07:16:51.585Z",
+        "completedBy": "695d11af4827d00c00d0f1b7"
+      },
+      {
+        "pharmacyId": "695065f504dae3686e8129b2",
+        "status": "Completed",
+        "comment": "[Signed by: Muhammed KK] OK",
+        "completedAt": "2026-04-08T09:24:58.252Z",
+        "completedBy": "695065f504dae3686e8129b2"
+      },
+      {
+        "pharmacyId": "695d11674827d00c00d0f19f",
+        "status": "Completed",
+        "comment": "[Signed by: Jisha] NO STOCK ",
+        "completedAt": "2026-04-07T08:44:53.848Z",
+        "completedBy": "695d11674827d00c00d0f19f"
+      },
+      {
+        "pharmacyId": "695d11924827d00c00d0f1ab",
+        "status": "Completed",
+        "comment": "[Signed by: Praveen] NO STOCKS AVAILABLE\n",
+        "completedAt": "2026-04-07T08:46:42.233Z",
+        "completedBy": "695d11924827d00c00d0f1ab"
+      }
+    ],
+    "createdAt": "2026-04-07T08:34:54.138Z",
+    "updatedAt": "2026-04-21T07:16:51.585Z",
+    "__v": 0
+  },
+  {
+    "_id": "69d67e5fc6b667ccf9673c56",
+    "type": "general",
+    "title": "Cut-off Time for Processing New Requirements",
+    "description": " Please be informed that effective from 8:00 PM on Wednesday, all new requirements received thereafter will not be included in tomorrow’s supply. These will be processed and fulfilled in the subsequent supply cycle.",
+    "priority": "High",
+    "dueDate": null,
+    "createdBy": "695065f404dae3686e8129ae",
+    "targetAudience": "All",
+    "assignments": [
+      {
+        "pharmacyId": "695065f504dae3686e8129b0",
+        "status": "Completed",
+        "comment": "[Signed by: Asim Mohammed] IF IT IS REAL WHY WE RECIVE SUPPLY NOW??????????????????????",
+        "completedAt": "2026-04-08T16:24:26.035Z",
+        "completedBy": "695065f504dae3686e8129b0"
+      },
+      {
+        "pharmacyId": "695065f504dae3686e8129b2",
+        "status": "Completed",
+        "comment": "[Signed by: Muhammed KK] OK\n",
+        "completedAt": "2026-04-09T06:20:26.436Z",
+        "completedBy": "695065f504dae3686e8129b2"
+      },
+      {
+        "pharmacyId": "6957d836b41d9e90275ef70f",
+        "status": "Completed",
+        "comment": "[Signed by: Rania] informed",
+        "completedAt": "2026-04-09T04:33:41.119Z",
+        "completedBy": "6957d836b41d9e90275ef70f"
+      },
+      {
+        "pharmacyId": "695d11674827d00c00d0f19f",
+        "status": "Completed",
+        "comment": "[Signed by: Jisha] ok",
+        "completedAt": "2026-04-09T18:41:23.978Z",
+        "completedBy": "695d11674827d00c00d0f19f"
+      },
+      {
+        "pharmacyId": "695d11784827d00c00d0f1a5",
+        "status": "Completed",
+        "comment": "[Signed by: Nisam] Task Completed",
+        "completedAt": "2026-04-08T17:10:41.515Z",
+        "completedBy": "695d11784827d00c00d0f1a5"
+      },
+      {
+        "pharmacyId": "695d11924827d00c00d0f1ab",
+        "status": "Completed",
+        "comment": "[Signed by: Praveen] IF POSSIBLE CAN YOU consider the last sent with tomorrow supply if possible",
+        "completedAt": "2026-04-08T17:53:48.759Z",
+        "completedBy": "695d11924827d00c00d0f1ab"
+      },
+      {
+        "pharmacyId": "695d119f4827d00c00d0f1b1",
+        "status": "Completed",
+        "comment": "[Signed by: Nahoor Meeran] Task Completed",
+        "completedAt": "2026-04-08T16:17:06.612Z",
+        "completedBy": "695d119f4827d00c00d0f1b1"
+      },
+      {
+        "pharmacyId": "695d11af4827d00c00d0f1b7",
+        "status": "Completed",
+        "comment": "[Signed by: Qasim] understood and will be considered",
+        "completedAt": "2026-04-21T07:18:07.023Z",
+        "completedBy": "695d11af4827d00c00d0f1b7"
+      },
+      {
+        "pharmacyId": "6967976c6dd7b2ad67fa915c",
+        "status": "Completed",
+        "comment": "[Signed by: Nihal] Task Completed",
+        "completedAt": "2026-04-24T21:59:11.049Z",
+        "completedBy": "6967976c6dd7b2ad67fa915c"
+      }
+    ],
+    "createdAt": "2026-04-08T16:12:15.844Z",
+    "updatedAt": "2026-04-24T21:59:11.074Z",
+    "__v": 0
+  }
+]

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import DutySchedule from '../models/DutySchedule.js';
 
 // @desc    Get duty schedules for a given month and year
@@ -33,12 +34,16 @@ export const saveDutySchedule = async (req, res) => {
       return res.status(400).json({ message: 'Branch ID, year, and month are required' });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(branchId)) {
+      return res.status(400).json({ message: `Invalid Branch ID format: ${branchId}` });
+    }
+
     const schedule = await DutySchedule.findOneAndUpdate(
       { branchId, year, month },
       {
-        shifts,
-        remarks,
-        notes
+        shifts: shifts || {},
+        remarks: remarks || {},
+        notes: notes || ''
       },
       { new: true, upsert: true }
     );

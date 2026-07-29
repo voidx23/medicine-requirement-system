@@ -30,13 +30,31 @@ const MedicineList = ({ medicines, onEdit, onDelete, canEdit, canDelete }) => {
                   }}>
                       {medicine.supplierId?.name || 'Unknown'}
                   </span>
+                  {medicine.divisionId && (
+                    <span style={{ 
+                        padding: '0.2rem 0.6rem', 
+                        background: 'rgba(99, 102, 241, 0.08)', 
+                        color: 'var(--primary)', 
+                        borderRadius: '12px',
+                        fontSize: '0.8rem',
+                        fontWeight: 500,
+                        marginLeft: '0.5rem'
+                    }}>
+                        Div: {medicine.divisionId?.divisionName || 'Unknown'}
+                    </span>
+                  )}
                 </span>
                 
                 <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem' }}>
                     {(medicine.costPrice > 0 || medicine.sellingPrice > 0) && (
-                       <span style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem' }}>
+                       <span style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.85rem' }}>
                           {medicine.costPrice > 0 && <span><strong>Cost:</strong> OMR {medicine.costPrice.toFixed(3)}</span>}
                           {medicine.sellingPrice > 0 && <span style={{ color: 'var(--success)', fontWeight: 500 }}><strong>Sell:</strong> OMR {medicine.sellingPrice.toFixed(3)}</span>}
+                       </span>
+                    )}
+                    {medicine.unit && (
+                       <span style={{ fontSize: '0.85rem' }}>
+                          <strong>UoM:</strong> {medicine.unit}
                        </span>
                     )}
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Trash2, ArrowLeft, Lock, Eye, EyeOff, Shield, ShieldAlert, ChevronRight } from 'lucide-react';
+import { Users, Plus, Trash2, ArrowLeft, Lock, Eye, EyeOff, Shield, ShieldAlert, ChevronRight, Clock, AlertTriangle, TrendingUp, BarChart2 } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import PasswordConfirmModal from '../components/UI/PasswordConfirmModal';
@@ -174,6 +174,74 @@ const ManagePharmacists = () => {
   const [showAllIncidents, setShowAllIncidents] = useState(false);
   const [showDeleteIssueModal, setShowDeleteIssueModal] = useState(false);
   const [issueIndexToDelete, setIssueIndexToDelete] = useState(null);
+
+  // Pharmacist Workload Analytics states
+  const [staffSchedules, setStaffSchedules] = useState([]);
+  const [schedulesLoading, setSchedulesLoading] = useState(false);
+
+  useEffect(() => {
+    if (currentView === 'details' && editingStaffId) {
+      const fetchStaffWorkload = async () => {
+        setSchedulesLoading(true);
+        try {
+          const now = new Date();
+          const res = await api.get('/duty-schedules', {
+            params: { year: now.getFullYear(), month: now.getMonth() }
+          });
+          setStaffSchedules(res.data || []);
+        } catch (err) {
+          console.error("Failed to fetch staff duty schedules", err);
+        } finally {
+          setSchedulesLoading(false);
+        }
+      };
+      fetchStaffWorkload();
+    }
+  }, [currentView, editingStaffId]);
+
+  const calculateShiftHours = (fromTime, toTime) => {
+    if (!fromTime || !toTime) return 0;
+    const [h1, m1] = fromTime.split(':').map(Number);
+    const [h2, m2] = toTime.split(':').map(Number);
+    if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return 0;
+    let start = h1 + m1 / 60;
+    let end = h2 + m2 / 60;
+    if (end <= start) end += 24;
+    return Math.round((end - start) * 10) / 10;
+  };
+
+  const getStaffWorkloadStats = () => {
+    if (!editingStaffId || !staffSchedules) return null;
+    const targetId = String(editingStaffId);
+    let totalShifts = 0;
+    let totalHours = 0;
+    let overtimeShiftsCount = 0;
+    const branchHoursMap = {};
+
+    staffSchedules.forEach(schedule => {
+      const bName = schedule.branchId?.name || branches.find(b => String(b._id) === String(schedule.branchId?._id || schedule.branchId))?.name || 'Branch';
+      const shiftsObj = schedule.shifts || {};
+      
+      Object.values(shiftsObj).forEach(dayObj => {
+        ['morning', 'evening'].forEach(sType => {
+          const shift = dayObj?.[sType];
+          if (shift && shift.pharmacistId && String(shift.pharmacistId) === targetId) {
+            const h = calculateShiftHours(shift.fromTime, shift.toTime);
+            totalShifts += 1;
+            totalHours += h;
+            if (h > 9) overtimeShiftsCount += 1;
+            branchHoursMap[bName] = (branchHoursMap[bName] || 0) + h;
+          }
+        });
+      });
+    });
+
+    totalHours = Math.round(totalHours * 10) / 10;
+    const avgShift = totalShifts > 0 ? Math.round((totalHours / totalShifts) * 10) / 10 : 0;
+    const loadPct = Math.min(100, Math.round((totalHours / 180) * 100));
+
+    return { totalShifts, totalHours, avgShift, overtimeShiftsCount, loadPct, branchHoursMap };
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -1356,7 +1424,94 @@ const ManagePharmacists = () => {
                 </div>
               </div>
 
-              {/* Card 3B: Staff Documents */}
+              {/* Card 3B: Duty Schedule Workload & Working Hours Analytics */}
+              <div className="glass-panel" style={{ ...cardStyle, background: 'rgba(99, 102, 241, 0.03)', border: '1.5px solid rgba(99, 102, 241, 0.2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h4 style={{ ...sectionHeaderStyle, color: 'var(--primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <BarChart2 size={18} color="var(--primary)" />
+                    Monthly Workload & Working Hours
+                  </h4>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>Current Month</span>
+                </div>
+
+                {schedulesLoading ? (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>Calculating working hours...</div>
+                ) : (() => {
+                  const stats = getStaffWorkloadStats();
+                  if (!stats || stats.totalShifts === 0) {
+                    return (
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem', fontStyle: 'italic' }}>
+                        No duty shifts assigned for this pharmacist in the current month.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                      {/* Progress Bar vs 180h target */}
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, marginBottom: '4px' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>Monthly Load Target (180h)</span>
+                          <span style={{ color: stats.totalHours > 180 ? '#dc2626' : 'var(--primary)' }}>{stats.totalHours} hrs ({stats.loadPct}%)</span>
+                        </div>
+                        <div style={{ background: 'rgba(0,0,0,0.06)', borderRadius: '99px', height: '8px', overflow: 'hidden' }}>
+                          <div style={{
+                            height: '100%',
+                            width: `${stats.loadPct}%`,
+                            background: stats.totalHours > 180 ? '#ef4444' : stats.totalHours > 150 ? '#f59e0b' : 'var(--primary)',
+                            borderRadius: '99px',
+                            transition: 'width 0.4s ease'
+                          }} />
+                        </div>
+                      </div>
+
+                      {/* 3 Metric Cards */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', background: 'white', padding: '0.65rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.07)' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--text-muted)' }}>SHIFTS ASSIGNED</div>
+                          <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>{stats.totalShifts}</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--text-muted)' }}>TOTAL HOURS</div>
+                          <div style={{ fontSize: '1rem', fontWeight: 800, color: stats.totalHours > 180 ? '#dc2626' : 'var(--primary)' }}>{stats.totalHours}h</div>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--text-muted)' }}>AVG SHIFT</div>
+                          <div style={{ fontSize: '1rem', fontWeight: 800, color: stats.avgShift > 9 ? '#dc2626' : 'var(--text-main)' }}>{stats.avgShift}h</div>
+                        </div>
+                      </div>
+
+                      {/* 9-Hour Compliance Banner */}
+                      {stats.overtimeShiftsCount > 0 ? (
+                        <div style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#dc2626', fontSize: '0.72rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+                          <span>Shift Compliance Warning: {stats.overtimeShiftsCount} shift{stats.overtimeShiftsCount > 1 ? 's' : ''} exceeded the 9-hour limit!</span>
+                        </div>
+                      ) : (
+                        <div style={{ padding: '0.4rem 0.6rem', borderRadius: '6px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', color: '#16a34a', fontSize: '0.72rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span>✓ All assigned shifts adhere to the 9-hour limit.</span>
+                        </div>
+                      )}
+
+                      {/* Branch Hours Distribution */}
+                      {Object.keys(stats.branchHoursMap).length > 0 && (
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                          <div style={{ fontWeight: '700', marginBottom: '4px' }}>Hours Worked Per Branch:</div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                            {Object.entries(stats.branchHoursMap).map(([brName, brHours]) => (
+                              <span key={brName} style={{ background: 'white', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '5px', padding: '2px 7px', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                                {brName}: {Math.round(brHours * 10) / 10}h
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Card 3C: Staff Documents */}
               <div className="glass-panel" style={cardStyle}>
                 <h4 style={sectionHeaderStyle}>Staff Documents</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

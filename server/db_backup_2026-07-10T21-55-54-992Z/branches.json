@@ -1,0 +1,101 @@
+[
+  {
+    "_id": "695065f504dae3686e8129b0",
+    "name": "NRP",
+    "password": "$2b$10$qn8GEbjc9UuQ0wlJ.F2J0.w5XkD20S4PXyFb9jIs2/fj42cd5clji",
+    "location": "",
+    "contactNumber": "",
+    "createdAt": "2025-12-27T23:04:21.200Z",
+    "updatedAt": "2026-07-10T16:14:58.116Z",
+    "__v": 0,
+    "appVersion": "v1.8.0"
+  },
+  {
+    "_id": "695065f504dae3686e8129b2",
+    "name": "Alkhoud",
+    "password": "$2b$10$wP1H8wItb3K3MAUCgsVD9uZVdFyefERP0A3V/ZVET37wsKaSZyRx.",
+    "location": "",
+    "contactNumber": "",
+    "createdAt": "2025-12-27T23:04:21.428Z",
+    "updatedAt": "2026-07-10T13:01:45.432Z",
+    "__v": 0,
+    "appVersion": "v1.8.0"
+  },
+  {
+    "_id": "6957d836b41d9e90275ef70f",
+    "name": "Wave Mabela",
+    "password": "$2b$10$pKmrY/ZvchAW1snsl4DI.e6OMsodzRxP.PPeFtnp5H1/8DOrB0HSG",
+    "location": "",
+    "contactNumber": "",
+    "createdAt": "2026-01-02T14:37:42.321Z",
+    "updatedAt": "2026-07-08T04:32:53.371Z",
+    "__v": 0,
+    "appVersion": "v1.8.0"
+  },
+  {
+    "_id": "695d11674827d00c00d0f19f",
+    "name": "Barka",
+    "password": "$2b$10$GYdPhaMcyk8jUezfxG/4wuhCShpaUHuAskUgyJmrOrjDQdereeYfC",
+    "location": "",
+    "contactNumber": "",
+    "createdAt": "2026-01-06T13:43:03.150Z",
+    "updatedAt": "2026-07-09T05:26:36.019Z",
+    "__v": 0,
+    "appVersion": "v1.8.0"
+  },
+  {
+    "_id": "695d11784827d00c00d0f1a5",
+    "name": "Wadi Mavil",
+    "password": "$2b$10$yZqypc5l4NNbmzjstMG8r.O6.mWHHqJ27eS1oHmJ4yJV8l0UyLcVC",
+    "location": "",
+    "contactNumber": "",
+    "createdAt": "2026-01-06T13:43:20.291Z",
+    "updatedAt": "2026-07-10T13:56:19.426Z",
+    "__v": 0,
+    "appVersion": "v1.8.0"
+  },
+  {
+    "_id": "695d11924827d00c00d0f1ab",
+    "name": "Bousher",
+    "password": "$2b$10$9AR3lNST6B2QKZUoGEjdUOvwA4nvG6CeCdxsD/QOCg3ED.yDf3A/K",
+    "location": "",
+    "contactNumber": "",
+    "createdAt": "2026-01-06T13:43:46.830Z",
+    "updatedAt": "2026-07-04T17:57:21.821Z",
+    "__v": 0,
+    "appVersion": "v1.8.0"
+  },
+  {
+    "_id": "695d119f4827d00c00d0f1b1",
+    "name": "Nakhal",
+    "password": "$2b$10$LG81YQzakSxk6QHe9ff6dOHxlecaFHpRuRHxjDGg33scTnM29X4I2",
+    "location": "",
+    "contactNumber": "",
+    "createdAt": "2026-01-06T13:43:59.271Z",
+    "updatedAt": "2026-06-30T07:29:43.941Z",
+    "__v": 0,
+    "appVersion": "v1.8.0"
+  },
+  {
+    "_id": "695d11af4827d00c00d0f1b7",
+    "name": "Al Hail",
+    "password": "$2b$10$2CKMu098vWvcpRNdg4cuQ.R4bYce.IYeGg5HS8Zwr4gPkVTSxbgBe",
+    "location": "",
+    "contactNumber": "",
+    "createdAt": "2026-01-06T13:44:15.391Z",
+    "updatedAt": "2026-06-16T06:21:24.464Z",
+    "__v": 0,
+    "appVersion": "v1.8.0"
+  },
+  {
+    "_id": "6967976c6dd7b2ad67fa915c",
+    "name": "test branch",
+    "password": "$2b$10$gouJibgb.v39xjU0SUZKmetj8eAdiEVdT22pJn.tBKG4zvU5dafJu",
+    "location": "",
+    "contactNumber": "",
+    "createdAt": "2026-01-14T13:17:32.098Z",
+    "updatedAt": "2026-06-26T14:31:49.199Z",
+    "__v": 0,
+    "appVersion": "v1.8.0"
+  }
+]

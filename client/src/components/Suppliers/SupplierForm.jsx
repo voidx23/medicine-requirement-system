@@ -8,7 +8,10 @@ const SupplierForm = ({ initialData, onSuccess, onCancel }) => {
     name: '',
     crNo: '',
     phone: '',
-    email: ''
+    email: '',
+    address: '',
+    contact: '',
+    supplierType: 'exclusive'
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -19,7 +22,10 @@ const SupplierForm = ({ initialData, onSuccess, onCancel }) => {
         name: initialData.name || '',
         crNo: initialData.crNo || '',
         phone: initialData.phone || '',
-        email: initialData.email || ''
+        email: initialData.email || '',
+        address: initialData.address || '',
+        contact: initialData.contact || '',
+        supplierType: initialData.supplierType || 'exclusive'
       });
     }
   }, [initialData]);
@@ -65,6 +71,34 @@ const SupplierForm = ({ initialData, onSuccess, onCancel }) => {
         value={formData.crNo}
         onChange={handleChange}
       />
+
+      <div className="flex flex-col gap-1">
+        <label 
+          htmlFor="supplierType" 
+          style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-main)', marginBottom: '0.3rem', display: 'block' }}
+        >
+          Supplier Type
+        </label>
+        <select
+          id="supplierType"
+          value={formData.supplierType}
+          onChange={handleChange}
+          style={{
+             width: '100%', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '8px',
+             background: 'white', fontSize: '0.95rem'
+          }}
+        >
+          <option value="exclusive">Exclusive Supplier</option>
+          <option value="multi">Multi Supplier (Sub-stockist)</option>
+        </select>
+      </div>
+
+      <Input
+        id="contact"
+        label="Contact Person (Optional)"
+        value={formData.contact}
+        onChange={handleChange}
+      />
       
       <Input
         id="phone"
@@ -78,6 +112,13 @@ const SupplierForm = ({ initialData, onSuccess, onCancel }) => {
         label="Email"
         type="email"
         value={formData.email}
+        onChange={handleChange}
+      />
+
+      <Input
+        id="address"
+        label="Address (Optional)"
+        value={formData.address}
         onChange={handleChange}
       />
 

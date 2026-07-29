@@ -1,0 +1,14 @@
+[
+  {
+    "_id": "6a12c3b6ee99d8e1a58cd8a7",
+    "supplierId": "6943289ee0f1c1f95b9963eb",
+    "month": 5,
+    "year": 2026,
+    "totalValueHandedOver": 996.7719999999999,
+    "totalValueCompensated": 0,
+    "compensations": [],
+    "createdAt": "2026-05-24T09:24:06.081Z",
+    "updatedAt": "2026-05-24T09:25:40.163Z",
+    "__v": 0
+  }
+]

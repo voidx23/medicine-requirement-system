@@ -114,6 +114,9 @@ const LEGACY_MAPPING = {
   view_purchasing: [],
   create_purchase_orders: [],
   receive_purchase_orders: [],
+  
+  view_duty_schedules: ['duty_schedules', 'workforce'],
+  edit_duty_schedules: ['duty_schedules', 'workforce'],
 };
 
 export const requirePermission = (permission) => {

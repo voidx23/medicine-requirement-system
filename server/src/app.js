@@ -15,10 +15,10 @@ import branchRoutes from './routes/branchRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import expiryRoutes from './routes/expiryRoutes.js';
 import dutyScheduleRoutes from './routes/dutyScheduleRoutes.js';
-// import purchaseRoutes from './routes/purchaseRoutes.js';
+import purchaseRoutes from './routes/purchaseRoutes.js';
+import invoiceRoutes from './routes/invoiceRoutes.js';
 
 const app = express();
-
 // Health Check Route for Cron-Job Pinging (Instantly accessible, bypassing middleware)
 app.get('/api/ping', (req, res) => {
     res.status(200).send('Server is awake');
@@ -28,6 +28,7 @@ app.get('/api/ping', (req, res) => {
 app.use(express.json({ limit: '2mb' })); // Body parser
 app.use(express.urlencoded({ limit: '2mb', extended: true }));
 app.use(cors()); // Enable CORS
+app.use('/uploads', express.static('uploads'));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/suppliers', supplierRoutes);
@@ -44,7 +45,8 @@ app.use('/api/branches', branchRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/expiry', expiryRoutes);
 app.use('/api/duty-schedules', dutyScheduleRoutes);
-// app.use('/api/purchasing', purchaseRoutes);
+app.use('/api/purchasing', purchaseRoutes);
+app.use('/api/invoices', invoiceRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {

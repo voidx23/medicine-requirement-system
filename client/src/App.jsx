@@ -28,7 +28,7 @@ import StoreExpiryVerification from './pages/StoreExpiryVerification';
 import HandoverPreparation from './pages/HandoverPreparation';
 import SupplierExpiryReport from './pages/SupplierExpiryReport';
 import DutyScheduler from './pages/DutyScheduler';
-// import Purchasing from './pages/Purchasing';
+import Purchasing from './pages/Purchasing';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -84,7 +84,9 @@ const PermissionRoute = ({ permission }) => {
     process_handover: ['expiry_returns'],
     view_supplier_ledgers: ['expiry_returns'],
     view_medicine_audit_logs: ['reports'],
-    generate_requirement_pdf: ['dashboard', 'reports', 'history']
+    generate_requirement_pdf: ['dashboard', 'reports', 'history'],
+    view_duty_schedules: ['duty_schedules', 'workforce'],
+    edit_duty_schedules: ['duty_schedules', 'workforce']
   };
 
   const hasAccess = user && (
@@ -246,11 +248,9 @@ const App = () => {
                         <Route element={<PermissionRoute permission="view_medicine_audit_logs" />}>
                             <Route path="reports/audit" element={<MedicineAudit />} />
                         </Route>
-                        {/* 
                         <Route element={<PermissionRoute permission="view_purchasing" />}>
                             <Route path="purchasing" element={<Purchasing />} />
                         </Route>
-                        */}
 
                         {/* Delegated / Super Admin routes */}
                         <Route element={<PermissionRoute permission="view_branches" />}>
