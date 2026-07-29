@@ -3,9 +3,47 @@ import { useSearchParams } from 'react-router-dom';
 import {
   CalendarDays, ChevronLeft, ChevronRight, Plus, X, Edit2, Trash2,
   UserPlus, Users, TrendingUp, Sun, Sunset, Search,
-  GripVertical, AlertCircle, FileText, Clock
+  GripVertical, AlertCircle, FileText, Clock, AlertTriangle, BarChart2
 } from 'lucide-react';
 import api from '../services/api';
+
+// Helper: Calculate shift duration in hours (e.g., 08:00 - 17:00 = 9 hrs)
+export const calculateShiftHours = (fromTime, toTime) => {
+  if (!fromTime || !toTime) return 0;
+  const [h1, m1] = fromTime.split(':').map(Number);
+  const [h2, m2] = toTime.split(':').map(Number);
+  if (isNaN(h1) || isNaN(m1) || isNaN(h2) || isNaN(m2)) return 0;
+  let start = h1 + m1 / 60;
+  let end = h2 + m2 / 60;
+  if (end <= start) {
+    end += 24;
+  }
+  return Math.round((end - start) * 10) / 10;
+};
+
+// Helper: Calculate rest gap between yesterday's shift end time and today's shift start time
+export const calculateRestGapHours = (prevFromTime, prevToTime, currentFromTime = '08:00') => {
+  if (!prevToTime || !currentFromTime) return null;
+  const [ph1] = prevFromTime ? prevFromTime.split(':').map(Number) : [16];
+  const [ph2, pm2] = prevToTime.split(':').map(Number);
+  const [ch1, cm1] = currentFromTime.split(':').map(Number);
+
+  if (isNaN(ph2) || isNaN(pm2) || isNaN(ch1) || isNaN(cm1)) return null;
+
+  let prevEndMinutes;
+  // If prev shift crossed midnight (e.g., from 17:00 to 02:00, ph2 < ph1 or ph2 <= 6)
+  if (ph2 < ph1 || ph2 <= 6) {
+    // Ended today in early morning hours (e.g., 02:00 AM)
+    prevEndMinutes = ph2 * 60 + pm2;
+  } else {
+    // Ended yesterday night before midnight (e.g., 23:00 PM)
+    prevEndMinutes = (ph2 - 24) * 60 + pm2;
+  }
+
+  const currentStartMinutes = ch1 * 60 + cm1;
+  const gapMinutes = currentStartMinutes - prevEndMinutes;
+  return Math.round((gapMinutes / 60) * 10) / 10;
+};
 
 
 // â”€â”€â”€ Real Staff Mapping Helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -232,7 +270,7 @@ const DutyScheduler = () => {
               Object.entries(sched.shifts).forEach(([day, dayShifts]) => {
                 restoredShifts[day] = {};
                 if (dayShifts.morning && dayShifts.morning.pharmacistId) {
-                  const ph = pharmacists.find(p => p.id === dayShifts.morning.pharmacistId || p._id === dayShifts.morning.pharmacistId) || null;
+                  const ph = pharmacists.find(p => String(p._id || p.id) === String(dayShifts.morning.pharmacistId)) || null;
                   restoredShifts[day].morning = ph ? {
                     pharmacist: ph,
                     fromTime: dayShifts.morning.fromTime || '08:00',
@@ -240,7 +278,7 @@ const DutyScheduler = () => {
                   } : null;
                 }
                 if (dayShifts.evening && dayShifts.evening.pharmacistId) {
-                  const ph = pharmacists.find(p => p.id === dayShifts.evening.pharmacistId || p._id === dayShifts.evening.pharmacistId) || null;
+                  const ph = pharmacists.find(p => String(p._id || p.id) === String(dayShifts.evening.pharmacistId)) || null;
                   restoredShifts[day].evening = ph ? {
                     pharmacist: ph,
                     fromTime: dayShifts.evening.fromTime || '16:00',
@@ -249,8 +287,9 @@ const DutyScheduler = () => {
                 }
               });
             }
-            monthShiftsObj[sched.branchId] = restoredShifts;
-            monthRemarksObj[sched.branchId] = sched.remarks || {};
+            const bIdStr = String(sched.branchId?._id || sched.branchId);
+            monthShiftsObj[bIdStr] = restoredShifts;
+            monthRemarksObj[bIdStr] = sched.remarks || {};
           });
           
           setBranchMonthShifts(monthShiftsObj);
@@ -344,26 +383,7 @@ const DutyScheduler = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Dismiss popover on scroll
-  useEffect(() => {
-    const handleScroll = (e) => {
-      if (popover) {
-        // Ignore scroll events originating from inside the popover itself (e.g. scrolling the staff list)
-        if (popoverRef.current && popoverRef.current.contains(e.target)) {
-          return;
-        }
-        // Hide instantly from DOM to prevent scroll stutter, defer React state update
-        if (popoverRef.current) {
-          popoverRef.current.style.display = 'none';
-        }
-        setTimeout(() => {
-          setPopover(null);
-        }, 150);
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { capture: true, passive: true });
-    return () => window.removeEventListener('scroll', handleScroll, { capture: true, passive: true });
-  }, [popover]);
+
 
   // Selected branch data
   const monthShifts = branchMonthShifts[activeBranchId] || {};
@@ -374,30 +394,89 @@ const DutyScheduler = () => {
   const saveSchedules = async () => {
     setIsSaving(true);
     try {
-      const savePromises = branches.map(b => {
+      const getPharmaId = (p) => {
+        if (!p) return null;
+        if (typeof p === 'string') return p;
+        return p._id || p.id || null;
+      };
+
+      // Filter to only branches with valid Mongo ObjectIds (24 hex characters)
+      const validBranches = branches.filter(b => b._id && /^[0-9a-fA-F]{24}$/.test(String(b._id)));
+      
+      if (validBranches.length === 0) {
+        alert('No valid branch records available to save duty schedules.');
+        setIsSaving(false);
+        return;
+      }
+
+      const savePromises = validBranches.map(b => {
         const bId = b._id;
         const shifts = branchMonthShifts[bId] || {};
         const remarks = branchMonthRemarks[bId] || {};
         
-        // Serialize shifts map: store pharmacistId, fromTime, toTime in DB
+        // Serialize shifts map
         const cleanShifts = {};
         Object.entries(shifts).forEach(([day, dayShifts]) => {
-          cleanShifts[day] = {};
-          if (dayShifts.morning && dayShifts.morning.pharmacist) {
-            cleanShifts[day].morning = {
-              pharmacistId: dayShifts.morning.pharmacist._id || dayShifts.morning.pharmacist.id,
+          if (!dayShifts) return;
+          const dayObj = {};
+          
+          const morningPid = getPharmaId(dayShifts.morning?.pharmacist);
+          if (morningPid) {
+            dayObj.morning = {
+              pharmacistId: String(morningPid),
               fromTime: dayShifts.morning.fromTime || '08:00',
               toTime: dayShifts.morning.toTime || '16:00'
             };
           }
-          if (dayShifts.evening && dayShifts.evening.pharmacist) {
-            cleanShifts[day].evening = {
-              pharmacistId: dayShifts.evening.pharmacist._id || dayShifts.evening.pharmacist.id,
+
+          const eveningPid = getPharmaId(dayShifts.evening?.pharmacist);
+          if (eveningPid) {
+            dayObj.evening = {
+              pharmacistId: String(eveningPid),
               fromTime: dayShifts.evening.fromTime || '16:00',
               toTime: dayShifts.evening.toTime || '23:59'
             };
           }
+
+          if (Object.keys(dayObj).length > 0) {
+            cleanShifts[day] = dayObj;
+          }
         });
+
+        // Also merge weekly view shifts if currently in weekly view
+        if (viewMode === 'weekly') {
+          Object.entries(branchWeekShifts[bId] || {}).forEach(([dateStr, dayShifts]) => {
+            if (!dateStr || !dayShifts) return;
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+              const dYear = parseInt(parts[0], 10);
+              const dMonth = parseInt(parts[1], 10) - 1;
+              const dDay = parseInt(parts[2], 10);
+              if (dYear === year && dMonth === month) {
+                const dayObj = cleanShifts[dDay] || {};
+                const morningPid = getPharmaId(dayShifts.morning?.pharmacist);
+                if (morningPid) {
+                  dayObj.morning = {
+                    pharmacistId: String(morningPid),
+                    fromTime: dayShifts.morning.fromTime || '08:00',
+                    toTime: dayShifts.morning.toTime || '16:00'
+                  };
+                }
+                const eveningPid = getPharmaId(dayShifts.evening?.pharmacist);
+                if (eveningPid) {
+                  dayObj.evening = {
+                    pharmacistId: String(eveningPid),
+                    fromTime: dayShifts.evening.fromTime || '16:00',
+                    toTime: dayShifts.evening.toTime || '23:59'
+                  };
+                }
+                if (Object.keys(dayObj).length > 0) {
+                  cleanShifts[dDay] = dayObj;
+                }
+              }
+            }
+          });
+        }
 
         return api.post('/duty-schedules/save', {
           branchId: bId,
@@ -580,6 +659,25 @@ const DutyScheduler = () => {
             ))}
           </div>
 
+          {/* Coverage Badge */}
+          {viewMode !== 'pharmacists' && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              padding: '0.45rem 0.75rem',
+              background: 'rgba(99,102,241,0.08)',
+              border: '1px solid rgba(99,102,241,0.2)',
+              borderRadius: '10px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              color: 'var(--primary)'
+            }}>
+              <TrendingUp size={15} />
+              <span>Coverage: {viewMode === 'monthly' ? `${Math.round(((morningFilled + eveningFilled) / (daysInMonth * 2)) * 100)}%` : `${weekCoveragePct}%`}</span>
+            </div>
+          )}
+
           {/* Navigation */}
           {viewMode !== 'pharmacists' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -626,10 +724,10 @@ const DutyScheduler = () => {
       </div>
 
 
-      {/* â”€â”€ Main Layout â”€â”€ */}
+      {/* ── Main Layout ── */}
       <div style={{ display: 'flex', gap: '1.5rem', flex: 1, minHeight: 0 }}>
 
-        {/* â”€â”€ Calendar / Grid Panel â”€â”€ */}
+        {/* ── Calendar / Grid Panel ── */}
         <div className="glass-panel" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           {isLoading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '300px', gap: '0.75rem' }}>
@@ -698,64 +796,6 @@ const DutyScheduler = () => {
               }))}
             />
           )}
-        </div>
-
-        {/* â”€â”€ Right Sidebar â”€â”€ */}
-        <div style={{ width: '280px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {/* Search */}
-          <div className="glass-panel" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <Search size={16} color="var(--text-muted)" />
-            <input
-              placeholder="Search staffâ€¦"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.88rem', color: 'var(--text-main)', width: '100%' }}
-            />
-          </div>
-
-          {/* Available Staff */}
-          <div className="glass-panel" style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.4rem', margin: 0 }}>
-                <Users size={16} color="var(--primary)" /> Available Staff
-              </h3>
-              <span style={{ background: 'rgba(34,197,94,0.1)', color: '#16a34a', fontSize: '0.7rem', fontWeight: 700, padding: '0.15rem 0.5rem', borderRadius: '6px' }}>
-                {pharmacists.filter(p => p.available).length} ONLINE
-              </span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', overflowY: 'auto', flex: 1 }}>
-              {filteredStaff.map(p => (
-                <StaffCard key={p.id} pharmacist={p} />
-              ))}
-            </div>
-          </div>
-
-          {/* Stats Card */}
-          <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%)', borderRadius: '12px', padding: '1rem', color: 'white', boxShadow: '0 8px 24px rgba(99,102,241,0.3)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <TrendingUp size={18} />
-              <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>
-                {viewMode === 'monthly' ? 'Duty Distribution' : 'Coverage Quality'}
-              </span>
-            </div>
-            {viewMode === 'monthly' ? (
-              <>
-                <StatBar label="Morning Shift" value={Math.round(morningFilled / daysInMonth * 100)} />
-                <StatBar label="Evening Shift" value={Math.round(eveningFilled / daysInMonth * 100)} />
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1 }}>{weekCoveragePct}%</div>
-                <div style={{ fontSize: '0.75rem', opacity: 0.8, marginBottom: '0.5rem' }}>Weekly Coverage</div>
-                <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '99px', height: '6px', overflow: 'hidden' }}>
-                  <div style={{ background: 'white', height: '100%', width: `${weekCoveragePct}%`, borderRadius: '99px', transition: 'width 0.5s ease' }} />
-                </div>
-                <p style={{ fontSize: '0.72rem', opacity: 0.85, marginTop: '0.5rem', fontStyle: 'italic' }}>
-                  {weekCoveragePct >= 90 ? 'Excellent coverage this week.' : 'Some shifts are still unassigned.'}
-                </p>
-              </>
-            )}
-          </div>
         </div>
       </div>
 
@@ -857,7 +897,7 @@ const DutyScheduler = () => {
   );
 };
 
-// â”€â”€â”€ Monthly Calendar View â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Monthly Calendar View ────────────────────────────────────────────────────────
 const MonthlyView = ({ year, month, today, shifts, shiftConfig, onOpenPopover, remarks, onRemarkChange }) => {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startOffset = new Date(year, month, 1).getDay();
@@ -921,8 +961,8 @@ const CalendarCell = ({ day, isToday, shifts, shiftConfig, onOpenPopover, remark
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderRight: '1px solid rgba(0,0,0,0.05)',
-        borderBottom: '1px solid rgba(0,0,0,0.05)',
+        borderRight: '1px solid rgba(0,0,0,0.13)',
+        borderBottom: '1px solid rgba(0,0,0,0.13)',
         padding: '0.4rem',
         display: 'flex',
         flexDirection: 'column',
@@ -962,6 +1002,8 @@ const CalendarCell = ({ day, isToday, shifts, shiftConfig, onOpenPopover, remark
             key={type}
             pharmacist={p.pharmacist}
             config={{ ...cfg, time: `${formatTime(p.fromTime)} - ${formatTime(p.toTime)}` }}
+            rawFrom={p.fromTime}
+            rawTo={p.toTime}
             onEdit={(e) => onOpenPopover(e, day, type, p)}
             isPast={isPast}
           />
@@ -1001,46 +1043,76 @@ const CalendarCell = ({ day, isToday, shifts, shiftConfig, onOpenPopover, remark
   );
 };
 
-const ShiftPill = ({ pharmacist, config, onEdit, isPast }) => (
-  <div
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '5px',
-      padding: '4px 7px',
-      borderRadius: '6px',
-      background: config.bg,
-      borderLeft: `3px solid ${config.color}`,
-      fontSize: '0.72rem',
-      fontWeight: 600,
-      color: config.color,
-      cursor: isPast ? 'default' : 'pointer',
-      overflow: 'hidden',
-      transition: 'all 0.15s',
-      minHeight: '28px',
-      opacity: isPast ? 0.8 : 1
-    }}
-    onClick={isPast ? undefined : onEdit}
-    title={isPast ? `${pharmacist.name} — ${config.label} (${config.time}) [Past Shift]` : `${pharmacist.name} — ${config.label} (${config.time})`}
-  >
-    {/* Avatar circle */}
-    <div style={{
-      width: '18px', height: '18px', borderRadius: '50%',
-      background: `${config.color}22`,
-      border: `1.5px solid ${config.color}`,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: '0.52rem', fontWeight: 800, color: config.color, flexShrink: 0,
-    }}>{pharmacist.initials}</div>
-    <div style={{ overflow: 'hidden', minWidth: 0 }}>
-      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 700 }}>
-        {pharmacist.name.replace('Dr. ', '')}
+const ShiftPill = ({ pharmacist, config, onEdit, isPast, rawFrom, rawTo }) => {
+  let shiftHours = 0;
+  let isOvernight = false;
+
+  if (rawFrom && rawTo) {
+    shiftHours = calculateShiftHours(rawFrom, rawTo);
+    const [h1] = rawFrom.split(':').map(Number);
+    const [h2] = rawTo.split(':').map(Number);
+    isOvernight = h2 < h1 || h2 <= 6;
+  } else if (config.time && config.time.includes(' - ')) {
+    const [f, t] = config.time.split(' - ');
+    shiftHours = calculateShiftHours(f, t);
+  }
+  const isOver9h = shiftHours > 9;
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '5px',
+        padding: '4px 7px',
+        borderRadius: '6px',
+        background: isOver9h ? 'rgba(239,68,68,0.12)' : isOvernight ? 'rgba(99,102,241,0.1)' : config.bg,
+        borderLeft: `3px solid ${isOver9h ? '#ef4444' : isOvernight ? '#6366f1' : config.color}`,
+        fontSize: '0.72rem',
+        fontWeight: 600,
+        color: isOver9h ? '#b91c1c' : config.color,
+        cursor: isPast ? 'default' : 'pointer',
+        overflow: 'hidden',
+        transition: 'all 0.15s',
+        minHeight: '28px',
+        opacity: isPast ? 0.8 : 1
+      }}
+      onClick={isPast ? undefined : onEdit}
+      title={isOvernight ? `🌙 Overnight shift (${shiftHours} hrs) — ${pharmacist.name}` : isOver9h ? `⚠️ Exceeds 9-hour limit (${shiftHours} hrs) — ${pharmacist.name}` : `${pharmacist.name} — ${config.label} (${config.time})`}
+    >
+      {/* Avatar circle */}
+      <div style={{
+        width: '18px', height: '18px', borderRadius: '50%',
+        background: `${config.color}22`,
+        border: `1.5px solid ${isOver9h ? '#ef4444' : config.color}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '0.52rem', fontWeight: 800, color: isOver9h ? '#ef4444' : config.color, flexShrink: 0,
+      }}>{pharmacist.initials}</div>
+      <div style={{ overflow: 'hidden', minWidth: 0, flex: 1 }}>
+        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.7rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+          {pharmacist.name.replace('Dr. ', '')}
+          {isOvernight && <span style={{ fontSize: '0.62rem' }}>🌙</span>}
+        </div>
+        <div style={{ fontSize: '0.6rem', opacity: 0.85, fontWeight: 500 }}>
+          {config.label} · {config.time}
+        </div>
       </div>
-      <div style={{ fontSize: '0.6rem', opacity: 0.75, fontWeight: 500 }}>
-        {config.label} · {config.time}
-      </div>
+      {isOver9h && (
+        <span style={{
+          background: '#ef4444',
+          color: 'white',
+          fontSize: '0.52rem',
+          fontWeight: 800,
+          padding: '1px 4px',
+          borderRadius: '4px',
+          flexShrink: 0
+        }}>
+          &gt;9h
+        </span>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Weekly Grid View ──────────────────────────────────────────────────────────
 const WeeklyView = ({ weekDays, shifts, today, shiftConfig, onOpenPopover, remarks, onRemarkChange }) => {
@@ -1059,7 +1131,7 @@ const WeeklyView = ({ weekDays, shifts, today, shiftConfig, onOpenPopover, remar
           <div style={{ 
             padding: '0.6rem', textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, 
             color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', 
-            borderRight: '1px solid rgba(0,0,0,0.06)', borderBottom: '1px solid rgba(0,0,0,0.08)',
+            borderRight: '1px solid rgba(0,0,0,0.13)', borderBottom: '1.5px solid rgba(0,0,0,0.15)',
             position: 'sticky', top: 0, left: 0, zIndex: 11, background: 'var(--panel-bg, #fff)' 
           }}>
             Shift
@@ -1071,8 +1143,8 @@ const WeeklyView = ({ weekDays, shifts, today, shiftConfig, onOpenPopover, remar
             return (
               <div key={dateStr} style={{ 
                 padding: '0.5rem', textAlign: 'center', 
-                borderRight: i < 6 ? '1px solid rgba(0,0,0,0.06)' : 'none',
-                borderBottom: '1px solid rgba(0,0,0,0.08)',
+                borderRight: i < 6 ? '1px solid rgba(0,0,0,0.13)' : 'none',
+                borderBottom: '1.5px solid rgba(0,0,0,0.15)',
                 position: 'sticky', top: 0, zIndex: 10, background: 'var(--panel-bg, #fff)'
               }}>
                 <div style={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', color: isWeekend ? '#dc2626' : 'var(--text-muted)' }}>{DAY_NAMES_SHORT[i]}</div>
@@ -1095,7 +1167,7 @@ const WeeklyView = ({ weekDays, shifts, today, shiftConfig, onOpenPopover, remar
               <div style={{ 
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
                 padding: '0.75rem 0.5rem', background: 'var(--panel-bg, #fff)', 
-                borderRight: '1px solid rgba(0,0,0,0.06)', borderBottom: '1px solid rgba(0,0,0,0.06)',
+                borderRight: '1px solid rgba(0,0,0,0.13)', borderBottom: '1px solid rgba(0,0,0,0.13)',
                 minHeight: '130px', gap: '4px',
                 position: 'sticky', left: 0, zIndex: 9
               }}>
@@ -1132,7 +1204,7 @@ const WeeklyView = ({ weekDays, shifts, today, shiftConfig, onOpenPopover, remar
           <div style={{ 
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
             padding: '0.5rem', background: 'var(--panel-bg, #fff)', 
-            borderRight: '1px solid rgba(0,0,0,0.06)', borderBottom: '1px solid rgba(0,0,0,0.06)',
+            borderRight: '1px solid rgba(0,0,0,0.13)', borderBottom: '1px solid rgba(0,0,0,0.13)',
             minHeight: '50px', gap: '4px',
             position: 'sticky', left: 0, zIndex: 9
           }}>
@@ -1150,8 +1222,8 @@ const WeeklyView = ({ weekDays, shifts, today, shiftConfig, onOpenPopover, remar
             const isPast = cellDate < today;
             return (
               <div key={dateStr} style={{ 
-                borderRight: i < 6 ? '1px solid rgba(0,0,0,0.06)' : 'none', 
-                borderBottom: '1px solid rgba(0,0,0,0.06)',
+                borderRight: i < 6 ? '1px solid rgba(0,0,0,0.13)' : 'none', 
+                borderBottom: '1px solid rgba(0,0,0,0.13)',
                 padding: '0.4rem', display: 'flex', alignItems: 'center', 
                 opacity: isPast ? 0.75 : 1, minWidth: '130px' 
               }}>
@@ -1200,8 +1272,8 @@ const WeekCell = ({ isLast, pharmacist, config, onEdit, isPast }) => {
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         style={{
-          borderRight: isLast ? 'none' : '1px solid rgba(0,0,0,0.06)',
-          borderBottom: '1px solid rgba(0,0,0,0.06)',
+          borderRight: isLast ? 'none' : '1px solid rgba(0,0,0,0.13)',
+          borderBottom: '1px solid rgba(0,0,0,0.13)',
           padding: '0.5rem',
           minHeight: '130px',
           display: 'flex',
@@ -1234,8 +1306,8 @@ const WeekCell = ({ isLast, pharmacist, config, onEdit, isPast }) => {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderRight: isLast ? 'none' : '1px solid rgba(0,0,0,0.06)',
-        borderBottom: '1px solid rgba(0,0,0,0.06)',
+        borderRight: isLast ? 'none' : '1px solid rgba(0,0,0,0.13)',
+        borderBottom: '1px solid rgba(0,0,0,0.13)',
         padding: '0.5rem',
         minHeight: '130px',
         background: hovered && !isPast ? config.bg : 'transparent',
@@ -1362,7 +1434,7 @@ const MatrixView = ({ year, month, today, branches, branchShifts, shiftConfig, o
       <div style={{ flex: 1, overflow: 'auto', maxHeight: '100%' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', position: 'relative' }}>
           <thead>
-            <tr style={{ background: 'rgba(255, 255, 255, 0.95)', borderBottom: '2px solid rgba(0,0,0,0.08)' }}>
+            <tr style={{ background: 'rgba(255, 255, 255, 0.95)', borderBottom: '2px solid rgba(0,0,0,0.15)' }}>
               <th style={{
                 position: 'sticky',
                 top: 0,
@@ -1376,7 +1448,7 @@ const MatrixView = ({ year, month, today, branches, branchShifts, shiftConfig, o
                 color: 'var(--text-muted)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
-                borderRight: '2px solid rgba(0,0,0,0.08)',
+                borderRight: '2px solid rgba(0,0,0,0.15)',
                 minWidth: '120px'
               }}>
                 Date
@@ -1394,7 +1466,7 @@ const MatrixView = ({ year, month, today, branches, branchShifts, shiftConfig, o
                   color: 'var(--text-main)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
-                  borderRight: '1px solid rgba(0,0,0,0.06)',
+                  borderRight: '1px solid rgba(0,0,0,0.13)',
                   minWidth: '180px'
                 }}>
                   {branch.name}
@@ -1416,7 +1488,7 @@ const MatrixView = ({ year, month, today, branches, branchShifts, shiftConfig, o
                 <tr
                   key={day}
                   style={{
-                    borderBottom: '1px solid rgba(0,0,0,0.05)',
+                    borderBottom: '1px solid rgba(0,0,0,0.13)',
                     background: isToday ? 'rgba(99,102,241,0.03)' : 'transparent'
                   }}
                 >
@@ -1429,7 +1501,7 @@ const MatrixView = ({ year, month, today, branches, branchShifts, shiftConfig, o
                     fontWeight: 700,
                     fontSize: '0.78rem',
                     color: isToday ? 'var(--primary)' : 'var(--text-muted)',
-                    borderRight: '2px solid rgba(0,0,0,0.08)',
+                    borderRight: '2px solid rgba(0,0,0,0.15)',
                     whiteSpace: 'nowrap'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1496,7 +1568,8 @@ const MatrixCell = ({ day, branchId, shifts, shiftConfig, onOpenPopover, remark,
       onMouseLeave={() => setHovered(false)}
       style={{
         padding: '0.4rem',
-        borderRight: '1px solid rgba(0,0,0,0.05)',
+        borderRight: '1px solid rgba(0,0,0,0.13)',
+        borderBottom: '1px solid rgba(0,0,0,0.13)',
         verticalAlign: 'top',
         height: '100%',
         minHeight: '100px',
@@ -1515,6 +1588,8 @@ const MatrixCell = ({ day, branchId, shifts, shiftConfig, onOpenPopover, remark,
                 key={type}
                 pharmacist={p.pharmacist}
                 config={{ ...cfg, time: `${formatTime(p.fromTime)} - ${formatTime(p.toTime)}` }}
+                rawFrom={p.fromTime}
+                rawTo={p.toTime}
                 onEdit={(e) => onOpenPopover(e, day, type, p, branchId)}
                 isPast={isPast}
               />
@@ -1578,10 +1653,13 @@ const MatrixCell = ({ day, branchId, shifts, shiftConfig, onOpenPopover, remark,
   );
 };
 
-// â”€â”€â”€ Reassign Popover â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+
+// ─── Reassign Popover ──────────────────────────────────────────────────
 const ReassignPopover = forwardRef(({ popover, dayShifts, pharmacists, shiftConfig, allBranchesShifts, currentBranchId, branches, onReassign, onRemove, onClose }, ref) => {
   const { rect } = popover;
   const [activeShiftType, setActiveShiftType] = useState(popover.shiftType);
+  const [popoverSearch, setPopoverSearch] = useState('');
 
   const currentPharma = dayShifts[activeShiftType] || null;
   const cfg = shiftConfig[activeShiftType];
@@ -1599,33 +1677,46 @@ const ReassignPopover = forwardRef(({ popover, dayShifts, pharmacists, shiftConf
     }
   }, [activeShiftType, currentPharma]);
 
-  const spaceBelow = window.innerHeight - rect.bottom;
-  const spaceAbove = rect.top;
-  const openUpward = spaceBelow < 300 && spaceAbove > spaceBelow;
+  const POPOVER_WIDTH = 340;
+  
+  // Calculate dynamic maximum height
+  const maxAvailableHeight = window.innerHeight - 32;
+  const finalMaxHeight = Math.min(540, Math.max(260, maxAvailableHeight));
 
-  // Calculate dynamic maximum height to fit the screen context
-  const optimalMaxHeight = openUpward
-    ? Math.max(200, spaceAbove - 24)
-    : Math.max(200, spaceBelow - 24);
-  const finalMaxHeight = Math.min(440, optimalMaxHeight);
+  // Determine horizontal position (Right vs Left side of selected cell)
+  const spaceRight = window.innerWidth - rect.right;
+  const spaceLeft = rect.left;
+  
+  let leftPos;
+  if (spaceRight >= POPOVER_WIDTH + 16) {
+    // Open on the Right side
+    leftPos = rect.right + 12;
+  } else if (spaceLeft >= POPOVER_WIDTH + 16) {
+    // Open on the Left side
+    leftPos = rect.left - POPOVER_WIDTH - 12;
+  } else {
+    // Fallback clamp inside screen bounds
+    leftPos = Math.max(16, Math.min(window.innerWidth - POPOVER_WIDTH - 16, rect.left));
+  }
+
+  // Determine vertical position (Align with cell top, clamp to screen height)
+  const topPos = Math.max(16, Math.min(window.innerHeight - finalMaxHeight - 16, rect.top));
 
   const style = {
     position: 'fixed',
     zIndex: 9999,
-    width: '240px',
-    top: openUpward 
-      ? `${Math.max(10, rect.top - finalMaxHeight - 8)}px` 
-      : `${Math.min(window.innerHeight - finalMaxHeight - 16, rect.bottom + 8)}px`,
-    left: `${Math.max(270, Math.min(window.innerWidth - 250, rect.left - 150))}px`,
+    width: `${POPOVER_WIDTH}px`,
+    top: `${topPos}px`,
+    left: `${leftPos}px`,
     maxHeight: `${finalMaxHeight}px`,
     display: 'flex',
     flexDirection: 'column',
-    background: 'rgba(255,255,255,0.97)',
+    background: 'rgba(255,255,255,0.98)',
     backdropFilter: 'blur(16px)',
-    border: '1px solid rgba(0,0,0,0.1)',
+    border: '1px solid rgba(0,0,0,0.12)',
     borderRadius: '14px',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
-    padding: '0.85rem',
+    boxShadow: '0 20px 45px rgba(0,0,0,0.18)',
+    padding: '0.95rem',
     animation: 'scaleUp 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
   };
 
@@ -1651,9 +1742,9 @@ const ReassignPopover = forwardRef(({ popover, dayShifts, pharmacists, shiftConf
         if (bId === currentBranchId && sType === activeShiftType) {
           return;
         }
-        if (shiftAssignment && shiftAssignment.pharmacist && shiftAssignment.pharmacist.id === p.id) {
+        if (shiftAssignment && shiftAssignment.pharmacist && String(shiftAssignment.pharmacist.id || shiftAssignment.pharmacist._id) === String(p.id)) {
           if (timesOverlap(fromTime, toTime, shiftAssignment.fromTime, shiftAssignment.toTime)) {
-            const brName = branches.find(b => b._id === bId)?.name || 'Other Branch';
+            const brName = branches.find(b => String(b._id) === String(bId))?.name || 'Other Branch';
             busyInfo = {
               branchName: brName,
               fromTime: shiftAssignment.fromTime,
@@ -1664,6 +1755,96 @@ const ReassignPopover = forwardRef(({ popover, dayShifts, pharmacists, shiftConf
       });
     });
     return busyInfo;
+  };
+
+  const getPreviousNightShiftDetails = (p) => {
+    if (!allBranchesShifts || !popover?.key) return null;
+    const targetPId = String(p._id || p.id);
+    let prevDayKey = null;
+
+    const rawKey = String(popover.key);
+    if (rawKey.includes('-')) {
+      const parts = rawKey.split('-');
+      if (parts.length === 3) {
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const d = parseInt(parts[2], 10);
+        const prevDate = new Date(y, m, d - 1);
+        const pYear = prevDate.getFullYear();
+        const pMonth = String(prevDate.getMonth() + 1).padStart(2, '0');
+        const pDay = String(prevDate.getDate()).padStart(2, '0');
+        prevDayKey = `${pYear}-${pMonth}-${pDay}`;
+      }
+    } else {
+      const dayNum = parseInt(rawKey, 10);
+      if (!isNaN(dayNum) && dayNum > 1) {
+        prevDayKey = dayNum - 1;
+      }
+    }
+
+    if (prevDayKey === null || prevDayKey === undefined) return null;
+
+    let nightShiftInfo = null;
+
+    // Search across all branches in allBranchesShifts
+    Object.entries(allBranchesShifts || {}).forEach(([bId, dayMap]) => {
+      if (!dayMap) return;
+      const prevDayData = dayMap[prevDayKey] || dayMap[String(prevDayKey)] || dayMap[Number(prevDayKey)] || {};
+      
+      Object.entries(prevDayData).forEach(([sType, shiftAssignment]) => {
+        if (shiftAssignment && shiftAssignment.pharmacist) {
+          const shiftStaffId = String(shiftAssignment.pharmacist._id || shiftAssignment.pharmacist.id || shiftAssignment.pharmacist);
+          if (shiftStaffId === targetPId) {
+            const toTime = shiftAssignment.toTime || '';
+            const fromTime = shiftAssignment.fromTime || '';
+            const parts = toTime.split(':').map(Number);
+            const endHour = parts[0];
+            // Check if evening shift OR end time is late at night (>= 20:00 or <= 07:00)
+            const isLate = (sType === 'evening') || (!isNaN(endHour) && (endHour >= 20 || endHour <= 7));
+            
+            if (isLate) {
+              const brName = branches.find(b => String(b._id) === String(bId))?.name || 'Branch';
+              nightShiftInfo = {
+                branchName: brName,
+                shiftType: sType,
+                fromTime: fromTime || (sType === 'evening' ? '16:00' : '08:00'),
+                toTime: toTime || (sType === 'evening' ? '23:59' : '16:00')
+              };
+            }
+          }
+        }
+      });
+    });
+
+    return nightShiftInfo;
+  };
+
+  const getSameDayOtherShiftDetails = (p) => {
+    if (!allBranchesShifts || !popover?.key) return null;
+    const targetPId = String(p._id || p.id);
+    let sameDayShiftInfo = null;
+
+    Object.entries(allBranchesShifts || {}).forEach(([bId, dayMap]) => {
+      if (!dayMap) return;
+      const dayData = dayMap[popover.key] || dayMap[String(popover.key)] || dayMap[Number(popover.key)] || {};
+      
+      Object.entries(dayData).forEach(([sType, shiftAssignment]) => {
+        if (sType !== activeShiftType && shiftAssignment && shiftAssignment.pharmacist) {
+          const shiftStaffId = String(shiftAssignment.pharmacist._id || shiftAssignment.pharmacist.id || shiftAssignment.pharmacist);
+          if (shiftStaffId === targetPId) {
+            const brName = branches.find(b => String(b._id) === String(bId))?.name || 'Branch';
+            sameDayShiftInfo = {
+              branchName: brName,
+              shiftType: sType,
+              fromTime: shiftAssignment.fromTime || (sType === 'morning' ? '08:00' : '16:00'),
+              toTime: shiftAssignment.toTime || (sType === 'morning' ? '16:00' : '23:59')
+            };
+          }
+        }
+      });
+    });
+
+    return sameDayShiftInfo;
   };
 
   return (
@@ -1716,7 +1897,7 @@ const ReassignPopover = forwardRef(({ popover, dayShifts, pharmacists, shiftConf
       </div>
 
       {/* Time Range Pickers */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.6rem', flexShrink: 0 }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.4rem', flexShrink: 0 }}>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <span style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>From</span>
           <input
@@ -1769,54 +1950,198 @@ const ReassignPopover = forwardRef(({ popover, dayShifts, pharmacists, shiftConf
         </div>
       </div>
 
+      {/* Shift Duration & 9h Warning Alert */}
+      {(() => {
+        const duration = calculateShiftHours(fromTime, toTime);
+        const isOver9h = duration > 9;
+        const currentWorkedLate = currentPharma?.pharmacist ? getPreviousNightShiftDetails(currentPharma.pharmacist) : null;
+        const currentSameDayShift = currentPharma?.pharmacist ? getSameDayOtherShiftDetails(currentPharma.pharmacist) : null;
+
+        return (
+          <div style={{ marginBottom: '0.4rem', flexShrink: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.66rem', fontWeight: 700, color: 'var(--text-muted)' }}>Shift Duration:</span>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: isOver9h ? '#dc2626' : '#16a34a' }}>
+                {duration} hrs {isOver9h ? '⚠️' : '✓'}
+              </span>
+            </div>
+            {isOver9h && (
+              <div style={{
+                marginTop: '3px',
+                padding: '0.3rem 0.5rem',
+                borderRadius: '6px',
+                background: 'rgba(239,68,68,0.1)',
+                border: '1px solid rgba(239,68,68,0.25)',
+                color: '#dc2626',
+                fontSize: '0.64rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}>
+                <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+                <span>Strict Warning: Exceeds 9-hour shift limit!</span>
+              </div>
+            )}
+            {currentSameDayShift && (
+              <div style={{
+                marginTop: '3px',
+                padding: '0.3rem 0.5rem',
+                borderRadius: '6px',
+                background: 'rgba(239,68,68,0.12)',
+                border: '1px solid rgba(239,68,68,0.3)',
+                color: '#dc2626',
+                fontSize: '0.64rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}>
+                <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+                <span>Double Shift Warning: Also working {currentSameDayShift.shiftType} today ({formatTime(currentSameDayShift.fromTime)} - {formatTime(currentSameDayShift.toTime)})</span>
+              </div>
+            )}
+            {currentWorkedLate && !currentSameDayShift && (
+              <div style={{
+                marginTop: '3px',
+                padding: '0.3rem 0.5rem',
+                borderRadius: '6px',
+                background: 'rgba(245,158,11,0.12)',
+                border: '1px solid rgba(245,158,11,0.3)',
+                color: '#b45309',
+                fontSize: '0.64rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}>
+                <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+                <span>Notice: Worked late yesterday ({formatTime(currentWorkedLate.fromTime)} - {formatTime(currentWorkedLate.toTime)})</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       <hr style={{ border: 'none', borderTop: '1px solid rgba(0,0,0,0.07)', margin: '0.4rem 0', flexShrink: 0 }} />
       <p style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem', flexShrink: 0 }}>Select Staff</p>
+
+      {/* Staff Search Bar inside Popover */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.4rem',
+        padding: '0.3rem 0.55rem',
+        background: 'rgba(0,0,0,0.03)',
+        border: '1px solid rgba(0,0,0,0.09)',
+        borderRadius: '7px',
+        marginBottom: '0.4rem',
+        flexShrink: 0
+      }}>
+        <Search size={13} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+        <input
+          type="text"
+          placeholder="Search staff..."
+          value={popoverSearch}
+          onChange={e => setPopoverSearch(e.target.value)}
+          style={{
+            border: 'none',
+            outline: 'none',
+            background: 'transparent',
+            fontSize: '0.72rem',
+            color: 'var(--text-main)',
+            width: '100%'
+          }}
+        />
+        {popoverSearch && (
+          <button
+            onClick={() => setPopoverSearch('')}
+            style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-muted)', display: 'flex' }}
+          >
+            <X size={12} />
+          </button>
+        )}
+      </div>
       
       {/* Scrollable Staff list container */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto', flex: 1, minHeight: '80px', marginBottom: '0.5rem' }}>
-        {pharmacists.filter(p => p.available).map(p => {
-          const busy = getBusyDetails(p);
-          return (
-            <button
-              key={p.id}
-              disabled={!!busy}
-              onClick={() => {
-                const finalFrom = p.defaultFromTime || fromTime;
-                const finalTo = p.defaultToTime || toTime;
-                onReassign(activeShiftType, p, finalFrom, finalTo);
-                onClose();
-              }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
-                padding: '0.45rem 0.6rem', border: 'none',
-                borderRadius: '8px', cursor: busy ? 'not-allowed' : 'pointer', textAlign: 'left', width: '100%',
-                background: currentPharma?.pharmacist?.id === p.id ? 'var(--primary-light)' : 'transparent',
-                color: busy ? 'var(--text-muted)' : (currentPharma?.pharmacist?.id === p.id ? 'var(--primary)' : 'var(--text-main)'),
-                fontWeight: currentPharma?.pharmacist?.id === p.id ? 700 : 500,
-                fontSize: '0.82rem',
-                transition: 'background 0.15s',
-                flexShrink: 0,
-                opacity: busy ? 0.6 : 1
-              }}
-              onMouseOver={e => { if (currentPharma?.pharmacist?.id !== p.id && !busy) e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
-              onMouseOut={e => { if (currentPharma?.pharmacist?.id !== p.id && !busy) e.currentTarget.style.background = 'transparent'; }}
-            >
-              {p.profilePicture ? (
-                <img src={p.profilePicture} style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} alt="" />
-              ) : (
-                <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: busy ? '#e5e7eb' : `${p.color}22`, border: `1.5px solid ${busy ? '#9ca3af' : p.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 800, color: busy ? '#9ca3af' : p.color, flexShrink: 0 }}>{p.initials}</div>
-              )}
-              <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                <div style={{ textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{p.name}</div>
-                {busy && (
-                  <div style={{ fontSize: '0.62rem', color: '#ef4444', fontWeight: 600, marginTop: '2px', whiteSpace: 'normal' }}>
-                    Busy: {busy.branchName} ({formatTime(busy.fromTime)} - {formatTime(busy.toTime)})
-                  </div>
-                )}
+        {(() => {
+          const matchingStaff = pharmacists.filter(p => {
+            if (!p.available) return false;
+            if (!popoverSearch.trim()) return true;
+            const q = popoverSearch.toLowerCase();
+            return (
+              p.name.toLowerCase().includes(q) ||
+              (p.designation && p.designation.toLowerCase().includes(q))
+            );
+          });
+
+          if (matchingStaff.length === 0) {
+            return (
+              <div style={{ padding: '0.75rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                No matching staff found
               </div>
-            </button>
-          );
-        })}
+            );
+          }
+
+          return matchingStaff.map(p => {
+            const busy = getBusyDetails(p);
+            const workedLateYesterday = getPreviousNightShiftDetails(p);
+            const sameDayShift = getSameDayOtherShiftDetails(p);
+
+            return (
+              <button
+                key={p.id}
+                disabled={!!busy}
+                onClick={() => {
+                  const finalFrom = p.defaultFromTime || fromTime;
+                  const finalTo = p.defaultToTime || toTime;
+                  onReassign(activeShiftType, p, finalFrom, finalTo);
+                  onClose();
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  padding: '0.45rem 0.6rem', border: 'none',
+                  borderRadius: '8px', cursor: busy ? 'not-allowed' : 'pointer', textAlign: 'left', width: '100%',
+                  background: currentPharma?.pharmacist?.id === p.id ? 'var(--primary-light)' : sameDayShift && !busy ? 'rgba(239,68,68,0.06)' : workedLateYesterday && !busy ? 'rgba(245,158,11,0.06)' : 'transparent',
+                  color: busy ? 'var(--text-muted)' : (currentPharma?.pharmacist?.id === p.id ? 'var(--primary)' : 'var(--text-main)'),
+                  fontWeight: currentPharma?.pharmacist?.id === p.id ? 700 : 500,
+                  fontSize: '0.82rem',
+                  transition: 'background 0.15s',
+                  flexShrink: 0,
+                  opacity: busy ? 0.6 : 1
+                }}
+                onMouseOver={e => { if (currentPharma?.pharmacist?.id !== p.id && !busy) e.currentTarget.style.background = sameDayShift ? 'rgba(239,68,68,0.12)' : workedLateYesterday ? 'rgba(245,158,11,0.12)' : 'rgba(0,0,0,0.04)'; }}
+                onMouseOut={e => { if (currentPharma?.pharmacist?.id !== p.id && !busy) e.currentTarget.style.background = sameDayShift ? 'rgba(239,68,68,0.06)' : workedLateYesterday ? 'rgba(245,158,11,0.06)' : 'transparent'; }}
+              >
+                {p.profilePicture ? (
+                  <img src={p.profilePicture} style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} alt="" />
+                ) : (
+                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: busy ? '#e5e7eb' : `${p.color}22`, border: `1.5px solid ${busy ? '#9ca3af' : p.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 800, color: busy ? '#9ca3af' : p.color, flexShrink: 0 }}>{p.initials}</div>
+                )}
+                <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                  <div style={{ textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{p.name}</div>
+                  {busy ? (
+                    <div style={{ fontSize: '0.62rem', color: '#ef4444', fontWeight: 600, marginTop: '2px', whiteSpace: 'normal' }}>
+                      Busy: {busy.branchName} ({formatTime(busy.fromTime)} - {formatTime(busy.toTime)})
+                    </div>
+                  ) : sameDayShift ? (
+                    <div style={{ fontSize: '0.62rem', color: '#dc2626', fontWeight: 700, marginTop: '2px', whiteSpace: 'normal', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <AlertTriangle size={11} style={{ flexShrink: 0 }} /> Double Shift: Working {sameDayShift.shiftType} today ({formatTime(sameDayShift.fromTime)} - {formatTime(sameDayShift.toTime)})
+                    </div>
+                  ) : workedLateYesterday ? (
+                    <div style={{ fontSize: '0.62rem', color: '#d97706', fontWeight: 700, marginTop: '2px', whiteSpace: 'normal', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <AlertTriangle size={11} style={{ flexShrink: 0 }} />
+                      {workedLateYesterday.restGap !== null && workedLateYesterday.restGap < 10
+                        ? `Short Rest (${workedLateYesterday.restGap}h rest) — ended at ${formatTime(workedLateYesterday.toTime)}`
+                        : `Worked late yesterday (${formatTime(workedLateYesterday.fromTime)} - ${formatTime(workedLateYesterday.toTime)})`}
+                    </div>
+                  ) : null}
+                </div>
+              </button>
+            );
+          });
+        })()}
       </div>
       
       <hr style={{ border: 'none', borderTop: '1px solid rgba(0,0,0,0.07)', margin: '0.4rem 0', flexShrink: 0 }} />

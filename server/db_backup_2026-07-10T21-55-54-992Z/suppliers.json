@@ -1,0 +1,992 @@
+[
+  {
+    "_id": "69432893e0f1c1f95b996346",
+    "name": "ABRAJ AL ZAHIRA INVESTMENT",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:02:59.957Z",
+    "updatedAt": "2025-12-18T12:08:58.266Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432894e0f1c1f95b996349",
+    "name": "ABU ABBAS TRADING ENTERPRISES",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:00.169Z",
+    "updatedAt": "2025-12-17T22:03:00.169Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432894e0f1c1f95b99634c",
+    "name": "ABU AMAL MEDICAL STORE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:00.365Z",
+    "updatedAt": "2025-12-17T22:03:00.365Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432894e0f1c1f95b99634f",
+    "name": "ADRAK INTERNATIONAL MEDICAL SUPPLIES",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:00.564Z",
+    "updatedAt": "2025-12-18T12:08:58.460Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432894e0f1c1f95b996352",
+    "name": "AL ATTAA SURGICAL MOBELA",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:00.768Z",
+    "updatedAt": "2025-12-18T12:08:58.649Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432894e0f1c1f95b996355",
+    "name": "AL BASMA",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:00.963Z",
+    "updatedAt": "2025-12-18T12:08:58.835Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432895e0f1c1f95b996358",
+    "name": "AL FARABI PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:01.170Z",
+    "updatedAt": "2025-12-18T12:08:59.025Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432895e0f1c1f95b99635b",
+    "name": "AL HAMDANI GOLDEN",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:01.374Z",
+    "updatedAt": "2025-12-18T12:08:59.212Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432895e0f1c1f95b99635e",
+    "name": "AL HASHAR PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:01.575Z",
+    "updatedAt": "2025-12-18T12:08:59.402Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432895e0f1c1f95b996361",
+    "name": "AL IMRAN INTERNATIONAL TRADING",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:01.780Z",
+    "updatedAt": "2025-12-18T12:08:59.589Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432895e0f1c1f95b996364",
+    "name": "AL JABRY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:01.984Z",
+    "updatedAt": "2025-12-18T12:08:59.775Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432896e0f1c1f95b996367",
+    "name": "AL JULFA",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:02.191Z",
+    "updatedAt": "2025-12-18T12:08:59.965Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432896e0f1c1f95b99636a",
+    "name": "AL MAHASEN INTEGRATED LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:02.398Z",
+    "updatedAt": "2025-12-18T12:09:00.166Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432896e0f1c1f95b99636d",
+    "name": "AL MAZYOUNA COMERCIAL",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:02.601Z",
+    "updatedAt": "2025-12-17T22:03:02.601Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432896e0f1c1f95b996370",
+    "name": "AL NABHANI PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:02.832Z",
+    "updatedAt": "2025-12-17T22:03:02.832Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432897e0f1c1f95b996373",
+    "name": "AL NAIMI",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:03.024Z",
+    "updatedAt": "2025-12-18T12:09:00.355Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432897e0f1c1f95b996376",
+    "name": "AL NAJAH INTEGRATED TRADE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:03.219Z",
+    "updatedAt": "2025-12-18T12:09:00.541Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432897e0f1c1f95b996379",
+    "name": "AL NAZIH UNITED SPC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:03.412Z",
+    "updatedAt": "2025-12-17T22:03:03.412Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432897e0f1c1f95b99637c",
+    "name": "AL OMARI INTERNATIONAL MEDICAL STORE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:03.609Z",
+    "updatedAt": "2025-12-18T12:09:00.739Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432897e0f1c1f95b99637f",
+    "name": "AL RAAYA DRUG STORE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:03.809Z",
+    "updatedAt": "2025-12-17T22:03:03.809Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432898e0f1c1f95b996382",
+    "name": "AL RAZI PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:04.005Z",
+    "updatedAt": "2025-12-18T12:09:00.925Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432898e0f1c1f95b996385",
+    "name": "AL SHABAK MIDDLE EAST TRADING LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:04.197Z",
+    "updatedAt": "2025-12-18T12:09:01.113Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432898e0f1c1f95b996388",
+    "name": "AL ZAHRATAIN TRADE S P C",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:04.392Z",
+    "updatedAt": "2025-12-18T12:09:01.304Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432898e0f1c1f95b99638b",
+    "name": "AL ZAYANA PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:04.594Z",
+    "updatedAt": "2025-12-18T12:09:01.492Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432898e0f1c1f95b99638e",
+    "name": "ALFARSI.ME",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:04.786Z",
+    "updatedAt": "2025-12-17T22:03:04.786Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432898e0f1c1f95b996391",
+    "name": "ALMTKHSSWN A A",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:04.982Z",
+    "updatedAt": "2025-12-18T12:09:01.721Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432899e0f1c1f95b996394",
+    "name": "ALPHA MEDICAL STORE LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:05.172Z",
+    "updatedAt": "2025-12-18T12:09:01.911Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432899e0f1c1f95b996397",
+    "name": "ALYA AL AMERAT FOR MEDICAL SERVICES",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:05.369Z",
+    "updatedAt": "2025-12-17T22:03:05.369Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432899e0f1c1f95b99639a",
+    "name": "ANMR MEDICAL STORE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:05.568Z",
+    "updatedAt": "2025-12-18T12:09:02.099Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432899e0f1c1f95b99639d",
+    "name": "ARAB STAR INVESTMENT LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:05.766Z",
+    "updatedAt": "2025-12-18T12:09:02.289Z",
+    "__v": 0
+  },
+  {
+    "_id": "69432899e0f1c1f95b9963a0",
+    "name": "AREEN MUSCAT",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:05.967Z",
+    "updatedAt": "2025-12-18T12:09:02.475Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ae0f1c1f95b9963a3",
+    "name": "ARYAF",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:06.167Z",
+    "updatedAt": "2025-12-18T12:09:02.662Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ae0f1c1f95b9963a6",
+    "name": "AVICEN",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:06.365Z",
+    "updatedAt": "2025-12-18T12:09:02.849Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ae0f1c1f95b9963a9",
+    "name": "BAHWAN HEALTHCARE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:06.562Z",
+    "updatedAt": "2025-12-18T12:09:03.050Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ae0f1c1f95b9963ac",
+    "name": "BAHWAN SISTERS TRD",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:06.756Z",
+    "updatedAt": "2025-12-18T12:09:03.239Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ae0f1c1f95b9963af",
+    "name": "BLUE BRIDGE PROJECT",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:06.949Z",
+    "updatedAt": "2025-12-18T12:09:03.434Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289be0f1c1f95b9963b2",
+    "name": "CAPITAL PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:07.141Z",
+    "updatedAt": "2025-12-18T12:09:03.622Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289be0f1c1f95b9963b5",
+    "name": "CARE TITLE INTERNATIONAL LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:07.334Z",
+    "updatedAt": "2025-12-18T12:09:03.816Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289be0f1c1f95b9963b8",
+    "name": "DAWAKUM",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:07.524Z",
+    "updatedAt": "2025-12-18T12:09:04.011Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289be0f1c1f95b9963bb",
+    "name": "DELTA PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:07.715Z",
+    "updatedAt": "2025-12-18T12:09:04.206Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289be0f1c1f95b9963be",
+    "name": "DESERT ROSE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:07.905Z",
+    "updatedAt": "2025-12-17T22:03:07.905Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ce0f1c1f95b9963c1",
+    "name": "DIGHADY GROUP",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:08.107Z",
+    "updatedAt": "2025-12-17T22:03:08.107Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ce0f1c1f95b9963c4",
+    "name": "DREAMS SANDUS INVEST COMPANY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:08.304Z",
+    "updatedAt": "2025-12-17T22:03:08.304Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ce0f1c1f95b9963c7",
+    "name": "ELITE BUSINESS & TRADE.",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:08.498Z",
+    "updatedAt": "2025-12-17T22:03:08.498Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ce0f1c1f95b9963ca",
+    "name": "GENERAL FOOD SUPPLIES CO. L.L.C",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:08.691Z",
+    "updatedAt": "2025-12-18T12:09:04.395Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ce0f1c1f95b9963cd",
+    "name": "GLOBAL PHARMACY&STORES (TRANS PENINSULA)",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:08.884Z",
+    "updatedAt": "2025-12-18T12:09:04.581Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289de0f1c1f95b9963d0",
+    "name": "GOLDEN TAG GENERAL TADING AND SERVICES LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:09.077Z",
+    "updatedAt": "2025-12-17T22:03:09.077Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289de0f1c1f95b9963d3",
+    "name": "GREENWORLD SUPPLIES AND SERVICES LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:09.270Z",
+    "updatedAt": "2025-12-17T22:03:09.270Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289de0f1c1f95b9963d6",
+    "name": "GULF HEALTHCARE AND INVESMENT",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:09.470Z",
+    "updatedAt": "2025-12-18T12:09:04.775Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289de0f1c1f95b9963d9",
+    "name": "HAYAT BIOCARE MEDICAL STORE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:09.663Z",
+    "updatedAt": "2025-12-17T22:03:09.663Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289de0f1c1f95b9963dc",
+    "name": "HEALTH PHARMACY LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:09.871Z",
+    "updatedAt": "2025-12-17T22:03:09.871Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ee0f1c1f95b9963df",
+    "name": "HOLISTIC BUSINESS SOLUTION",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:10.079Z",
+    "updatedAt": "2025-12-18T12:09:04.964Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ee0f1c1f95b9963e2",
+    "name": "IBN AL ARABI LEADING BUSINESS LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:10.280Z",
+    "updatedAt": "2025-12-18T12:09:05.149Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ee0f1c1f95b9963e5",
+    "name": "IBN AL SAWAR TRADE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:10.485Z",
+    "updatedAt": "2025-12-18T12:09:05.338Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ee0f1c1f95b9963e8",
+    "name": "IBN SALEEM PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:10.695Z",
+    "updatedAt": "2025-12-17T22:03:10.695Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289ee0f1c1f95b9963eb",
+    "name": "IBN SINA PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:10.905Z",
+    "updatedAt": "2025-12-18T12:09:05.526Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289fe0f1c1f95b9963ee",
+    "name": "ICARE LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:11.098Z",
+    "updatedAt": "2025-12-18T12:09:05.714Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289fe0f1c1f95b9963f1",
+    "name": "ITTIHAD AL YAMAMAH MEDICAL COMPANY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:11.305Z",
+    "updatedAt": "2025-12-17T22:03:11.305Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289fe0f1c1f95b9963f4",
+    "name": "KEMETA MEDICAL SUPPLIES",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:11.509Z",
+    "updatedAt": "2025-12-18T12:09:05.918Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289fe0f1c1f95b9963f7",
+    "name": "KHIMJI RAMDAS",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:11.712Z",
+    "updatedAt": "2025-12-18T12:09:06.115Z",
+    "__v": 0
+  },
+  {
+    "_id": "6943289fe0f1c1f95b9963fa",
+    "name": "MAZOON PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:11.915Z",
+    "updatedAt": "2025-12-18T12:09:06.310Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a0e0f1c1f95b9963fd",
+    "name": "MEDICAL AND PHARMACEUTICAL SERVICES",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:12.115Z",
+    "updatedAt": "2025-12-18T12:09:06.517Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a0e0f1c1f95b996400",
+    "name": "MEDICAL SUPPLES LINK CO.",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:12.308Z",
+    "updatedAt": "2025-12-18T12:09:06.708Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a0e0f1c1f95b996403",
+    "name": "MEERA MEDICAL STORE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:12.506Z",
+    "updatedAt": "2025-12-18T12:09:06.899Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a0e0f1c1f95b996406",
+    "name": "MESK",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:12.708Z",
+    "updatedAt": "2025-12-17T22:03:12.708Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a0e0f1c1f95b996409",
+    "name": "MOLECULES",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:12.903Z",
+    "updatedAt": "2025-12-17T22:03:12.903Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a1e0f1c1f95b99640c",
+    "name": "MSTE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:13.095Z",
+    "updatedAt": "2025-12-18T12:09:07.097Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a1e0f1c1f95b99640f",
+    "name": "MULTIPLEX INTERNATIONAL LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:13.290Z",
+    "updatedAt": "2025-12-17T22:03:13.290Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a1e0f1c1f95b996412",
+    "name": "MUSCAT PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:13.483Z",
+    "updatedAt": "2025-12-18T12:09:07.299Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a1e0f1c1f95b996415",
+    "name": "MUTTRAH PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:13.679Z",
+    "updatedAt": "2025-12-18T12:09:07.487Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a1e0f1c1f95b996418",
+    "name": "NADA HAPPINESS TRAD. LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:13.871Z",
+    "updatedAt": "2025-12-18T12:09:07.680Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a2e0f1c1f95b99641b",
+    "name": "NAMA PHARMA",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:14.069Z",
+    "updatedAt": "2025-12-17T22:03:14.069Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a2e0f1c1f95b99641e",
+    "name": "NATIONAL PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:14.273Z",
+    "updatedAt": "2025-12-18T12:09:07.880Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a2e0f1c1f95b996421",
+    "name": "NEW FANJA CLINIC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:14.477Z",
+    "updatedAt": "2025-12-17T22:03:14.477Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a2e0f1c1f95b996424",
+    "name": "NEW RUWI PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:14.680Z",
+    "updatedAt": "2025-12-17T22:03:14.680Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a2e0f1c1f95b996427",
+    "name": "OVERSEAS INVESTMENT LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:14.879Z",
+    "updatedAt": "2025-12-18T12:09:08.095Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a3e0f1c1f95b99642a",
+    "name": "PETRA MEDICAL SERVICES",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:15.081Z",
+    "updatedAt": "2025-12-18T12:09:08.291Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a3e0f1c1f95b99642d",
+    "name": "PHARMACURE WHOLESALE PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:15.273Z",
+    "updatedAt": "2025-12-17T22:03:15.273Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a3e0f1c1f95b996430",
+    "name": "PRIME HEALTHCARE LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:15.473Z",
+    "updatedAt": "2025-12-18T12:09:08.480Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a3e0f1c1f95b996433",
+    "name": "PRIVATE INTEGRATED SERVICES LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:15.678Z",
+    "updatedAt": "2025-12-17T22:03:15.678Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a3e0f1c1f95b996436",
+    "name": "RAWABI DELTA TRADING",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:15.871Z",
+    "updatedAt": "2025-12-18T12:09:08.666Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a4e0f1c1f95b996439",
+    "name": "RED SHADOWS SPC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:16.066Z",
+    "updatedAt": "2025-12-17T22:03:16.066Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a4e0f1c1f95b99643c",
+    "name": "SALA MEDICAL STORE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:16.270Z",
+    "updatedAt": "2025-12-18T12:09:08.851Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a4e0f1c1f95b99643f",
+    "name": "SCIENTIFIC PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:16.468Z",
+    "updatedAt": "2025-12-18T12:09:09.046Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a4e0f1c1f95b996442",
+    "name": "SEASON STAR STORE",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:16.660Z",
+    "updatedAt": "2025-12-18T12:09:09.234Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a4e0f1c1f95b996445",
+    "name": "SILSAL",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:16.850Z",
+    "updatedAt": "2025-12-18T12:09:09.422Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a5e0f1c1f95b996448",
+    "name": "SKY FASHION UNITED L.L.C",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:17.046Z",
+    "updatedAt": "2025-12-18T12:09:09.607Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a5e0f1c1f95b99644b",
+    "name": "SOUD AL SUBHI SONS TRAD. ASSO.",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:17.239Z",
+    "updatedAt": "2025-12-18T12:09:09.807Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a5e0f1c1f95b99644e",
+    "name": "SOUTH LEADING INTERNATIONAL LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:17.434Z",
+    "updatedAt": "2025-12-18T12:09:09.993Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a5e0f1c1f95b996451",
+    "name": "TAIBA PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:17.628Z",
+    "updatedAt": "2025-12-18T12:09:10.179Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a5e0f1c1f95b996454",
+    "name": "TAJ INTERNATIONAL BUSINESS LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:17.826Z",
+    "updatedAt": "2025-12-18T12:09:10.367Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a6e0f1c1f95b996457",
+    "name": "THASKEEL",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:18.022Z",
+    "updatedAt": "2025-12-17T22:03:18.022Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a6e0f1c1f95b99645a",
+    "name": "THE MODERN MEDICAL LEGEND LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:18.221Z",
+    "updatedAt": "2025-12-17T22:03:18.221Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a6e0f1c1f95b99645d",
+    "name": "TOP CARE COMPANY LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:18.417Z",
+    "updatedAt": "2025-12-18T12:09:10.554Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a6e0f1c1f95b996460",
+    "name": "UM-SALAMA PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:18.611Z",
+    "updatedAt": "2025-12-18T12:09:10.748Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a6e0f1c1f95b996463",
+    "name": "VIRAL",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:18.805Z",
+    "updatedAt": "2025-12-18T12:09:10.932Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a6e0f1c1f95b996466",
+    "name": "VISTA PHARMA",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:18.999Z",
+    "updatedAt": "2025-12-18T12:09:11.127Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a7e0f1c1f95b996469",
+    "name": "WALEED PHARMACY",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:19.200Z",
+    "updatedAt": "2025-12-18T12:09:11.316Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a7e0f1c1f95b99646c",
+    "name": "WESTERN NATIONAL AL BUSINESS SPC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:19.393Z",
+    "updatedAt": "2025-12-18T12:09:11.502Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a7e0f1c1f95b99646f",
+    "name": "ZAINAL BAQER",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-17T22:03:19.595Z",
+    "updatedAt": "2025-12-18T12:09:11.691Z",
+    "__v": 0
+  },
+  {
+    "_id": "694328a7e0f1c1f95b996472",
+    "name": "1",
+    "crNo": "",
+    "isActive": false,
+    "createdAt": "2025-12-17T22:03:19.791Z",
+    "updatedAt": "2025-12-17T22:04:06.360Z",
+    "__v": 0
+  },
+  {
+    "_id": "694793d287600c5e9fa8f598",
+    "name": "ARYAF/WESTERN/SKY/AL-IMRAN/MSTE/ABU ABBAS/, HOLISTIC/SOUTH-LEADING/MEERA",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-21T06:29:38.752Z",
+    "updatedAt": "2025-12-22T18:19:21.153Z",
+    "__v": 0
+  },
+  {
+    "_id": "6948d9eb90c95c52ccf8aa47",
+    "name": "Not in database",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-22T05:40:59.617Z",
+    "updatedAt": "2025-12-22T15:54:05.199Z",
+    "__v": 0
+  },
+  {
+    "_id": "694b8115b4bff4cbdc55a8c9",
+    "name": "DELTA/VISTA/SALA/ANMR/UMSALAMA/AVICEN",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2025-12-24T05:58:45.949Z",
+    "updatedAt": "2025-12-24T06:59:01.051Z",
+    "__v": 0
+  },
+  {
+    "_id": "695b84a5b92bbbf2d0e4ccce",
+    "name": "WESTERN/MUTTRAH",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2026-01-05T09:30:13.348Z",
+    "updatedAt": "2026-01-05T09:30:13.348Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a36df53402696a644962d4",
+    "name": "UNKNOWN",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2026-02-28T22:36:37.668Z",
+    "updatedAt": "2026-02-28T22:36:37.668Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a408edaed4065d2d30173e",
+    "name": "AW PHARMACEUTICALS LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2026-03-01T09:37:49.062Z",
+    "updatedAt": "2026-03-01T09:37:49.062Z",
+    "__v": 0
+  },
+  {
+    "_id": "69a4c1a4aed4065d2d321d57",
+    "name": "ALPHAMED MODERN BUSINESS LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2026-03-01T22:45:56.580Z",
+    "updatedAt": "2026-03-01T22:45:56.580Z",
+    "__v": 0
+  },
+  {
+    "_id": "69b9caa127d64be232eaef53",
+    "name": "NAJAFI COSMETICS AND TRADING LLC",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2026-03-17T21:41:53.189Z",
+    "updatedAt": "2026-03-17T21:41:53.189Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a28ff8b12276e6630a924f0",
+    "name": "WHEEL CHAIR - HOLISTIC, MEERA, MSTE, WESTERN",
+    "crNo": "",
+    "isActive": true,
+    "createdAt": "2026-06-10T06:09:15.783Z",
+    "updatedAt": "2026-06-10T06:09:15.783Z",
+    "__v": 0
+  }
+]

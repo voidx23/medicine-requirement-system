@@ -49,7 +49,12 @@ const medicineSchema = new mongoose.Schema({
         type: String,
         enum: ['active', 'inactive'],
         default: 'active'
-    }
+    },
+    previouslySuppliedBy: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Supplier',
+        index: true
+    }]
 }, {
     timestamps: true
 });

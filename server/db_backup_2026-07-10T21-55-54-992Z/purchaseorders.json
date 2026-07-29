@@ -1,0 +1,23 @@
+[
+  {
+    "_id": "6a4811125badee81464e7e09",
+    "poNumber": "PO-2026-0001",
+    "supplierId": "694328a1e0f1c1f95b996412",
+    "status": "draft",
+    "items": [
+      {
+        "medicineId": "6965f28cbd93f580a17166c5",
+        "quantityOrdered": 1,
+        "quantityReceived": 0,
+        "costPrice": 2.06,
+        "_id": "6a4811125badee81464e7e0a"
+      }
+    ],
+    "totalAmount": 2.06,
+    "notes": "",
+    "orderedAt": null,
+    "createdAt": "2026-07-03T19:44:18.208Z",
+    "updatedAt": "2026-07-03T19:44:18.208Z",
+    "__v": 0
+  }
+]

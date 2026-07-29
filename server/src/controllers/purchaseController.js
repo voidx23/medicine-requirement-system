@@ -1,8 +1,11 @@
-import PurchaseOrder from '../models/PurchaseOrder.js';
+import LPO from '../models/LPO.js';
+import LPOItem from '../models/LPOItem.js';
 import Supplier from '../models/Supplier.js';
 import Medicine from '../models/Medicine.js';
 import RequirementList from '../models/RequirementList.js';
 import PharmacistRequest from '../models/PharmacistRequest.js';
+import SupplierDivision from '../models/SupplierDivision.js';
+import SupplierMedicineStats from '../models/SupplierMedicineStats.js';
 
 // Helper to get today's date (Dubai Midnight)
 const getTodayDate = () => {
@@ -14,12 +17,12 @@ const getTodayDate = () => {
     return new Date(dubaiTime.getTime() - dubaiOffset);
 };
 
-// @desc    Create a new Purchase Order
+// @desc    Create a new Purchase Order (LPO)
 // @route   POST /api/purchasing
 // @access  Private (Admin only)
 export const createPurchaseOrder = async (req, res) => {
     try {
-        const { supplierId, items, notes, status } = req.body;
+        const { supplierId, items, notes, status, divisionId } = req.body;
 
         if (!supplierId) {
             return res.status(400).json({ message: 'Supplier is required' });
@@ -28,40 +31,83 @@ export const createPurchaseOrder = async (req, res) => {
             return res.status(400).json({ message: 'At least one item is required' });
         }
 
-        // Generate PO Number (PO-YYYY-Sequential)
-        const year = new Date().getFullYear();
-        const count = await PurchaseOrder.countDocuments();
-        const poNumber = `PO-${year}-${(count + 1).toString().padStart(4, '0')}`;
+        // 1. Resolve Division ID
+        let resolvedDivisionId = divisionId;
+        if (!resolvedDivisionId) {
+            const divisions = await SupplierDivision.find({ supplierId, status: 'active' });
+            if (divisions.length > 0) {
+                resolvedDivisionId = divisions[0]._id;
+            } else {
+                const defaultDiv = await SupplierDivision.create({
+                    supplierId,
+                    divisionName: 'General',
+                    description: 'Default general division'
+                });
+                resolvedDivisionId = defaultDiv._id;
+            }
+        }
 
-        // Compute total amount
+        // 2. Generate LPO Number (LPO-YYYY-Sequential)
+        const year = new Date().getFullYear();
+        const count = await LPO.countDocuments();
+        const lpoNumber = `LPO-${year}-${(count + 1).toString().padStart(4, '0')}`;
+
+        // 3. Compute total amount
         let totalAmount = 0;
-        const formattedItems = items.map(item => {
+        items.forEach(item => {
             const qty = Number(item.quantityOrdered) || 1;
             const price = Number(item.costPrice) || 0;
             totalAmount += qty * price;
-            return {
-                medicineId: item.medicineId,
-                quantityOrdered: qty,
-                costPrice: price,
-                quantityReceived: 0
-            };
         });
 
-        const purchaseOrder = await PurchaseOrder.create({
-            poNumber,
+        // 4. Create LPO
+        const lpo = await LPO.create({
+            lpoNumber,
             supplierId,
-            items: formattedItems,
-            totalAmount,
-            notes: notes || '',
+            divisionId: resolvedDivisionId,
+            remarks: notes || '',
             status: status || 'draft',
-            orderedAt: status === 'ordered' ? new Date() : null
+            totalAmount,
+            preparedBy: req.user._id,
+            date: new Date()
         });
 
-        const populatedPO = await PurchaseOrder.findById(purchaseOrder._id)
-            .populate('supplierId', 'name')
-            .populate('items.medicineId', 'name barcode costPrice');
+        // 5. Create LPO Items
+        const formattedItems = await Promise.all(items.map(async (item) => {
+            const qty = Number(item.quantityOrdered) || 1;
+            const price = Number(item.costPrice) || 0;
 
-        res.status(201).json(populatedPO);
+            const lpoItem = await LPOItem.create({
+                lpoId: lpo._id,
+                productId: item.medicineId,
+                orderQuantity: qty,
+                receivedQuantity: 0,
+                lastPrice: price,
+                lastFoc: Number(item.lastFoc) || 0,
+                remarks: item.remarks || ''
+            });
+
+            return lpoItem;
+        }));
+
+        // Populate and return combined structure
+        const populatedPO = await LPO.findById(lpo._id).populate('supplierId', 'name');
+        
+        const populatedItems = await LPOItem.find({ lpoId: lpo._id })
+            .populate('productId', 'name barcode costPrice');
+
+        const clientItems = populatedItems.map(it => ({
+            _id: it._id,
+            medicineId: it.productId,
+            quantityOrdered: it.orderQuantity,
+            quantityReceived: it.receivedQuantity,
+            costPrice: it.lastPrice
+        }));
+
+        res.status(201).json({
+            ...populatedPO.toObject(),
+            items: clientItems
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -80,12 +126,32 @@ export const getPurchaseOrders = async (req, res) => {
             query.supplierId = req.query.supplierId;
         }
 
-        const purchaseOrders = await PurchaseOrder.find(query)
+        const lpos = await LPO.find(query)
             .populate('supplierId', 'name')
-            .populate('items.medicineId', 'name costPrice')
             .sort({ createdAt: -1 });
 
-        res.json(purchaseOrders);
+        const populatedLPOs = await Promise.all(lpos.map(async (lpo) => {
+            const items = await LPOItem.find({ lpoId: lpo._id })
+                .populate('productId', 'name costPrice');
+
+            const formattedItems = items.map(item => ({
+                _id: item._id,
+                medicineId: item.productId,
+                quantityOrdered: item.orderQuantity,
+                quantityReceived: item.receivedQuantity,
+                costPrice: item.lastPrice
+            }));
+
+            // Map keys to match legacy PO page expectation
+            return {
+                ...lpo.toObject(),
+                poNumber: lpo.lpoNumber,
+                orderedAt: lpo.date,
+                items: formattedItems
+            };
+        }));
+
+        res.json(populatedLPOs);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -96,15 +162,35 @@ export const getPurchaseOrders = async (req, res) => {
 // @access  Private
 export const getPurchaseOrderById = async (req, res) => {
     try {
-        const po = await PurchaseOrder.findById(req.params.id)
-            .populate('supplierId', 'name crNo')
-            .populate('items.medicineId', 'name barcode costPrice unitsPerBox');
+        const lpo = await LPO.findById(req.params.id)
+            .populate('supplierId', 'name crNo');
 
-        if (!po) {
+        if (!lpo) {
             return res.status(404).json({ message: 'Purchase Order not found' });
         }
 
-        res.json(po);
+        const items = await LPOItem.find({ lpoId: lpo._id })
+            .populate('productId', 'name barcode costPrice unitsPerBox');
+
+        const formattedItems = items.map(item => ({
+            _id: item._id,
+            medicineId: item.productId,
+            quantityOrdered: item.orderQuantity,
+            quantityReceived: item.receivedQuantity,
+            costPrice: item.lastPrice
+        }));
+
+        const invoices = await PurchaseInvoice.find({ lpoId: lpo._id })
+            .select('invoiceNumber invoiceDate totalAmount invoiceFile');
+
+        res.json({
+            ...lpo.toObject(),
+            poNumber: lpo.lpoNumber,
+            orderedAt: lpo.date,
+            notes: lpo.remarks,
+            items: formattedItems,
+            invoices
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -115,58 +201,83 @@ export const getPurchaseOrderById = async (req, res) => {
 // @access  Private (Admin only)
 export const updatePurchaseOrder = async (req, res) => {
     try {
-        const { supplierId, items, notes, status } = req.body;
-        const po = await PurchaseOrder.findById(req.params.id);
+        const { supplierId, items, notes, status, divisionId } = req.body;
+        const lpo = await LPO.findById(req.params.id);
 
-        if (!po) {
+        if (!lpo) {
             return res.status(404).json({ message: 'Purchase Order not found' });
         }
 
-        if (po.status !== 'draft' && status !== 'cancelled' && po.status !== status) {
-            // Cannot edit items if not in draft
-            // But can transit ordered -> cancelled
+        if (lpo.status !== 'draft' && status !== 'cancelled' && lpo.status !== status) {
             if (status) {
-                po.status = status;
-                if (status === 'ordered' && !po.orderedAt) {
-                    po.orderedAt = new Date();
+                lpo.status = status;
+                if (status === 'ordered') {
+                    lpo.date = new Date();
                 }
-                const saved = await po.save();
-                return res.json(saved);
+                const saved = await lpo.save();
+                return res.json({
+                    ...saved.toObject(),
+                    poNumber: saved.lpoNumber,
+                    orderedAt: saved.date,
+                    notes: saved.remarks,
+                    items: []
+                });
             }
             return res.status(400).json({ message: 'Cannot edit items on non-draft Purchase Orders' });
         }
 
-        if (supplierId) po.supplierId = supplierId;
-        if (notes !== undefined) po.notes = notes;
+        if (supplierId) lpo.supplierId = supplierId;
+        if (notes !== undefined) lpo.remarks = notes;
         if (status) {
-            po.status = status;
-            if (status === 'ordered' && !po.orderedAt) {
-                po.orderedAt = new Date();
+            lpo.status = status;
+            if (status === 'ordered') {
+                lpo.date = new Date();
             }
         }
+        if (divisionId) lpo.divisionId = divisionId;
 
         if (items && Array.isArray(items)) {
+            // Delete old items and rewrite
+            await LPOItem.deleteMany({ lpoId: lpo._id });
+
             let totalAmount = 0;
-            po.items = items.map(item => {
+            const newItems = await Promise.all(items.map(async (item) => {
                 const qty = Number(item.quantityOrdered) || 1;
                 const price = Number(item.costPrice) || 0;
                 totalAmount += qty * price;
-                return {
-                    medicineId: item.medicineId,
-                    quantityOrdered: qty,
-                    costPrice: price,
-                    quantityReceived: item.quantityReceived || 0
-                };
-            });
-            po.totalAmount = totalAmount;
+
+                return await LPOItem.create({
+                    lpoId: lpo._id,
+                    productId: item.medicineId,
+                    orderQuantity: qty,
+                    receivedQuantity: item.quantityReceived || 0,
+                    lastPrice: price
+                });
+            }));
+            lpo.totalAmount = totalAmount;
         }
 
-        const updatedPO = await po.save();
-        const populatedPO = await PurchaseOrder.findById(updatedPO._id)
-            .populate('supplierId', 'name')
-            .populate('items.medicineId', 'name barcode costPrice');
+        const updatedLPO = await lpo.save();
+        const populatedPO = await LPO.findById(updatedLPO._id).populate('supplierId', 'name');
+        
+        const populatedItems = await LPOItem.find({ lpoId: updatedLPO._id })
+            .populate('productId', 'name barcode costPrice');
 
-        res.json(populatedPO);
+        const formattedItems = populatedItems.map(item => ({
+            _id: item._id,
+            medicineId: item.productId,
+            quantityOrdered: item.orderQuantity,
+            quantityReceived: item.receivedQuantity,
+            costPrice: item.lastPrice
+        }));
+
+        res.json({
+            ...populatedPO.toObject(),
+            poNumber: populatedPO.lpoNumber,
+            orderedAt: populatedPO.date,
+            notes: populatedPO.remarks,
+            items: formattedItems
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -178,53 +289,69 @@ export const updatePurchaseOrder = async (req, res) => {
 export const receivePurchaseOrder = async (req, res) => {
     try {
         const { items } = req.body; // Expect array of { _id, quantityReceived }
-        const po = await PurchaseOrder.findById(req.params.id);
+        const lpo = await LPO.findById(req.params.id);
 
-        if (!po) {
+        if (!lpo) {
             return res.status(404).json({ message: 'Purchase Order not found' });
         }
 
-        if (po.status !== 'ordered' && po.status !== 'partially_received') {
+        if (lpo.status !== 'ordered' && lpo.status !== 'partially_received') {
             return res.status(400).json({ message: 'Can only receive items on Ordered or Partially Received POs' });
         }
 
         if (items && Array.isArray(items)) {
-            items.forEach(updateItem => {
-                const item = po.items.id(updateItem._id);
+            await Promise.all(items.map(async (updateItem) => {
+                const item = await LPOItem.findById(updateItem._id);
                 if (item) {
-                    item.quantityReceived = Number(updateItem.quantityReceived) || 0;
+                    item.receivedQuantity = Number(updateItem.quantityReceived) || 0;
+                    await item.save();
                 }
-            });
+            }));
         }
 
-        // Compute status
+        // Compute status based on updated LPOItems
+        const allItems = await LPOItem.find({ lpoId: lpo._id });
         let allReceived = true;
         let someReceived = false;
 
-        po.items.forEach(item => {
-            if (item.quantityReceived < item.quantityOrdered) {
+        allItems.forEach(item => {
+            if (item.receivedQuantity < item.orderQuantity) {
                 allReceived = false;
             }
-            if (item.quantityReceived > 0) {
+            if (item.receivedQuantity > 0) {
                 someReceived = true;
             }
         });
 
         if (allReceived) {
-            po.status = 'received';
-            po.receivedAt = new Date();
+            lpo.status = 'received';
         } else if (someReceived) {
-            po.status = 'partially_received';
+            lpo.status = 'partially_received';
         } else {
-            po.status = 'ordered';
+            lpo.status = 'ordered';
         }
 
-        const updatedPO = await po.save();
-        const populatedPO = await PurchaseOrder.findById(updatedPO._id)
-            .populate('supplierId', 'name')
-            .populate('items.medicineId', 'name barcode costPrice');
+        const updatedLPO = await lpo.save();
+        const populatedPO = await LPO.findById(updatedLPO._id).populate('supplierId', 'name');
+        
+        const populatedItems = await LPOItem.find({ lpoId: updatedLPO._id })
+            .populate('productId', 'name barcode costPrice');
 
-        res.json(populatedPO);
+        const formattedItems = populatedItems.map(item => ({
+            _id: item._id,
+            medicineId: item.productId,
+            quantityOrdered: item.orderQuantity,
+            quantityReceived: item.receivedQuantity,
+            costPrice: item.lastPrice
+        }));
+
+        res.json({
+            ...populatedPO.toObject(),
+            poNumber: populatedPO.lpoNumber,
+            orderedAt: populatedPO.date,
+            notes: populatedPO.remarks,
+            items: formattedItems
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -286,11 +413,9 @@ export const suggestPOFromRequirements = async (req, res) => {
             // Check if this medicine is already in the list
             const existingMed = suggestionsMap[supplierId].items.find(i => i.medicineId.toString() === med._id.toString());
             if (!existingMed) {
-                // Determine suggested quantity: pending requests sum, or fallback to unitsPerBox or 1
                 const pendingQty = pendingQtyMap[med._id.toString()] || 0;
                 let suggestedQty = pendingQty > 0 ? pendingQty : 1;
                 
-                // If unitsPerBox is set, suggest ordering in full boxes (ceiling division)
                 if (med.unitsPerBox && med.unitsPerBox > 1 && pendingQty > 0) {
                     suggestedQty = Math.ceil(pendingQty / med.unitsPerBox);
                 }
@@ -301,13 +426,107 @@ export const suggestPOFromRequirements = async (req, res) => {
                     barcode: med.barcode,
                     costPrice: med.costPrice || 0,
                     unitsPerBox: med.unitsPerBox || 1,
-                    requiredQty: pendingQty, // raw quantity needed by branches
-                    suggestedQuantity: suggestedQty // in boxes
+                    requiredQty: pendingQty,
+                    suggestedQuantity: suggestedQty
                 });
             }
         });
 
         res.json(Object.values(suggestionsMap));
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Get dynamic LPO panels for a supplier (Exclusive vs Multi)
+// @route   GET /api/purchasing/panels/:supplierId
+// @access  Private (Admin only)
+export const getSupplierPanels = async (req, res) => {
+    try {
+        const { supplierId } = req.params;
+        const supplier = await Supplier.findById(supplierId);
+        if (!supplier) {
+            return res.status(404).json({ message: 'Supplier not found' });
+        }
+
+        // Fetch requirement items from the last 30 days
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const reqLists = await RequirementList.find({ date: { $gte: thirtyDaysAgo } });
+        const reqMedIds = new Set();
+        reqLists.forEach(list => {
+            list.items.forEach(item => {
+                if (item.medicineId) {
+                    reqMedIds.add(item.medicineId.toString());
+                }
+            });
+        });
+
+        const reqMedicines = await Medicine.find({ _id: { $in: Array.from(reqMedIds) } })
+            .populate('supplierId', 'name');
+
+        if (supplier.supplierType === 'exclusive') {
+            // Panel 1: Medicines whose Primary Supplier is this supplier AND require purchase
+            const panel1 = reqMedicines.filter(m => m.supplierId && m.supplierId._id.toString() === supplierId);
+
+            // Panel 2: Show all medicines whose Primary Supplier is this supplier, excluding Panel 1
+            const panel1Ids = new Set(panel1.map(m => m._id.toString()));
+            const allSupplierMedicines = await Medicine.find({ supplierId })
+                .populate('supplierId', 'name');
+            const panel2 = allSupplierMedicines.filter(m => !panel1Ids.has(m._id.toString()));
+
+            return res.json({
+                supplierType: 'exclusive',
+                panel1,
+                panel2
+            });
+        } else {
+            // Multi Supplier
+            // Panel 1: Show all medicines currently requiring purchase (the entire reqMedicines list)
+            const panel1 = reqMedicines;
+
+            // Panel 2: Previously ordered from this supplier (from SupplierMedicineStats)
+            const stats = await SupplierMedicineStats.find({ supplierId })
+                .populate({
+                    path: 'medicineId',
+                    populate: { path: 'supplierId', select: 'name' }
+                });
+            
+            const panel2 = stats.map(stat => ({
+                _id: stat.medicineId?._id,
+                name: stat.medicineId?.name,
+                barcode: stat.medicineId?.barcode,
+                costPrice: stat.medicineId?.costPrice || 0,
+                unitsPerBox: stat.medicineId?.unitsPerBox || 1,
+                unit: stat.medicineId?.unit || 'Box',
+                supplierId: stat.medicineId?.supplierId,
+                stats: {
+                    lastOrderedQty: stat.lastOrderedQty,
+                    lastReceivedQty: stat.lastReceivedQty,
+                    lastFocQty: stat.lastFocQty,
+                    lastUnitCost: stat.lastUnitCost || 0,
+                    lastLpoNumber: stat.lastLpoNumber,
+                    lastOrderDate: stat.lastOrderDate,
+                    purchaseCount: stat.purchaseCount,
+                    averageFocPercent: stat.averageFocPercent
+                }
+            })).filter(item => item._id !== undefined); // filter out if medicine was deleted
+
+            // Panel 3: Supplier Products - medicines whose Primary Supplier is this supplier
+            // Exclude medicines already displayed in Panel 1 or Panel 2
+            const panel1Ids = new Set(panel1.map(m => m._id.toString()));
+            const panel2Ids = new Set(panel2.map(m => m._id.toString()));
+
+            const allSupplierMedicines = await Medicine.find({ supplierId })
+                .populate('supplierId', 'name');
+            const panel3 = allSupplierMedicines.filter(m => !panel1Ids.has(m._id.toString()) && !panel2Ids.has(m._id.toString()));
+
+            return res.json({
+                supplierType: 'multi',
+                panel1,
+                panel2,
+                panel3
+            });
+        }
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

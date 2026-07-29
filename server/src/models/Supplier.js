@@ -35,6 +35,11 @@ const supplierSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    supplierType: {
+        type: String,
+        enum: ['exclusive', 'multi'],
+        default: 'exclusive'
+    },
     erpId: {
         type: String,
         unique: true,

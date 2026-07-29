@@ -1,0 +1,68 @@
+[
+  {
+    "_id": "69f3ecc0abc170f6037b9879",
+    "userId": "6967976c6dd7b2ad67fa915c",
+    "title": "Expiry List Verified",
+    "message": "The Store has verified your 5/2026 expiry list. They added a note.",
+    "isRead": true,
+    "link": "/expiry-returns",
+    "createdAt": "2026-04-30T23:58:56.388Z",
+    "updatedAt": "2026-05-01T19:28:57.568Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f51b5cd24419c0e282a057",
+    "userId": "6967976c6dd7b2ad67fa915c",
+    "title": "Expiry List Verified",
+    "message": "The Store has verified your 4/2026 expiry list.",
+    "isRead": true,
+    "link": "/pharmacist-dashboard/expiry",
+    "createdAt": "2026-05-01T21:30:04.416Z",
+    "updatedAt": "2026-05-02T17:36:19.859Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f63303afef209c3605ef99",
+    "userId": "6967976c6dd7b2ad67fa915c",
+    "title": "Expiry List Verified",
+    "message": "The Store has verified your 5/2026 expiry list.",
+    "isRead": true,
+    "link": "/pharmacist-dashboard/expiry",
+    "createdAt": "2026-05-02T17:23:15.598Z",
+    "updatedAt": "2026-05-02T17:36:21.492Z",
+    "__v": 0
+  },
+  {
+    "_id": "69f63560afef209c36061aad",
+    "userId": "6967976c6dd7b2ad67fa915c",
+    "title": "Expiry List Verified",
+    "message": "The Store has verified your 3/2026 expiry list.",
+    "isRead": true,
+    "link": "/pharmacist-dashboard/expiry",
+    "createdAt": "2026-05-02T17:33:20.374Z",
+    "updatedAt": "2026-05-02T17:36:23.180Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a0d5a2ab775722bd5045dfb",
+    "userId": "695065f404dae3686e8129ae",
+    "title": "Expiry List Verified",
+    "message": "The Store has verified your 5/2026 expiry list. They added a note.",
+    "isRead": false,
+    "link": "/pharmacist-dashboard/expiry",
+    "createdAt": "2026-05-20T06:52:26.177Z",
+    "updatedAt": "2026-05-20T06:52:26.177Z",
+    "__v": 0
+  },
+  {
+    "_id": "6a186445dde2998c17b3f3d3",
+    "userId": "6967976c6dd7b2ad67fa915c",
+    "title": "Expiry List Verified",
+    "message": "The Store has verified your 5/2026 expiry list.",
+    "isRead": false,
+    "link": "/pharmacist-dashboard/expiry",
+    "createdAt": "2026-05-28T15:50:29.787Z",
+    "updatedAt": "2026-05-28T15:50:29.787Z",
+    "__v": 0
+  }
+]

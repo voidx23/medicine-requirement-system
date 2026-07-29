@@ -47,7 +47,7 @@ const lpoSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['draft', 'pending_approval', 'approved', 'sent', 'received', 'cancelled'],
+        enum: ['draft', 'pending_approval', 'approved', 'sent', 'ordered', 'partially_received', 'received', 'cancelled'],
         default: 'draft',
         index: true
     },
@@ -61,6 +61,10 @@ const lpoSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'synced', 'failed'],
         default: 'pending'
+    },
+    totalAmount: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true

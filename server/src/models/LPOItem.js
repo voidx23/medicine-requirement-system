@@ -18,6 +18,10 @@ const lpoItemSchema = new mongoose.Schema({
         required: true,
         min: 1
     },
+    receivedQuantity: {
+        type: Number,
+        default: 0
+    },
     lastPrice: {
         type: Number,
         default: 0

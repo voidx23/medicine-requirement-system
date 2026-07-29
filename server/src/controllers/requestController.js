@@ -75,8 +75,10 @@ export const getRequests = async (req, res) => {
                     select: 'name'
                 }
             })
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
 
+        res.setHeader('Cache-Control', 'no-cache, private');
         res.json(requests);
     } catch (error) {
         res.status(500).json({ message: error.message });

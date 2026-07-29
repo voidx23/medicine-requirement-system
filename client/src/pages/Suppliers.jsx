@@ -312,10 +312,21 @@ const Suppliers = () => {
                         </div>
                       )}
                     </div>
-                    
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                      {sup.crNo && <span><strong>CR No:</strong> {sup.crNo}</span>}
-                      {sup.phone && <span><strong>Phone:</strong> {sup.phone}</span>}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '0.4rem' }}>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                        {sup.crNo && <span><strong>CR No:</strong> {sup.crNo}</span>}
+                        {sup.phone && <span><strong>Phone:</strong> {sup.phone}</span>}
+                      </div>
+                      <span style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '6px',
+                        background: sup.supplierType === 'multi' ? 'rgba(99, 102, 241, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+                        color: sup.supplierType === 'multi' ? 'var(--primary)' : 'var(--success)'
+                      }}>
+                        {sup.supplierType === 'multi' ? 'MULTI' : 'EXCLUSIVE'}
+                      </span>
                     </div>
                   </div>
                 );
@@ -483,7 +494,7 @@ const Suppliers = () => {
         isOpen={isDivisionModalOpen}
         onClose={() => setIsDivisionModalOpen(false)}
         title={editingDivision ? 'Edit Division' : 'Add Supplier Division'}
-        width="450px"
+        maxWidth="450px"
       >
         <form onSubmit={handleSubmitDivision} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>

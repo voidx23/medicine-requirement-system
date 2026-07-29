@@ -50,13 +50,14 @@ const requestSchema = mongoose.Schema({
         type: Boolean,
         default: false
     },
-    wasProcessed: {
-        type: Boolean,
-        default: false
-    }
 }, {
     timestamps: true
 });
+
+// Compound indexes to accelerate GET /api/requests filtering and sorting
+requestSchema.index({ status: 1, createdAt: -1 });
+requestSchema.index({ pharmacistId: 1, status: 1, createdAt: -1 });
+requestSchema.index({ 'items.status': 1 });
 
 const PharmacistRequest = mongoose.model('PharmacistRequest', requestSchema);
 

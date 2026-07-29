@@ -1,0 +1,328 @@
+[
+  {
+    "_id": "695e6b95e765b570fbb89143",
+    "name": "Shanawaz",
+    "pin": "$2b$10$vmPDK2XDeNpZGfyYP.zCsORc5O8h3l5aXq3Ai.xl2gH1XkZdD18Zm",
+    "isActive": true,
+    "createdAt": "2026-01-07T14:20:05.324Z",
+    "updatedAt": "2026-07-01T11:40:57.944Z",
+    "__v": 1,
+    "branches": [
+      "695065f504dae3686e8129b0",
+      "695d11af4827d00c00d0f1b7"
+    ]
+  },
+  {
+    "_id": "695f3c8f1a97493d17d42695",
+    "name": "Remya",
+    "pin": "$2b$10$FjOTSMzDg35C1oXSePHfj.CkGLsH3iNPcZoRPJZt82SUQzF30dZg2",
+    "isActive": false,
+    "createdAt": "2026-01-08T05:11:43.214Z",
+    "updatedAt": "2026-06-22T21:56:18.971Z",
+    "__v": 0,
+    "branches": [
+      "695065f504dae3686e8129b0"
+    ],
+    "defaultBranch": null,
+    "defaultFromTime": "",
+    "defaultOffDay": "",
+    "defaultShiftType": "",
+    "defaultToTime": "",
+    "designation": "General Pharma",
+    "employeeId": "",
+    "employmentType": "Full Time",
+    "idCardExpiry": null,
+    "idCardNotifyDays": 30,
+    "idCardNumber": "",
+    "licenseExpiry": null,
+    "licenseNotifyDays": 30,
+    "licenseNumber": "",
+    "passportExpiry": null,
+    "passportNotifyDays": 30,
+    "passportNumber": "",
+    "profilePicture": "",
+    "rating": 5,
+    "remarks": "",
+    "status": "On Leave"
+  },
+  {
+    "_id": "69616af4d467abffaaae33a2",
+    "name": "Asim Mohammed",
+    "pin": "$2b$10$PJF7j1Fchu.6nEaFOrhOWuvdOYFgl4ym8INYVF.4fD6Y/EaotZ2f2",
+    "isActive": true,
+    "createdAt": "2026-01-09T20:54:12.874Z",
+    "updatedAt": "2026-06-25T20:38:01.955Z",
+    "__v": 2,
+    "branches": [
+      "695065f504dae3686e8129b0"
+    ],
+    "defaultBranch": null,
+    "defaultFromTime": "",
+    "defaultOffDay": "",
+    "defaultShiftType": "",
+    "defaultToTime": "",
+    "designation": "General Pharma",
+    "idCardExpiry": null,
+    "idCardNumber": "",
+    "licenseExpiry": "2026-06-28T00:00:00.000Z",
+    "licenseNumber": "566465766",
+    "passportExpiry": null,
+    "passportNumber": "",
+    "profilePicture": "",
+    "rating": 5,
+    "remarks": "",
+    "employeeId": "",
+    "employmentType": "Full Time",
+    "status": "Active",
+    "idCardNotifyDays": 30,
+    "licenseNotifyDays": 30,
+    "passportNotifyDays": 30,
+    "performanceIssues": [
+      {
+        "issueType": "Tardiness",
+        "severity": "Medium",
+        "date": "2026-06-25T00:00:00.000Z",
+        "description": "cqadlkglk",
+        "_id": "6a3d91a9437c03def2b590e0"
+      }
+    ]
+  },
+  {
+    "_id": "696782906dd7b2ad67fa4d7d",
+    "name": "Muhammed KK",
+    "pin": "$2b$10$rmz0pism.5vB/pAxJdIDROYjQ.EsnR3QJSoPm3zQyhjNW4x6GPv3y",
+    "isActive": true,
+    "createdAt": "2026-01-14T11:48:32.713Z",
+    "updatedAt": "2026-01-14T11:48:32.713Z",
+    "__v": 0,
+    "branches": [
+      "695065f504dae3686e8129b2"
+    ]
+  },
+  {
+    "_id": "696a1bc3e7b662e58bccd5b0",
+    "name": "Tuahid",
+    "pin": "$2b$10$9koFeKesnx0Trpg2Kq3NGu9FBLz/gGSGHUAEsA2ehYCTUxis3axRO",
+    "isActive": true,
+    "createdAt": "2026-01-16T11:06:43.996Z",
+    "updatedAt": "2026-01-16T11:06:43.996Z",
+    "__v": 0,
+    "branches": [
+      "695d11af4827d00c00d0f1b7"
+    ]
+  },
+  {
+    "_id": "697901924fc48ba9b2e80c93",
+    "name": "Nahoor Meeran",
+    "pin": "$2b$10$G9kwXhlQullUZU95OZO6Su1/M6ouVMlNGEa885ndCRur0hg.yKuee",
+    "isActive": true,
+    "createdAt": "2026-01-27T18:18:58.197Z",
+    "updatedAt": "2026-06-19T23:14:19.903Z",
+    "__v": 0,
+    "branches": [
+      "695d119f4827d00c00d0f1b1"
+    ],
+    "designation": "General Pharma",
+    "rating": 4.9
+  },
+  {
+    "_id": "6979099c4fc48ba9b2e82be1",
+    "name": "Nisam",
+    "pin": "$2b$10$hShWVHxuLpEEoj8DQuhtaeUOeJ5YMkBMOYeiHL1HyuaE8hRGV2VDi",
+    "isActive": true,
+    "createdAt": "2026-01-27T18:53:16.879Z",
+    "updatedAt": "2026-04-05T21:06:24.910Z",
+    "__v": 2,
+    "branches": [
+      "695d11784827d00c00d0f1a5"
+    ]
+  },
+  {
+    "_id": "6982697ec59b386ffbac6545",
+    "name": "Vineesh",
+    "pin": "$2b$10$CdoyUsYeO96EL93iwzLvP.yxNY.3JtifzxoHhyn4jw90uKbC3S8Be",
+    "isActive": true,
+    "createdAt": "2026-02-03T21:32:46.273Z",
+    "updatedAt": "2026-02-03T21:32:46.273Z",
+    "__v": 0,
+    "branches": [
+      "695065f504dae3686e8129b2"
+    ]
+  },
+  {
+    "_id": "698df496edede4d91966048d",
+    "name": "Praveen",
+    "pin": "$2b$10$NuopRxnUNRTQJZaQPzXzMuUcBjgCg8tOsHfZXJEwPHZLlyPx6yfCm",
+    "isActive": true,
+    "createdAt": "2026-02-12T15:41:10.529Z",
+    "updatedAt": "2026-02-12T15:41:10.529Z",
+    "__v": 0,
+    "branches": [
+      "695d11924827d00c00d0f1ab"
+    ]
+  },
+  {
+    "_id": "69b95c117284d2c27e7166f2",
+    "name": "Jisha",
+    "pin": "$2b$10$DccyN2Ga6s1smsC2OJkDB.Nk/MwyHDWFWL4w6Ugp53G1VenO2euoy",
+    "isActive": true,
+    "createdAt": "2026-03-17T13:50:09.136Z",
+    "updatedAt": "2026-03-17T13:50:09.136Z",
+    "__v": 0,
+    "branches": [
+      "695d11674827d00c00d0f19f"
+    ]
+  },
+  {
+    "_id": "69b9c50527d64be232ead84a",
+    "name": "Renju",
+    "pin": "$2b$10$ZFk6DJK.uIGnsfe9NF9HZuenR.m3x7OIVUovU4kfiOcRuXttcCkZ6",
+    "isActive": false,
+    "createdAt": "2026-03-17T21:17:57.551Z",
+    "updatedAt": "2026-06-22T21:56:29.586Z",
+    "__v": 0,
+    "branches": [
+      "6957d836b41d9e90275ef70f"
+    ],
+    "defaultBranch": null,
+    "defaultFromTime": "",
+    "defaultOffDay": "",
+    "defaultShiftType": "",
+    "defaultToTime": "",
+    "designation": "General Pharma",
+    "employeeId": "",
+    "employmentType": "Full Time",
+    "idCardExpiry": null,
+    "idCardNotifyDays": 30,
+    "idCardNumber": "",
+    "licenseExpiry": null,
+    "licenseNotifyDays": 30,
+    "licenseNumber": "",
+    "passportExpiry": null,
+    "passportNotifyDays": 30,
+    "passportNumber": "",
+    "profilePicture": "",
+    "rating": 5,
+    "remarks": "",
+    "status": "On Leave"
+  },
+  {
+    "_id": "69bc5c7c49723793e11e9471",
+    "name": "Ranjith M",
+    "pin": "$2b$10$qPF35zktUo9GQwsLXF2mQOVcUdV7LYmE.ZqA97Ucx7vZYtTE/oWyy",
+    "isActive": true,
+    "createdAt": "2026-03-19T20:28:44.796Z",
+    "updatedAt": "2026-06-22T14:28:18.789Z",
+    "__v": 1,
+    "branches": [
+      "695065f504dae3686e8129b0",
+      "695065f504dae3686e8129b2"
+    ],
+    "designation": "General Pharma",
+    "rating": 4,
+    "defaultBranch": null,
+    "defaultFromTime": "",
+    "defaultShiftType": "",
+    "defaultToTime": "",
+    "idCardExpiry": null,
+    "idCardNumber": "",
+    "licenseExpiry": null,
+    "licenseNumber": "",
+    "passportExpiry": null,
+    "passportNumber": "",
+    "profilePicture": "",
+    "remarks": ""
+  },
+  {
+    "_id": "69c77815ee00b1fcf828a11c",
+    "name": "Rania",
+    "pin": "$2b$10$PliXFyX.Dl63r8tR1ll9bOTw6vLbZdb02By06IJd52gig7abkBcxu",
+    "isActive": true,
+    "createdAt": "2026-03-28T06:41:25.176Z",
+    "updatedAt": "2026-03-28T06:41:25.176Z",
+    "__v": 0,
+    "branches": [
+      "6957d836b41d9e90275ef70f"
+    ]
+  },
+  {
+    "_id": "69c7846bee00b1fcf828b69e",
+    "name": "Nadeem",
+    "pin": "$2b$10$15tife1fecyUD8obCBzjk.yuxOKlnbVQrfKSaBq1DTl.9X65UQz7W",
+    "isActive": true,
+    "createdAt": "2026-03-28T07:34:03.249Z",
+    "updatedAt": "2026-07-10T16:29:10.645Z",
+    "__v": 2,
+    "branches": [
+      "695065f504dae3686e8129b2",
+      "695d11af4827d00c00d0f1b7"
+    ],
+    "defaultBranch": null,
+    "defaultFromTime": "",
+    "defaultOffDay": "",
+    "defaultShiftType": "",
+    "defaultToTime": "",
+    "designation": "General Pharma",
+    "employeeId": "",
+    "employmentType": "Full Time",
+    "idCardExpiry": null,
+    "idCardNotifyDays": 30,
+    "idCardNumber": "",
+    "licenseExpiry": null,
+    "licenseNotifyDays": 30,
+    "licenseNumber": "",
+    "passportExpiry": null,
+    "passportNotifyDays": 30,
+    "passportNumber": "",
+    "profilePicture": "",
+    "rating": 5,
+    "remarks": "",
+    "status": "Active",
+    "performanceIssues": []
+  },
+  {
+    "_id": "69c7a477ee00b1fcf828ff5d",
+    "name": "Krishnadas",
+    "pin": "$2b$10$B9Bc75bDLY5Yn7iIIwjIB.P3g4YoAfzrROtCgiByjJe5MGZBCccda",
+    "isActive": true,
+    "createdAt": "2026-03-28T09:50:47.726Z",
+    "updatedAt": "2026-04-04T14:31:53.065Z",
+    "__v": 1,
+    "branches": [
+      "695d11674827d00c00d0f19f",
+      "695d11784827d00c00d0f1a5"
+    ]
+  },
+  {
+    "_id": "6a156f6bee99d8e1a5abc005",
+    "name": "Ijaz",
+    "pin": "$2b$10$xgh1sy6LjQUkwC/V.Z8pPeGeV9gGq9GSMtcuiid/Ik8BFkRXXEm1O",
+    "branches": [],
+    "isActive": true,
+    "createdAt": "2026-05-26T10:01:15.142Z",
+    "updatedAt": "2026-07-10T16:29:32.032Z",
+    "__v": 1,
+    "defaultBranch": null,
+    "defaultFromTime": "",
+    "defaultOffDay": "",
+    "defaultShiftType": "",
+    "defaultToTime": "",
+    "designation": "General Pharma",
+    "employeeId": "",
+    "employmentType": "Full Time",
+    "idCardExpiry": null,
+    "idCardNumber": "",
+    "licenseExpiry": null,
+    "licenseNumber": "",
+    "passportExpiry": null,
+    "passportNumber": "",
+    "profilePicture": "",
+    "rating": 5,
+    "remarks": "",
+    "status": "Active",
+    "idCardNotifyDays": 30,
+    "licenseNotifyDays": 30,
+    "passportNotifyDays": 30,
+    "performanceIssues": []
+  }
+]

@@ -8,6 +8,10 @@ import PurchaseHistory from '../models/PurchaseHistory.js';
 import LPO from '../models/LPO.js';
 import LPOItem from '../models/LPOItem.js';
 import User from '../models/User.js';
+import { getSupplierPanels } from '../controllers/purchaseController.js';
+import { createInvoice } from '../controllers/invoiceController.js';
+import SupplierMedicineStats from '../models/SupplierMedicineStats.js';
+import RequirementList from '../models/RequirementList.js';
 
 describe('LPO & Purchase Intelligence Database Models', () => {
 
@@ -38,6 +42,7 @@ describe('LPO & Purchase Intelligence Database Models', () => {
     });
 
     it('2. should create SupplierDivisions and enforce unique names per Supplier', async () => {
+        await SupplierDivision.init();
         const supplier = await Supplier.create({ name: 'Muscat Pharmacy' });
 
         const div1 = await SupplierDivision.create({
@@ -184,5 +189,126 @@ describe('LPO & Purchase Intelligence Database Models', () => {
             orderQuantity: 10
         });
         expect(item2._id).toBeDefined();
+    });
+
+    it('7. should query supplier panels for exclusive and multi suppliers', async () => {
+        const exclusiveSupplier = await Supplier.create({ name: 'Exclusive Supplier A', supplierType: 'exclusive' });
+        const multiSupplier = await Supplier.create({ name: 'Multi Supplier B', supplierType: 'multi' });
+
+        const divisionA = await SupplierDivision.create({ supplierId: exclusiveSupplier._id, divisionName: 'Div A' });
+        const divisionB = await SupplierDivision.create({ supplierId: multiSupplier._id, divisionName: 'Div B' });
+
+        const m1 = await Medicine.create({ name: 'Exclusive Med 1', supplierId: exclusiveSupplier._id, divisionId: divisionA._id });
+        const m2 = await Medicine.create({ name: 'Exclusive Med 2', supplierId: exclusiveSupplier._id, divisionId: divisionA._id });
+        const m3 = await Medicine.create({ name: 'Multi Med 1', supplierId: multiSupplier._id, divisionId: divisionB._id });
+
+        // Add m1 to today's RequirementList
+        const today = new Date();
+        // Shift today to UAE offsets to match controller Midnight Dubai timezone helper
+        const utcTimestamp = today.getTime();
+        const dubaiOffset = 4 * 60 * 60 * 1000;
+        const dubaiTime = new Date(utcTimestamp + dubaiOffset);
+        dubaiTime.setUTCHours(0, 0, 0, 0);
+        const dubaiMidnight = new Date(dubaiTime.getTime() - dubaiOffset);
+
+        await RequirementList.create({
+            date: dubaiMidnight,
+            items: [{ medicineId: m1._id, isUrgent: false }]
+        });
+
+        // Mock request and response
+        let resData = null;
+        const res = {
+            json: (data) => { resData = data; }
+        };
+
+        // Call panel controller for Exclusive Supplier
+        await getSupplierPanels({ params: { supplierId: exclusiveSupplier._id.toString() } }, res);
+
+        expect(resData.supplierType).toBe('exclusive');
+        expect(resData.panel1.length).toBe(1); // m1 is in requirements
+        expect(resData.panel1[0]._id.toString()).toBe(m1._id.toString());
+        expect(resData.panel2.length).toBe(1); // m2 is catalog only
+        expect(resData.panel2[0]._id.toString()).toBe(m2._id.toString());
+
+        // Call panel controller for Multi Supplier
+        await getSupplierPanels({ params: { supplierId: multiSupplier._id.toString() } }, res);
+
+        expect(resData.supplierType).toBe('multi');
+        expect(resData.panel1.length).toBe(1); // Show all requirements (m1)
+        expect(resData.panel2.length).toBe(0); // No stats yet
+        expect(resData.panel3.length).toBe(1); // m3 is catalog only
+        expect(resData.panel3[0]._id.toString()).toBe(m3._id.toString());
+    });
+
+    it('8. should process invoice, update LPO status, create PurchaseHistory, and update SupplierMedicineStats', async () => {
+        const prepUser = await User.create({ username: 'nihal_inv', password: 'password123', role: 'admin' });
+        const supplier = await Supplier.create({ name: 'Invoice Supplier A' });
+        const division = await SupplierDivision.create({ supplierId: supplier._id, divisionName: 'Div A' });
+        const m1 = await Medicine.create({ name: 'Med 1', supplierId: supplier._id, divisionId: division._id });
+
+        const lpo = await LPO.create({
+            lpoNumber: 'LPO-INV-100',
+            supplierId: supplier._id,
+            divisionId: division._id,
+            preparedBy: prepUser._id,
+            status: 'ordered',
+            totalAmount: 100,
+            date: new Date()
+        });
+
+        const lpoItem = await LPOItem.create({
+            lpoId: lpo._id,
+            productId: m1._id,
+            orderQuantity: 10,
+            receivedQuantity: 0,
+            lastPrice: 10
+        });
+
+        // Mock request and response for invoice upload
+        let resData = null;
+        const res = {
+            status: () => res,
+            json: (data) => { resData = data; }
+        };
+
+        await createInvoice({
+            user: prepUser,
+            body: {
+                invoiceNumber: 'INV-10020',
+                invoiceDate: new Date(),
+                lpoId: lpo._id.toString(),
+                supplierId: supplier._id.toString(),
+                items: [{
+                    medicineId: m1._id.toString(),
+                    quantity: 10,
+                    focQuantity: 1,
+                    unitCost: 10
+                }],
+                totalAmount: 100
+            }
+        }, res);
+
+        expect(resData._id).toBeDefined();
+
+        // 1. Assert LPO status changed to received
+        const updatedLpo = await LPO.findById(lpo._id);
+        expect(updatedLpo.status).toBe('received');
+
+        // 2. Assert LPOItem receivedQuantity updated
+        const updatedLpoItem = await LPOItem.findById(lpoItem._id);
+        expect(updatedLpoItem.receivedQuantity).toBe(10);
+
+        // 3. Assert SupplierMedicineStats created
+        const stats = await SupplierMedicineStats.findOne({ supplierId: supplier._id, medicineId: m1._id });
+        expect(stats).toBeDefined();
+        expect(stats.purchaseCount).toBe(1);
+        expect(stats.lastReceivedQty).toBe(10);
+        expect(stats.lastFocQty).toBe(1);
+        expect(stats.averageFocPercent).toBe(10); // (1 / 10) * 100
+
+        // 4. Assert Medicine supply history updated
+        const updatedMed = await Medicine.findById(m1._id);
+        expect(updatedMed.previouslySuppliedBy.map(id => id.toString())).toContain(supplier._id.toString());
     });
 });
