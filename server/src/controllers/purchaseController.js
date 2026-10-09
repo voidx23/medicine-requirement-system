@@ -38,11 +38,11 @@ export const createPurchaseOrder = async (req, res) => {
             if (divisions.length > 0) {
                 resolvedDivisionId = divisions[0]._id;
             } else {
-                const defaultDiv = await SupplierDivision.create({
-                    supplierId,
-                    divisionName: 'General',
-                    description: 'Default general division'
-                });
+                const defaultDiv = await SupplierDivision.findOneAndUpdate(
+                    { supplierId, divisionName: 'General' },
+                    { $setOnInsert: { supplierId, divisionName: 'General', description: 'Default general division' } },
+                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                );
                 resolvedDivisionId = defaultDiv._id;
             }
         }
@@ -127,12 +127,13 @@ export const getPurchaseOrders = async (req, res) => {
         }
 
         const lpos = await LPO.find(query)
-            .populate('supplierId', 'name')
+            .populate('supplierId', 'name crNo phone email address contactPerson supplierType')
+            .populate('divisionId', 'divisionName')
             .sort({ createdAt: -1 });
 
         const populatedLPOs = await Promise.all(lpos.map(async (lpo) => {
             const items = await LPOItem.find({ lpoId: lpo._id })
-                .populate('productId', 'name costPrice');
+                .populate('productId', 'name barcode costPrice unitsPerBox');
 
             const formattedItems = items.map(item => ({
                 _id: item._id,
@@ -147,6 +148,7 @@ export const getPurchaseOrders = async (req, res) => {
                 ...lpo.toObject(),
                 poNumber: lpo.lpoNumber,
                 orderedAt: lpo.date,
+                notes: lpo.remarks,
                 items: formattedItems
             };
         }));
@@ -163,7 +165,8 @@ export const getPurchaseOrders = async (req, res) => {
 export const getPurchaseOrderById = async (req, res) => {
     try {
         const lpo = await LPO.findById(req.params.id)
-            .populate('supplierId', 'name crNo');
+            .populate('supplierId', 'name crNo phone email address contactPerson supplierType')
+            .populate('divisionId', 'divisionName');
 
         if (!lpo) {
             return res.status(404).json({ message: 'Purchase Order not found' });

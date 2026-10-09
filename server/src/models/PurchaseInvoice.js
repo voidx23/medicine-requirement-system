@@ -27,26 +27,30 @@ const purchaseInvoiceSchema = new mongoose.Schema({
     items: [{
         medicineId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Medicine',
-            required: true
+            ref: 'Medicine'
         },
-        quantity: {
-            type: Number,
-            required: true,
-            min: 1
-        },
-        focQuantity: {
-            type: Number,
-            default: 0
-        },
-        unitCost: {
-            type: Number,
-            required: true
-        },
-        totalCost: {
-            type: Number,
-            required: true
-        }
+        code: { type: String, default: '' },
+        product: { type: String, default: '' },
+        batch: { type: String, default: '' },
+        expDate: { type: Date },
+        expDateFormatted: { type: String, default: '' },
+        pack: { type: Number, default: 0 },
+        loose: { type: Number, default: 0 },
+        unit: { type: String, default: 'BOX' },
+        parsedMultiplier: { type: Number, default: 1 },
+        price: { type: Number, default: 0 },
+        foc: { type: Number, default: 0 },
+        amount: { type: Number, default: 0 },
+        rpSale: { type: Number, default: 0 },
+        discAmt: { type: Number, default: 0 },
+        netValue: { type: Number, default: 0 },
+        vatAmt: { type: Number, default: 0 },
+        netAmount: { type: Number, default: 0 },
+        quantity: { type: Number, default: 1 },
+        focQuantity: { type: Number, default: 0 },
+        unitCost: { type: Number, default: 0 },
+        totalCost: { type: Number, default: 0 },
+        totalUnitsReceived: { type: Number, default: 0 }
     }],
     totalAmount: {
         type: Number,

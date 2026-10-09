@@ -28,3 +28,6 @@ yarn-error.log*
 
 # Backups
 server/backups/
+
+# Uploads
+server/uploads/

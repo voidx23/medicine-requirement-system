@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, useMemo } from 'react';
-import { ShoppingCart, Plus, ClipboardList, RotateCw, AlertTriangle, Eye, CheckSquare, Trash2, Calendar, FileText, Search, Sparkles, FileSpreadsheet, UploadCloud, Info, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, Plus, ClipboardList, RotateCw, AlertTriangle, Eye, CheckSquare, Trash2, Calendar, FileText, Search, Sparkles, FileSpreadsheet, UploadCloud, Info, ArrowLeft, Printer, Edit3, BookOpen, Receipt } from 'lucide-react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
 import AuthContext from '../context/AuthContext';
@@ -7,6 +7,9 @@ import Button from '../components/UI/Button';
 import Modal from '../components/UI/Modal';
 import Input from '../components/UI/Input';
 import { TableRowSkeleton } from '../components/UI/Skeleton';
+import PrintableLPO from '../components/Purchasing/PrintableLPO';
+import ExcelInvoiceUploadModal from '../components/Purchasing/ExcelInvoiceUploadModal';
+import PurchaseEntryModal from '../components/Purchasing/PurchaseEntryModal';
 
 const Purchasing = () => {
     const { showConfirm, showToast } = useNotification();
@@ -25,10 +28,18 @@ const Purchasing = () => {
     const canCreate = user?.isSuperAdmin || user?.permissions?.includes('create_purchase_orders');
     const canReceive = user?.isSuperAdmin || user?.permissions?.includes('receive_purchase_orders');
 
+    // Sub-Tabs State: 'orders', 'invoices', 'ledger'
+    const [activeTab, setActiveTab] = useState('orders');
+
     // State Variables
     const [purchaseOrders, setPurchaseOrders] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
+    const [invoicesList, setInvoicesList] = useState([]);
+    const [invoicesLoading, setInvoicesLoading] = useState(false);
+    const [ledgerList, setLedgerList] = useState([]);
+    const [ledgerLoading, setLedgerLoading] = useState(false);
+    const [allMedicines, setAllMedicines] = useState([]);
     const [loading, setLoading] = useState(true);
     const [suggestionsLoading, setSuggestionsLoading] = useState(false);
     
@@ -39,7 +50,8 @@ const Purchasing = () => {
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterSupplier, setFilterSupplier] = useState('all');
 
-    // Create PO Form State
+    // Create / Edit PO Form State
+    const [editingPoId, setEditingPoId] = useState(null);
     const [poSupplierId, setPoSupplierId] = useState('');
     const [poSupplierType, setPoSupplierType] = useState('exclusive');
     const [poItems, setPoItems] = useState([]);
@@ -75,19 +87,30 @@ const Purchasing = () => {
     const [receiveQuantities, setReceiveQuantities] = useState({}); // { itemId: quantity }
     const [isReceiving, setIsReceiving] = useState(false);
 
+    // Printable LPO Modal state
+    const [showPrintableModal, setShowPrintableModal] = useState(false);
+    const [printablePo, setPrintablePo] = useState(null);
+
     // Suggestions Modal state
     const [showSuggestionsModal, setShowSuggestionsModal] = useState(false);
+    const [showExcelUploadModal, setShowExcelUploadModal] = useState(false);
+
+    // Invoice Detail View Modal
+    const [showInvoiceDetailModal, setShowInvoiceDetailModal] = useState(false);
+    const [selectedInvoice, setSelectedInvoice] = useState(null);
 
     // Fetch Data on Load
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [poRes, supplierRes] = await Promise.all([
+            const [poRes, supplierRes, medRes] = await Promise.all([
                 api.get('/purchasing'),
-                api.get('/suppliers?limit=all')
+                api.get('/suppliers?limit=all'),
+                api.get('/medicines?limit=all')
             ]);
             setPurchaseOrders(poRes.data);
             setSuppliers(supplierRes.data.suppliers || supplierRes.data || []);
+            setAllMedicines(medRes.data.medicines || medRes.data || []);
         } catch (error) {
             console.error('Failed to load purchasing data', error);
             showToast('Failed to load data', 'error');
@@ -95,6 +118,36 @@ const Purchasing = () => {
             setLoading(false);
         }
     };
+
+    const fetchInvoices = async () => {
+        setInvoicesLoading(true);
+        try {
+            const { data } = await api.get('/invoices');
+            setInvoicesList(data);
+        } catch (error) {
+            console.error('Failed to load invoices', error);
+        } finally {
+            setInvoicesLoading(false);
+        }
+    };
+
+    const fetchLedger = async () => {
+        setLedgerLoading(true);
+        try {
+            const { data } = await api.get('/invoices/history');
+            setLedgerList(data);
+        } catch (error) {
+            console.error('Failed to load purchase history ledger', error);
+        } finally {
+            setLedgerLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'orders') fetchData();
+        if (activeTab === 'invoices') fetchInvoices();
+        if (activeTab === 'ledger') fetchLedger();
+    }, [activeTab]);
 
     const fetchSuggestions = async () => {
         setSuggestionsLoading(true);
@@ -285,7 +338,32 @@ const Purchasing = () => {
         ));
     };
 
-    // Submit New LPO
+    // Edit Existing Draft PO
+    const handleEditDraftPO = (po) => {
+        setEditingPoId(po._id);
+        setPoSupplierId(po.supplierId?._id || po.supplierId);
+        setPoSupplierType(po.supplierId?.supplierType || 'exclusive');
+        setPoItems((po.items || []).map(it => ({
+            medicineId: it.medicineId?._id || it.medicineId,
+            name: it.medicineId?.name || 'Medicine',
+            barcode: it.medicineId?.barcode || '',
+            quantityOrdered: it.quantityOrdered || it.orderQuantity || 1,
+            costPrice: it.costPrice || it.lastPrice || 0,
+            unitsPerBox: it.medicineId?.unitsPerBox || 1
+        })));
+        setPoNotes(po.notes || po.remarks || '');
+        setPoStatus('draft');
+        setShowDetailModal(false);
+        setViewMode('create');
+    };
+
+    // Open Printable LPO Document
+    const handlePrintPO = (po) => {
+        setPrintablePo(po);
+        setShowPrintableModal(true);
+    };
+
+    // Submit New or Updated LPO
     const handleSubmitPO = async (e) => {
         e.preventDefault();
         if (!poSupplierId) {
@@ -305,13 +383,25 @@ const Purchasing = () => {
                 costPrice: Number(it.costPrice) || 0
             }));
 
-            await api.post('/purchasing', {
-                supplierId: poSupplierId,
-                items: cleanedItems,
-                notes: poNotes,
-                status: poStatus
-            });
-            showToast(`Purchase Order created successfully as ${poStatus}`, 'success');
+            if (editingPoId) {
+                await api.put(`/purchasing/${editingPoId}`, {
+                    supplierId: poSupplierId,
+                    items: cleanedItems,
+                    notes: poNotes,
+                    status: poStatus
+                });
+                showToast('Purchase Order updated successfully!', 'success');
+            } else {
+                await api.post('/purchasing', {
+                    supplierId: poSupplierId,
+                    items: cleanedItems,
+                    notes: poNotes,
+                    status: poStatus
+                });
+                showToast(`Purchase Order created successfully as ${poStatus}`, 'success');
+            }
+
+            setEditingPoId(null);
             setPoSupplierId('');
             setPoItems([]);
             setPoNotes('');
@@ -320,7 +410,7 @@ const Purchasing = () => {
             fetchData();
         } catch (error) {
             console.error(error);
-            showToast(error.response?.data?.message || 'Failed to create PO', 'error');
+            showToast(error.response?.data?.message || 'Failed to save PO', 'error');
         } finally {
             setIsSaving(false);
         }
@@ -572,15 +662,15 @@ const Purchasing = () => {
                         <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>Create, verify, and receive supplier purchase orders.</p>
                     </div>
                     
-                    <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                         {canReceive && (
                             <Button 
-                                variant="secondary" 
+                                variant="primary" 
                                 onClick={() => setShowInvoiceModal(true)}
-                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#059669', borderColor: '#059669' }}
                             >
-                                <UploadCloud size={16} />
-                                Match Purchase Invoice
+                                <Receipt size={16} />
+                                Purchase Entry (Excel & Manual)
                             </Button>
                         )}
                         {canCreate && (
@@ -606,126 +696,345 @@ const Purchasing = () => {
                     </div>
                 </div>
 
-                {/* Overview Stats Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
-                    <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>Active Orders</span>
-                        <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--primary)' }}>{stats.active}</span>
-                    </div>
-                    <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>Draft Tenders</span>
-                        <span style={{ fontSize: '1.8rem', fontWeight: 800, color: '#6b7280' }}>{stats.draft}</span>
-                    </div>
-                    <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>Fully Received POs</span>
-                        <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--success)' }}>{stats.completed}</span>
-                    </div>
-                    <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>Total Order Value</span>
-                        <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)' }}>{formatCurrency(stats.spend)}</span>
-                    </div>
+                {/* Sub-Tabs Navigation Bar */}
+                <div style={{ display: 'flex', gap: '0.75rem', borderBottom: '2px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('orders')}
+                        style={{
+                            padding: '0.65rem 1.25rem',
+                            borderRadius: '10px',
+                            border: 'none',
+                            fontWeight: 700,
+                            fontSize: '0.92rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            background: activeTab === 'orders' ? 'var(--primary)' : 'rgba(0,0,0,0.04)',
+                            color: activeTab === 'orders' ? 'white' : 'var(--text-secondary)',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <ShoppingCart size={16} /> Purchase Orders ({purchaseOrders.length})
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('invoices')}
+                        style={{
+                            padding: '0.65rem 1.25rem',
+                            borderRadius: '10px',
+                            border: 'none',
+                            fontWeight: 700,
+                            fontSize: '0.92rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            background: activeTab === 'invoices' ? 'var(--primary)' : 'rgba(0,0,0,0.04)',
+                            color: activeTab === 'invoices' ? 'white' : 'var(--text-secondary)',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <Receipt size={16} /> Invoices History ({invoicesList.length})
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('ledger')}
+                        style={{
+                            padding: '0.65rem 1.25rem',
+                            borderRadius: '10px',
+                            border: 'none',
+                            fontWeight: 700,
+                            fontSize: '0.92rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            background: activeTab === 'ledger' ? 'var(--primary)' : 'rgba(0,0,0,0.04)',
+                            color: activeTab === 'ledger' ? 'white' : 'var(--text-secondary)',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <BookOpen size={16} /> Purchase History Ledger ({ledgerList.length})
+                    </button>
                 </div>
 
-                {/* Filters panel */}
-                <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)' }}>Status:</span>
-                        <select 
-                            value={filterStatus} 
-                            onChange={(e) => setFilterStatus(e.target.value)}
-                            className="input-field" 
-                            style={{ padding: '0.4rem 2rem 0.4rem 0.8rem', width: '180px' }}
-                        >
-                            <option value="all">All Statuses</option>
-                            <option value="draft">Draft</option>
-                            <option value="ordered">Ordered</option>
-                            <option value="partially_received">Partially Received</option>
-                            <option value="received">Received</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                    </div>
+                {activeTab === 'orders' && (
+                    <>
+                        {/* Overview Stats Cards */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
+                            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>Active Orders</span>
+                                <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--primary)' }}>{stats.active}</span>
+                            </div>
+                            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>Draft Tenders</span>
+                                <span style={{ fontSize: '1.8rem', fontWeight: 800, color: '#6b7280' }}>{stats.draft}</span>
+                            </div>
+                            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>Fully Received POs</span>
+                                <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--success)' }}>{stats.completed}</span>
+                            </div>
+                            <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 500 }}>Total Order Value</span>
+                                <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)' }}>{formatCurrency(stats.spend)}</span>
+                            </div>
+                        </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)' }}>Supplier:</span>
-                        <select 
-                            value={filterSupplier} 
-                            onChange={(e) => setFilterSupplier(e.target.value)}
-                            className="input-field" 
-                            style={{ padding: '0.4rem 2rem 0.4rem 0.8rem', width: '220px' }}
-                        >
-                            <option value="all">All Suppliers</option>
-                            {suppliers.map(s => (
-                                <option key={s._id} value={s._id}>{s.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
+                        {/* Filters panel */}
+                        <div className="glass-panel" style={{ padding: '1.25rem', display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)' }}>Status:</span>
+                                <select 
+                                    value={filterStatus} 
+                                    onChange={(e) => setFilterStatus(e.target.value)}
+                                    className="input-field" 
+                                    style={{ padding: '0.4rem 2rem 0.4rem 0.8rem', width: '180px' }}
+                                >
+                                    <option value="all">All Statuses</option>
+                                    <option value="draft">Draft</option>
+                                    <option value="ordered">Ordered</option>
+                                    <option value="partially_received">Partially Received</option>
+                                    <option value="received">Received</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
 
-                {/* Orders list table */}
-                <div className="glass-panel" style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                <th style={{ padding: '1rem' }}>PO Number</th>
-                                <th style={{ padding: '1rem' }}>Supplier</th>
-                                <th style={{ padding: '1rem' }}>Order Date</th>
-                                <th style={{ padding: '1rem' }}>Items</th>
-                                <th style={{ padding: '1rem' }}>Total Amount</th>
-                                <th style={{ padding: '1rem' }}>Status</th>
-                                <th style={{ padding: '1rem', textAlign: 'right' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <TableRowSkeleton cols={7} rows={5} />
-                            ) : filteredPOs.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                        <ClipboardList size={40} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />
-                                        No purchase orders found matching the filter criteria.
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredPOs.map((po) => {
-                                    const styles = getStatusStyle(po.status);
-                                    return (
-                                        <tr key={po._id} style={{ borderBottom: '1px solid var(--glass-border)', fontSize: '0.95rem' }} className="table-row-hover">
-                                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>{po.poNumber}</td>
-                                            <td style={{ padding: '1rem' }}>{po.supplierId?.name || 'Unknown'}</td>
-                                            <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>
-                                                {po.orderedAt ? new Date(po.orderedAt).toLocaleDateString() : 'N/A (Draft)'}
-                                            </td>
-                                            <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>
-                                                {po.items?.length || 0} {po.items?.length === 1 ? 'item' : 'items'}
-                                            </td>
-                                            <td style={{ padding: '1rem', fontWeight: 600 }}>{formatCurrency(po.totalAmount)}</td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <span style={{ 
-                                                    fontSize: '0.78rem', fontWeight: 700, padding: '0.25rem 0.6rem', 
-                                                    borderRadius: '12px', background: styles.bg, color: styles.text,
-                                                    letterSpacing: '0.5px', textTransform: 'uppercase'
-                                                }}>
-                                                    {po.status.replace('_', ' ')}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                                <Button 
-                                                    variant="secondary" 
-                                                    size="sm" 
-                                                    onClick={() => handleOpenPODetails(po._id)}
-                                                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
-                                                >
-                                                    <Eye size={14} style={{ marginRight: '0.25rem' }} />
-                                                    View / Receive
-                                                </Button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-muted)' }}>Supplier:</span>
+                                <select 
+                                    value={filterSupplier} 
+                                    onChange={(e) => setFilterSupplier(e.target.value)}
+                                    className="input-field" 
+                                    style={{ padding: '0.4rem 2rem 0.4rem 0.8rem', width: '220px' }}
+                                >
+                                    <option value="all">All Suppliers</option>
+                                    {suppliers.map(s => (
+                                        <option key={s._id} value={s._id}>{s.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Orders list table */}
+                        <div className="glass-panel" style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                        <th style={{ padding: '1rem' }}>PO Number</th>
+                                        <th style={{ padding: '1rem' }}>Supplier</th>
+                                        <th style={{ padding: '1rem' }}>Order Date</th>
+                                        <th style={{ padding: '1rem' }}>Items</th>
+                                        <th style={{ padding: '1rem' }}>Total Amount</th>
+                                        <th style={{ padding: '1rem' }}>Status</th>
+                                        <th style={{ padding: '1rem', textAlign: 'right' }}>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {loading ? (
+                                        <TableRowSkeleton cols={8} rows={5} />
+                                    ) : filteredPOs.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                                <ClipboardList size={40} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />
+                                                No purchase orders found matching the filter criteria.
                                             </td>
                                         </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                    ) : (
+                                        filteredPOs.map((po) => {
+                                            const styles = getStatusStyle(po.status);
+                                            return (
+                                                <tr key={po._id} style={{ borderBottom: '1px solid var(--glass-border)', fontSize: '0.95rem' }} className="table-row-hover">
+                                                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>{po.poNumber}</td>
+                                                    <td style={{ padding: '1rem' }}>{po.supplierId?.name || 'Unknown'}</td>
+                                                    <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>
+                                                        {po.orderedAt ? new Date(po.orderedAt).toLocaleDateString() : 'N/A (Draft)'}
+                                                    </td>
+                                                    <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>
+                                                        {po.items?.length || 0} {po.items?.length === 1 ? 'item' : 'items'}
+                                                    </td>
+                                                    <td style={{ padding: '1rem', fontWeight: 600 }}>{formatCurrency(po.totalAmount)}</td>
+                                                    <td style={{ padding: '1rem' }}>
+                                                        <span style={{ 
+                                                            fontSize: '0.78rem', fontWeight: 700, padding: '0.25rem 0.6rem', 
+                                                            borderRadius: '12px', background: styles.bg, color: styles.text,
+                                                            letterSpacing: '0.5px', textTransform: 'uppercase'
+                                                        }}>
+                                                            {po.status.replace('_', ' ')}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                                                            <Button 
+                                                                variant="secondary" 
+                                                                size="sm" 
+                                                                onClick={() => handlePrintPO(po)}
+                                                                style={{ padding: '0.35rem 0.55rem' }}
+                                                                title="Print LPO Document"
+                                                            >
+                                                                <Printer size={14} />
+                                                            </Button>
+                                                            {po.status === 'draft' && canCreate && (
+                                                                <Button 
+                                                                    variant="secondary" 
+                                                                    size="sm" 
+                                                                    onClick={() => handleEditDraftPO(po)}
+                                                                    style={{ padding: '0.35rem 0.55rem' }}
+                                                                    title="Edit Draft LPO"
+                                                                >
+                                                                    <Edit3 size={14} />
+                                                                </Button>
+                                                            )}
+                                                            <Button 
+                                                                variant="secondary" 
+                                                                size="sm" 
+                                                                onClick={() => handleOpenPODetails(po._id)}
+                                                                style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+                                                            >
+                                                                <Eye size={14} style={{ marginRight: '0.25rem' }} />
+                                                                View / Receive
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                )}
+
+                {activeTab === 'invoices' && (
+                    <div className="glass-panel" style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                    <th style={{ padding: '1rem' }}>Invoice Number</th>
+                                    <th style={{ padding: '1rem' }}>Supplier</th>
+                                    <th style={{ padding: '1rem' }}>Invoice Date</th>
+                                    <th style={{ padding: '1rem' }}>Items</th>
+                                    <th style={{ padding: '1rem' }}>Total Amount</th>
+                                    <th style={{ padding: '1rem' }}>Linked LPO</th>
+                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Attachment</th>
+                                    <th style={{ padding: '1rem', textAlign: 'center' }}>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {invoicesLoading ? (
+                                    <TableRowSkeleton cols={8} rows={5} />
+                                ) : invoicesList.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                            <Receipt size={40} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />
+                                            No purchase invoices uploaded yet.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    invoicesList.map(inv => (
+                                        <tr key={inv._id} style={{ borderBottom: '1px solid var(--glass-border)', fontSize: '0.95rem' }} className="table-row-hover">
+                                            <td style={{ padding: '1rem', fontWeight: 'bold' }}>{inv.invoiceNumber}</td>
+                                            <td style={{ padding: '1rem' }}>{inv.supplierId?.name || 'Unknown'}</td>
+                                            <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{new Date(inv.invoiceDate).toLocaleDateString()}</td>
+                                            <td style={{ padding: '1rem' }}>{inv.items?.length || 0} line items</td>
+                                            <td style={{ padding: '1rem', fontWeight: 700, color: 'var(--primary)' }}>{formatCurrency(inv.totalAmount)}</td>
+                                            <td style={{ padding: '1rem' }}>{inv.lpoId?.lpoNumber ? <span style={{ fontWeight: 600, color: '#4f46e5' }}>{inv.lpoId.lpoNumber}</span> : <span style={{ color: 'var(--text-muted)' }}>Direct Invoice</span>}</td>
+                                            <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                {inv.invoiceFile ? (
+                                                    <a 
+                                                        href={getInvoiceFileUrl(inv.invoiceFile)} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        style={{ color: 'var(--primary)', fontWeight: 700, textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                                                    >
+                                                        <FileText size={14} /> View File
+                                                    </a>
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>None</span>
+                                                )}
+                                            </td>
+                                            <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
+                                                <button
+                                                    type="button"
+                                                    title="View invoice details"
+                                                    onClick={() => { setSelectedInvoice(inv); setShowInvoiceDetailModal(true); }}
+                                                    style={{
+                                                        background: 'var(--primary)',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '7px',
+                                                        padding: '0.35rem 0.75rem',
+                                                        cursor: 'pointer',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.35rem',
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: 700
+                                                    }}
+                                                >
+                                                    <Eye size={13} /> View
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {activeTab === 'ledger' && (
+                    <div className="glass-panel" style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                    <th style={{ padding: '1rem' }}>Date</th>
+                                    <th style={{ padding: '1rem' }}>Invoice #</th>
+                                    <th style={{ padding: '1rem' }}>Supplier</th>
+                                    <th style={{ padding: '1rem' }}>Division</th>
+                                    <th style={{ padding: '1rem' }}>Medicine</th>
+                                    <th style={{ padding: '1rem', textAlign: 'center' }}>Qty Received</th>
+                                    <th style={{ padding: '1rem', textAlign: 'center' }}>FOC Qty</th>
+                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Unit Cost</th>
+                                    <th style={{ padding: '1rem', textAlign: 'right' }}>Total Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {ledgerLoading ? (
+                                    <TableRowSkeleton cols={9} rows={5} />
+                                ) : ledgerList.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={9} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                            <BookOpen size={40} style={{ margin: '0 auto 1rem auto', opacity: 0.5 }} />
+                                            No purchase transactions recorded in history ledger yet.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    ledgerList.map(row => (
+                                        <tr key={row._id} style={{ borderBottom: '1px solid var(--glass-border)', fontSize: '0.92rem' }} className="table-row-hover">
+                                            <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{new Date(row.invoiceDate).toLocaleDateString()}</td>
+                                            <td style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>{row.invoiceNumber}</td>
+                                            <td style={{ padding: '0.85rem 1rem' }}>{row.supplierId?.name || 'Unknown'}</td>
+                                            <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>{row.divisionId?.divisionName || 'General'}</td>
+                                            <td style={{ padding: '0.85rem 1rem' }}>
+                                                <div style={{ fontWeight: 700 }}>{row.productId?.name || 'Medicine'}</div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{row.productId?.barcode || 'No barcode'}</div>
+                                            </td>
+                                            <td style={{ padding: '0.85rem 1rem', textAlign: 'center', fontWeight: 600 }}>{row.quantity}</td>
+                                            <td style={{ padding: '0.85rem 1rem', textAlign: 'center', color: row.foc > 0 ? 'var(--success)' : 'var(--text-muted)', fontWeight: row.foc > 0 ? 700 : 400 }}>{row.foc || 0}</td>
+                                            <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>{formatCurrency(row.unitCost)}</td>
+                                            <td style={{ padding: '0.85rem 1rem', textAlign: 'right', fontWeight: 800, color: 'var(--primary)' }}>{formatCurrency(row.totalCost)}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
 
                 {/* Suggestions Modal */}
                 <Modal
@@ -789,214 +1098,157 @@ const Purchasing = () => {
                     </div>
                 </Modal>
 
-                {/* Purchase Invoice Upload Modal */}
-                <Modal
+                {/* Purchase Entry Modal (Excel & Manual Entry) */}
+                <PurchaseEntryModal
                     isOpen={showInvoiceModal}
                     onClose={() => setShowInvoiceModal(false)}
-                    title="🧾 Upload Purchase Invoice"
-                    maxWidth="1100px"
+                    suppliers={suppliers}
+                    purchaseOrders={purchaseOrders}
+                    medicines={allMedicines}
+                    onSaveSuccess={() => {
+                        setActiveTab('invoices');
+                        fetchData();
+                        fetchInvoices();
+                        fetchLedger();
+                    }}
+                    showToast={showToast}
+                />
+
+                {/* Invoice Detail View Modal */}
+                <Modal
+                    isOpen={showInvoiceDetailModal}
+                    onClose={() => { setShowInvoiceDetailModal(false); setSelectedInvoice(null); }}
+                    title={selectedInvoice ? `📄 Invoice: ${selectedInvoice.invoiceNumber}` : 'Invoice Detail'}
+                    maxWidth="1300px"
                 >
-                    <form onSubmit={handleSubmitInvoice} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                        
-                        {/* Top row: Invoice Details and Supplier selections */}
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'end', width: '100%', flexWrap: 'nowrap' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '18%', minWidth: '110px' }}>
-                                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.2rem' }}>Invoice Number *</label>
-                                <input 
-                                    id="invoiceNo"
-                                    type="text"
-                                    value={invoiceNo}
-                                    onChange={(e) => setInvoiceNo(e.target.value)}
-                                    className="input-field"
-                                    style={{ padding: '0.45rem 0.75rem', fontSize: '0.85rem', width: '100%', maxWidth: '100%' }}
-                                    required
-                                />
-                            </div>
+                    {selectedInvoice && (() => {
+                        const inv = selectedInvoice;
+                        const totals = (inv.items || []).reduce((acc, it) => {
+                            acc.amount += Number(it.amount) || 0;
+                            acc.discAmt += Number(it.discAmt) || 0;
+                            acc.netValue += Number(it.netValue) || 0;
+                            acc.vatAmt += Number(it.vatAmt) || 0;
+                            acc.netAmount += Number(it.netAmount) || 0;
+                            return acc;
+                        }, { amount: 0, discAmt: 0, netValue: 0, vatAmt: 0, netAmount: 0 });
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '17%', minWidth: '120px' }}>
-                                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.2rem' }}>Invoice Date *</label>
-                                <input 
-                                    type="date"
-                                    value={invoiceDate}
-                                    onChange={(e) => setInvoiceDate(e.target.value)}
-                                    className="input-field"
-                                    style={{ padding: '0.45rem 0.75rem', fontSize: '0.85rem', width: '100%', maxWidth: '100%' }}
-                                    required
-                                />
-                            </div>
+                        return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '22%', minWidth: '150px' }}>
-                                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.2rem' }}>Supplier *</label>
-                                <select
-                                    value={invSupplierId}
-                                    onChange={(e) => setInvSupplierId(e.target.value)}
-                                    className="input-field"
-                                    style={{ padding: '0.45rem 2rem 0.45rem 0.75rem', fontSize: '0.85rem', width: '100%', maxWidth: '100%' }}
-                                    required
-                                >
-                                    <option value="">Select Supplier</option>
-                                    {suppliers.map(s => (
-                                        <option key={s._id} value={s._id}>{s.name}</option>
+                                {/* Header Info Cards */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+                                    {[
+                                        { label: 'Supplier', value: inv.supplierId?.name || 'Unknown', highlight: false },
+                                        { label: 'Invoice Date', value: new Date(inv.invoiceDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }), highlight: false },
+                                        { label: 'Linked LPO', value: inv.lpoId?.lpoNumber || 'Direct Invoice', highlight: !!inv.lpoId },
+                                        { label: 'Line Items', value: `${(inv.items || []).length} items`, highlight: false },
+                                        { label: 'Grand Total', value: formatCurrency(inv.totalAmount), highlight: true },
+                                    ].map(card => (
+                                        <div key={card.label} style={{
+                                            background: card.highlight ? 'linear-gradient(135deg, #4f46e5, #7c3aed)' : 'var(--surface-color, #f8fafc)',
+                                            border: '1px solid var(--border-color, #e2e8f0)',
+                                            borderRadius: '12px',
+                                            padding: '1rem 1.25rem'
+                                        }}>
+                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: card.highlight ? 'rgba(255,255,255,0.75)' : 'var(--text-muted)', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{card.label}</div>
+                                            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: card.highlight ? 'white' : 'var(--text-main)' }}>{card.value}</div>
+                                        </div>
                                     ))}
-                                </select>
-                            </div>
+                                </div>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '43%', minWidth: '220px' }}>
-                                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.2rem' }}>Link with LPO (Optional)</label>
-                                <select
-                                    value={invLpoId}
-                                    onChange={(e) => setInvLpoId(e.target.value)}
-                                    className="input-field"
-                                    style={{ padding: '0.45rem 2rem 0.45rem 0.75rem', fontSize: '0.85rem', width: '100%', maxWidth: '100%' }}
-                                    disabled={!invSupplierId || invLpos.length === 0}
-                                >
-                                    <option value="">
-                                        {!invSupplierId ? 'Select Supplier First' : (invLpos.length === 0 ? 'No Active LPOs' : 'Select LPO')}
-                                    </option>
-                                    {invLpos.map(po => (
-                                        <option key={po._id} value={po._id}>{po.poNumber} (Placed: {new Date(po.orderedAt).toLocaleDateString()})</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-
-                        {/* Document Upload Area */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem', alignItems: 'end', background: 'rgba(99, 102, 241, 0.02)', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px dashed rgba(99, 102, 241, 0.2)' }}>
-                            <div className="flex flex-col gap-1">
-                                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.2rem' }}>Upload Invoice Document (PDF / Image / Excel)</label>
-                                <input 
-                                    type="file"
-                                    onChange={(e) => setInvoiceFile(e.target.files[0])}
-                                    accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls"
-                                    style={{ padding: '0.3rem 0.5rem', fontSize: '0.82rem', background: 'white', border: '1px solid var(--glass-border)', borderRadius: '6px' }}
-                                />
-                            </div>
-                            
-                            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'end' }}>
-                                {invoiceFile ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px' }}>
-                                            ✓ {invoiceFile.name}
-                                        </span>
-                                        {(invoiceFile.name.endsWith('.xlsx') || invoiceFile.name.endsWith('.xls')) && (
-                                            <Button 
-                                                type="button" 
-                                                variant="primary" 
-                                                size="sm"
-                                                onClick={handleParseExcelInvoice}
-                                                disabled={isParsingExcel}
-                                                style={{ width: '100%', padding: '0.35rem 0.75rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'center' }}
-                                            >
-                                                {isParsingExcel ? <RotateCw className="spin" size={12} /> : null}
-                                                Auto-Fill Items from Excel
-                                            </Button>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontStyle: 'italic', paddingBottom: '0.25rem' }}>
-                                        No document selected.
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-
-                        {invItems.length > 0 && (
-                            <div className="glass-panel" style={{ padding: 0, maxHeight: '320px', overflowY: 'auto' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                                    <thead>
-                                        <tr style={{ background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)' }}>
-                                            <th style={{ padding: '0.5rem' }}>Medicine</th>
-                                            <th style={{ padding: '0.5rem', textAlign: 'center' }}>Ordered</th>
-                                            <th style={{ padding: '0.5rem', textAlign: 'center' }}>Received</th>
-                                            <th style={{ padding: '0.5rem', textAlign: 'center', background: 'rgba(99,102,241,0.04)' }}>This Invoice Qty</th>
-                                            <th style={{ padding: '0.5rem', textAlign: 'center' }}>FOC Qty</th>
-                                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Unit Cost</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {invItems.map((item, idx) => (
-                                            <tr key={item.medicineId} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                                                <td style={{ padding: '0.5rem', fontWeight: 600 }}>{item.name}</td>
-                                                <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.quantityOrdered}</td>
-                                                <td style={{ padding: '0.5rem', textAlign: 'center' }}>{item.quantityReceived}</td>
-                                                <td style={{ padding: '0.5rem', textAlign: 'center', background: 'rgba(99,102,241,0.02)' }}>
-                                                    <input 
-                                                        type="number"
-                                                        value={item.quantity}
-                                                        min="0"
-                                                        onChange={(e) => {
-                                                            const val = Number(e.target.value) || 0;
-                                                            setInvItems(prev => prev.map((itm, i) => i === idx ? { ...itm, quantity: val } : itm));
-                                                        }}
-                                                        style={{ 
-                                                            width: '75px', 
-                                                            padding: '0.25rem 0.5rem', 
-                                                            border: '1px solid var(--glass-border)', 
-                                                            borderRadius: '6px', 
-                                                            textAlign: 'center', 
-                                                            fontSize: '0.85rem',
-                                                            outline: 'none',
-                                                            background: 'white'
-                                                        }}
-                                                    />
-                                                </td>
-                                                <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                                                    <input 
-                                                        type="number"
-                                                        value={item.focQuantity}
-                                                        min="0"
-                                                        onChange={(e) => {
-                                                            const val = Number(e.target.value) || 0;
-                                                            setInvItems(prev => prev.map((itm, i) => i === idx ? { ...itm, focQuantity: val } : itm));
-                                                        }}
-                                                        style={{ 
-                                                            width: '75px', 
-                                                            padding: '0.25rem 0.5rem', 
-                                                            border: '1px solid var(--glass-border)', 
-                                                            borderRadius: '6px', 
-                                                            textAlign: 'center', 
-                                                            fontSize: '0.85rem',
-                                                            outline: 'none',
-                                                            background: 'white'
-                                                        }}
-                                                    />
-                                                </td>
-                                                <td style={{ padding: '0.5rem', textAlign: 'right' }}>
-                                                    <input 
-                                                        type="number"
-                                                        step="0.001"
-                                                        value={item.unitCost}
-                                                        min="0"
-                                                        onChange={(e) => {
-                                                            const val = Number(e.target.value) || 0;
-                                                            setInvItems(prev => prev.map((itm, i) => i === idx ? { ...itm, unitCost: val } : itm));
-                                                        }}
-                                                        style={{ 
-                                                            width: '95px', 
-                                                            padding: '0.25rem 0.5rem', 
-                                                            border: '1px solid var(--glass-border)', 
-                                                            borderRadius: '6px', 
-                                                            textAlign: 'right', 
-                                                            fontSize: '0.85rem',
-                                                            outline: 'none',
-                                                            background: 'white'
-                                                        }}
-                                                    />
-                                                </td>
+                                {/* Line Items Table */}
+                                <div style={{ border: '1px solid var(--border-color, #cbd5e1)', borderRadius: '10px', overflowX: 'auto', maxHeight: '420px', overflowY: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', minWidth: '1200px' }}>
+                                        <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: '#1e293b' }}>
+                                            <tr style={{ color: '#94a3b8', fontWeight: 700, fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                <th style={{ padding: '0.7rem 0.5rem', width: '32px', textAlign: 'center' }}>#</th>
+                                                <th style={{ padding: '0.7rem 0.5rem', textAlign: 'left', minWidth: '200px' }}>Product</th>
+                                                <th style={{ padding: '0.7rem 0.5rem', textAlign: 'left', width: '120px' }}>Barcode</th>
+                                                <th style={{ padding: '0.7rem 0.5rem', textAlign: 'left', width: '90px' }}>Batch</th>
+                                                <th style={{ padding: '0.7rem 0.5rem', textAlign: 'center', width: '95px' }}>Exp Date</th>
+                                                <th style={{ padding: '0.7rem 0.4rem', textAlign: 'center', width: '55px' }}>Pack</th>
+                                                <th style={{ padding: '0.7rem 0.4rem', textAlign: 'center', width: '55px' }}>Loose</th>
+                                                <th style={{ padding: '0.7rem 0.4rem', textAlign: 'center', width: '60px' }}>Unit</th>
+                                                <th style={{ padding: '0.7rem 0.4rem', textAlign: 'right', width: '80px' }}>Cost</th>
+                                                <th style={{ padding: '0.7rem 0.4rem', textAlign: 'center', width: '50px' }}>FOC</th>
+                                                <th style={{ padding: '0.7rem 0.4rem', textAlign: 'right', width: '80px' }}>Amount</th>
+                                                <th style={{ padding: '0.7rem 0.4rem', textAlign: 'right', width: '80px' }}>Retail Rate</th>
+                                                <th style={{ padding: '0.7rem 0.4rem', textAlign: 'right', width: '75px' }}>Disc Amt</th>
+                                                <th style={{ padding: '0.7rem 0.4rem', textAlign: 'right', width: '80px' }}>Net Value</th>
+                                                <th style={{ padding: '0.7rem 0.4rem', textAlign: 'right', width: '70px' }}>VAT Amt</th>
+                                                <th style={{ padding: '0.7rem 0.5rem', textAlign: 'right', width: '90px', background: 'rgba(99,102,241,0.2)', color: '#a5b4fc' }}>Net Amt</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+                                        </thead>
+                                        <tbody>
+                                            {(inv.items || []).map((it, idx) => (
+                                                <tr key={idx} style={{
+                                                    borderBottom: '1px solid #1e293b',
+                                                    background: idx % 2 === 0 ? '#0f172a' : '#1a2744',
+                                                    color: '#e2e8f0'
+                                                }}>
+                                                    <td style={{ padding: '0.55rem 0.4rem', textAlign: 'center', color: '#64748b', fontWeight: 600 }}>{idx + 1}</td>
+                                                    <td style={{ padding: '0.55rem 0.5rem' }}>
+                                                        <div style={{ fontWeight: 700, color: it.medicineId ? '#818cf8' : '#e2e8f0' }}>
+                                                            {it.product || it.medicineId?.name || '—'}
+                                                        </div>
+                                                        {it.medicineId && <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Matched ✓</div>}
+                                                    </td>
+                                                    <td style={{ padding: '0.55rem 0.5rem', color: '#94a3b8', fontFamily: 'monospace', fontSize: '0.78rem' }}>{it.code || '—'}</td>
+                                                    <td style={{ padding: '0.55rem 0.5rem', color: '#94a3b8' }}>{it.batch || '—'}</td>
+                                                    <td style={{ padding: '0.55rem 0.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
+                                                        {it.expDateFormatted || (it.expDate ? new Date(it.expDate).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : '—')}
+                                                    </td>
+                                                    <td style={{ padding: '0.55rem 0.4rem', textAlign: 'center', fontWeight: 600 }}>{it.pack ?? 0}</td>
+                                                    <td style={{ padding: '0.55rem 0.4rem', textAlign: 'center' }}>{it.loose ?? 0}</td>
+                                                    <td style={{ padding: '0.55rem 0.4rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.78rem' }}>{it.unit || 'BOX'}</td>
+                                                    <td style={{ padding: '0.55rem 0.4rem', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(it.price ?? it.unitCost)}</td>
+                                                    <td style={{ padding: '0.55rem 0.4rem', textAlign: 'center', color: (it.foc ?? it.focQuantity) > 0 ? '#4ade80' : '#64748b', fontWeight: (it.foc ?? it.focQuantity) > 0 ? 700 : 400 }}>{it.foc ?? it.focQuantity ?? 0}</td>
+                                                    <td style={{ padding: '0.55rem 0.4rem', textAlign: 'right', color: '#cbd5e1' }}>{formatCurrency(it.amount)}</td>
+                                                    <td style={{ padding: '0.55rem 0.4rem', textAlign: 'right', color: '#94a3b8' }}>{formatCurrency(it.rpSale ?? it.retailRate)}</td>
+                                                    <td style={{ padding: '0.55rem 0.4rem', textAlign: 'right', color: '#f87171' }}>{it.discAmt > 0 ? `- ${formatCurrency(it.discAmt)}` : '—'}</td>
+                                                    <td style={{ padding: '0.55rem 0.4rem', textAlign: 'right', color: '#cbd5e1', fontWeight: 600 }}>{formatCurrency(it.netValue)}</td>
+                                                    <td style={{ padding: '0.55rem 0.4rem', textAlign: 'right', color: '#fbbf24' }}>{it.vatAmt > 0 ? formatCurrency(it.vatAmt) : '—'}</td>
+                                                    <td style={{ padding: '0.55rem 0.5rem', textAlign: 'right', fontWeight: 800, color: '#a5b4fc', background: 'rgba(99,102,241,0.1)' }}>{formatCurrency(it.netAmount)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        {/* Totals footer row */}
+                                        <tfoot style={{ position: 'sticky', bottom: 0, background: '#0f172a', borderTop: '2px solid #334155' }}>
+                                            <tr style={{ color: '#e2e8f0', fontWeight: 800, fontSize: '0.85rem' }}>
+                                                <td colSpan={10} style={{ padding: '0.65rem 0.5rem', textAlign: 'right', color: '#94a3b8' }}>TOTALS</td>
+                                                <td style={{ padding: '0.65rem 0.4rem', textAlign: 'right' }}>{formatCurrency(totals.amount)}</td>
+                                                <td style={{ padding: '0.65rem 0.4rem' }}></td>
+                                                <td style={{ padding: '0.65rem 0.4rem', textAlign: 'right', color: '#f87171' }}>- {formatCurrency(totals.discAmt)}</td>
+                                                <td style={{ padding: '0.65rem 0.4rem', textAlign: 'right' }}>{formatCurrency(totals.netValue)}</td>
+                                                <td style={{ padding: '0.65rem 0.4rem', textAlign: 'right', color: '#fbbf24' }}>{formatCurrency(totals.vatAmt)}</td>
+                                                <td style={{ padding: '0.65rem 0.5rem', textAlign: 'right', color: '#818cf8', background: 'rgba(99,102,241,0.15)', fontSize: '0.95rem' }}>{formatCurrency(totals.netAmount)}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-                            <Button variant="secondary" type="button" onClick={() => setShowInvoiceModal(false)}>Cancel</Button>
-                            <Button variant="primary" type="submit" disabled={isSavingInvoice}>
-                                {isSavingInvoice ? <RotateCw className="spin" size={16} /> : 'Match & Save Invoice'}
-                            </Button>
-                        </div>
-                    </form>
+                                {/* Attachment link if exists */}
+                                {inv.invoiceFile && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.85rem 1.25rem', background: 'rgba(99,102,241,0.08)', borderRadius: '10px', border: '1px solid rgba(99,102,241,0.2)' }}>
+                                        <FileText size={18} color="#818cf8" />
+                                        <span style={{ fontWeight: 600, color: '#e2e8f0', fontSize: '0.9rem' }}>Attached Document:</span>
+                                        <a
+                                            href={getInvoiceFileUrl(inv.invoiceFile)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ color: '#818cf8', fontWeight: 700, textDecoration: 'underline' }}
+                                        >
+                                            {inv.invoiceFile.split('/').pop()}
+                                        </a>
+                                    </div>
+                                )}
+
+                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                    <Button variant="secondary" onClick={() => { setShowInvoiceDetailModal(false); setSelectedInvoice(null); }}>Close</Button>
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </Modal>
 
                 {/* View / Receive PO Details Modal */}
@@ -1195,7 +1447,27 @@ const Purchasing = () => {
                                     )}
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                    <Button 
+                                        variant="secondary" 
+                                        onClick={() => handlePrintPO(selectedPO)}
+                                        style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                                    >
+                                        <Printer size={16} />
+                                        Print / Export LPO
+                                    </Button>
+
+                                    {selectedPO.status === 'draft' && canCreate && (
+                                        <Button 
+                                            variant="secondary" 
+                                            onClick={() => handleEditDraftPO(selectedPO)}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                                        >
+                                            <Edit3 size={16} />
+                                            Edit Draft
+                                        </Button>
+                                    )}
+
                                     <Button variant="secondary" onClick={() => setShowDetailModal(false)}>Close</Button>
                                     
                                     {selectedPO.status === 'draft' && canCreate && (
@@ -1215,6 +1487,28 @@ const Purchasing = () => {
                         </div>
                     )}
                 </Modal>
+
+                {/* Printable LPO Document Overlay Modal */}
+                {showPrintableModal && (
+                    <PrintableLPO 
+                        po={printablePo} 
+                        onClose={() => setShowPrintableModal(false)} 
+                    />
+                )}
+
+                {/* Purchase Invoice Excel Upload Modal */}
+                <ExcelInvoiceUploadModal
+                    isOpen={showExcelUploadModal}
+                    onClose={() => setShowExcelUploadModal(false)}
+                    suppliers={suppliers}
+                    purchaseOrders={purchaseOrders}
+                    onUploadSuccess={() => {
+                        fetchData();
+                        if (fetchInvoices) fetchInvoices();
+                        if (fetchLedger) fetchLedger();
+                    }}
+                    showToast={showToast}
+                />
             </div>
         );
     }

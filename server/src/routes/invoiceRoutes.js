@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { createInvoice, getInvoices, parseInvoiceExcel } from '../controllers/invoiceController.js';
+import { createInvoice, getInvoices, parseInvoiceExcel, getPurchaseHistory, uploadAndProcessExcelInvoice } from '../controllers/invoiceController.js';
 import { protect, requirePermission } from '../middleware/authMiddleware.js';
 
 // Ensure upload directory exists
@@ -42,6 +42,8 @@ router.use(protect);
 
 router.post('/', requirePermission('receive_purchase_orders'), upload.single('invoiceFile'), createInvoice);
 router.post('/parse-excel', requirePermission('receive_purchase_orders'), upload.single('invoiceFile'), parseInvoiceExcel);
+router.post('/upload-excel', requirePermission('receive_purchase_orders'), upload.single('invoiceFile'), uploadAndProcessExcelInvoice);
+router.get('/history', requirePermission('view_order_history'), getPurchaseHistory);
 router.get('/', requirePermission('view_order_history'), getInvoices);
 
 export default router;
