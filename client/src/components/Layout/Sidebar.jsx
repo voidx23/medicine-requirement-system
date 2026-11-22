@@ -1,5 +1,5 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Pill, History, GitBranch, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, PackageX, ArrowRightLeft, CalendarDays, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, Users, Pill, History, GitBranch, ClipboardList, Truck, FileText, MessageSquare, CheckSquare, BellRing, PackageX, ArrowRightLeft, CalendarDays, ShoppingCart, BarChart3 } from 'lucide-react';
 import Frame from '../../assets/frame.svg?react';
 import { useContext, useState, useEffect, useRef } from 'react';
 import AuthContext from '../../context/AuthContext';
@@ -106,6 +106,17 @@ const Sidebar = () => {
 
   const rawLinks = [
     { to: '/admin', icon: LayoutDashboard, label: 'Daily Requirement List', reqPerm: 'view_requirements' },
+    {
+      id: 'data-analytics',
+      icon: BarChart3,
+      label: 'Data Analytics',
+      superAdminOnly: true,
+      subLinks: [
+        { to: '/admin/analytics', label: 'Analytics Dashboard', exact: true },
+        { to: '/admin/analytics/products', label: 'Product-Wise Sales' },
+        { to: '/admin/analytics/locations', label: 'Location-Wise Sales' }
+      ]
+    },
     { to: '/admin/tasks', icon: CheckSquare, label: 'Tasks', reqPerm: 'view_tasks' },
     { to: '/admin/requests', icon: ClipboardList, label: 'Requests', badge: pendingRequestsCount, reqPerm: 'view_requests' },
     { to: '/admin/purchasing', icon: ShoppingCart, label: 'Purchasing', reqPerm: 'view_purchasing' },
@@ -154,6 +165,9 @@ const Sidebar = () => {
   ];
 
   const links = rawLinks.map(link => {
+      if (link.superAdminOnly) {
+          return user?.isSuperAdmin ? link : null;
+      }
       if (link.subLinks) {
           const activeSubLinks = link.subLinks.filter(sub => hasPermission(sub.reqPerm));
           if (activeSubLinks.length > 0) {
@@ -164,6 +178,7 @@ const Sidebar = () => {
       return hasPermission(link.reqPerm) ? link : null;
   }).filter(Boolean);
 
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(location.pathname.startsWith('/admin/analytics'));
   const [isReportsOpen, setIsReportsOpen] = useState(location.pathname.startsWith('/admin/reports'));
   const [isWorkforceOpen, setIsWorkforceOpen] = useState(
     location.pathname.includes('/admin/duty-scheduler') || 
@@ -176,10 +191,18 @@ const Sidebar = () => {
     location.pathname.startsWith('/admin/handover')
   );
 
-  const isSubActive = (subTo) => {
+  const isSubActive = (subLink) => {
+    const subTo = typeof subLink === 'string' ? subLink : subLink.to;
+    const exact = typeof subLink === 'object' && subLink.exact;
     const currentPath = location.pathname + location.search;
     if (subTo.includes('?')) {
       return currentPath === subTo;
+    }
+    if (exact) {
+      return location.pathname === subTo || (subTo === '/admin/analytics' && location.pathname.startsWith('/admin/analytics/transactions'));
+    }
+    if (subTo === '/admin/analytics/products' || subTo === '/admin/analytics/locations') {
+      return location.pathname.startsWith(subTo);
     }
     return location.pathname === subTo;
   };
@@ -223,17 +246,21 @@ const Sidebar = () => {
         {links.map((link) => {
           if (link.subLinks) {
             let isOpen = false;
-            if (link.id === 'reports-menu') isOpen = isReportsOpen;
+            if (link.id === 'data-analytics') isOpen = isAnalyticsOpen;
+            else if (link.id === 'reports-menu') isOpen = isReportsOpen;
             else if (link.id === 'workforce-management') isOpen = isWorkforceOpen;
             else if (link.id === 'store-administration') isOpen = isStoreAdminOpen;
             else if (link.id === 'expiry-management') isOpen = isExpiryOpen;
 
             const toggleOpen = () => {
-                if (link.id === 'reports-menu') setIsReportsOpen(!isReportsOpen);
+                if (link.id === 'data-analytics') setIsAnalyticsOpen(!isAnalyticsOpen);
+                else if (link.id === 'reports-menu') setIsReportsOpen(!isReportsOpen);
                 else if (link.id === 'workforce-management') setIsWorkforceOpen(!isWorkforceOpen);
                 else if (link.id === 'store-administration') setIsStoreAdminOpen(!isStoreAdminOpen);
                 else if (link.id === 'expiry-management') setIsExpiryOpen(!isExpiryOpen);
             };
+
+            const hasActiveSub = link.subLinks.some((s) => isSubActive(s));
 
             return (
               <div key={link.id} style={{ display: 'flex', flexDirection: 'column' }}>
@@ -246,13 +273,14 @@ const Sidebar = () => {
                     padding: '0.75rem 1rem',
                     borderRadius: '8px',
                     cursor: 'pointer',
-                    color: 'var(--text-muted)',
-                    fontWeight: 500,
+                    color: hasActiveSub ? 'var(--primary)' : 'var(--text-muted)',
+                    backgroundColor: hasActiveSub && !isOpen ? 'var(--primary-light)' : 'transparent',
+                    fontWeight: hasActiveSub ? 600 : 500,
                     transition: 'all 0.2s ease',
                     border: '1px solid transparent'
                   }}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(0,0,0,0.02)'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = hasActiveSub && !isOpen ? 'var(--primary-light)' : 'transparent'}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <link.icon size={20} />
@@ -267,9 +295,9 @@ const Sidebar = () => {
                       <NavLink
                         key={subLink.to}
                         to={subLink.to}
-                        end={subLink.to === '/admin/reports'} // Exact matching for /admin/reports so it doesn't highlight both
+                        end={subLink.exact || subLink.to === '/admin/reports'}
                         style={() => {
-                          const active = isSubActive(subLink.to);
+                          const active = isSubActive(subLink);
                           return {
                             display: 'block',
                             padding: '0.5rem 0.75rem',

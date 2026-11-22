@@ -17,6 +17,7 @@ import expiryRoutes from './routes/expiryRoutes.js';
 import dutyScheduleRoutes from './routes/dutyScheduleRoutes.js';
 import purchaseRoutes from './routes/purchaseRoutes.js';
 import invoiceRoutes from './routes/invoiceRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
 
 const app = express();
 // Health Check Route for Cron-Job Pinging (Instantly accessible, bypassing middleware)
@@ -47,6 +48,7 @@ app.use('/api/expiry', expiryRoutes);
 app.use('/api/duty-schedules', dutyScheduleRoutes);
 app.use('/api/purchasing', purchaseRoutes);
 app.use('/api/invoices', invoiceRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {
