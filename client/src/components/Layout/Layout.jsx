@@ -1,14 +1,19 @@
 import { useState, useEffect, useContext } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import { Menu, UserCircle, LogOut } from 'lucide-react';
 import AuthContext from '../../context/AuthContext';
 
 const Layout = () => {
+  const location = useLocation();
   const { user, logout } = useContext(AuthContext);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  // Full-width layout restricted exclusively to Analytics routes
+  const isWidePage = location.pathname === '/admin/analytics' ||
+                     location.pathname.startsWith('/admin/analytics/');
 
   useEffect(() => {
       const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -101,7 +106,13 @@ const Layout = () => {
         </div>
 
         <main style={{ overflowY: 'auto', flex: 1 }}>
-            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '1.5rem' }}>
+            <div style={{
+                maxWidth: isWidePage ? '100%' : '1200px',
+                margin: '0 auto',
+                padding: isWidePage ? '1rem 1.5rem' : '1.5rem',
+                width: '100%',
+                boxSizing: 'border-box'
+            }}>
                 <Outlet />
             </div>
         </main>

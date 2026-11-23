@@ -29,6 +29,13 @@ import HandoverPreparation from './pages/HandoverPreparation';
 import SupplierExpiryReport from './pages/SupplierExpiryReport';
 import DutyScheduler from './pages/DutyScheduler';
 import Purchasing from './pages/Purchasing';
+import AnalyticsHub from './pages/AnalyticsHub';
+import ProductWiseSales from './pages/analytics/ProductWiseSales';
+import ProductDetailAnalytics from './pages/analytics/ProductDetailAnalytics';
+import ProductBranchTransactions from './pages/analytics/ProductBranchTransactions';
+import LocationWiseSales from './pages/analytics/LocationWiseSales';
+import LocationDetailAnalytics from './pages/analytics/LocationDetailAnalytics';
+import SalesTransactionsDrilldown from './pages/analytics/SalesTransactionsDrilldown';
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 import { NotificationProvider } from './context/NotificationContext';
@@ -213,6 +220,15 @@ const App = () => {
                     <Route path="/admin" element={<Layout />}>
                         <Route element={<PermissionRoute permission="view_requirements" />}>
                             <Route index element={<Dashboard />} />
+                        </Route>
+                        <Route element={<SuperAdminRoute />}>
+                            <Route path="analytics" element={<AnalyticsHub />} />
+                            <Route path="analytics/products" element={<ProductWiseSales />} />
+                            <Route path="analytics/products/:itemId" element={<ProductDetailAnalytics />} />
+                            <Route path="analytics/products/:itemId/branch/:locationId" element={<ProductBranchTransactions />} />
+                            <Route path="analytics/locations" element={<LocationWiseSales />} />
+                            <Route path="analytics/locations/:locationId" element={<LocationDetailAnalytics />} />
+                            <Route path="analytics/transactions" element={<SalesTransactionsDrilldown />} />
                         </Route>
                         {/* Modules protected by granular permissions */}
                         <Route element={<PermissionRoute permission="view_tasks" />}>
