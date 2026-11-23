@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { Zap } from 'lucide-react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
@@ -108,30 +108,31 @@ const PermissionRoute = ({ permission }) => {
 };
 
 const VersionPoller = () => {
-    const [localVersion, setLocalVersion] = useState(null);
+    const { user } = useContext(AuthContext);
+    const localVersionRef = useRef(null);
+    const lastTelemetryKeyRef = useRef(null);
+    const [currentVersionString, setCurrentVersionString] = useState(null);
     const [isUpdating, setIsUpdating] = useState(false);
     const [countdown, setCountdown] = useState(5); // 5 second countdown
 
+    const userId = user?._id;
+    const userRole = user?.role;
+    const userToken = user?.token;
+
     useEffect(() => {
-        let isFirstLoad = true;
-        
+        if (isUpdating) return;
+
         const checkVersion = async () => {
-            if (isUpdating) return;
             try {
                 const res = await api.get('/system/version');
                 const serverVersion = res.data.clientVersion;
                 const versionString = res.data.versionString || 'v1.0.0';
-                
-                if (isFirstLoad) {
-                    setLocalVersion(serverVersion);
+
+                if (localVersionRef.current === null) {
+                    localVersionRef.current = serverVersion;
                     localStorage.setItem('appVersion', versionString);
-                    isFirstLoad = false;
-                    
-                    // Fire telemetry beacon now that we have loaded successfully
-                    // We wrap it in a silent catch block so if the user isn't logged in yet, it fails gracefully
-                    api.post('/system/telemetry', { versionString }).catch(() => {});
-                    
-                } else if (localVersion !== null && serverVersion > localVersion) {
+                    setCurrentVersionString(versionString);
+                } else if (serverVersion > localVersionRef.current) {
                     setIsUpdating(true);
                 }
             } catch {
@@ -140,9 +141,27 @@ const VersionPoller = () => {
         };
 
         checkVersion();
-        const interval = setInterval(checkVersion, 15000); 
+        const interval = setInterval(checkVersion, 15000);
         return () => clearInterval(interval);
-    }, [localVersion, isUpdating]);
+    }, [isUpdating]);
+
+    useEffect(() => {
+        if (!userToken) {
+            lastTelemetryKeyRef.current = null;
+            return;
+        }
+        if (userRole !== 'branch' || !currentVersionString) {
+            return;
+        }
+
+        const telemetryKey = `${userId}:${currentVersionString}`;
+        if (lastTelemetryKeyRef.current === telemetryKey) {
+            return;
+        }
+
+        lastTelemetryKeyRef.current = telemetryKey;
+        api.post('/system/telemetry', { versionString: currentVersionString }).catch(() => {});
+    }, [userId, userRole, userToken, currentVersionString]);
 
     useEffect(() => {
         if (isUpdating) {
