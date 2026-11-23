@@ -2,12 +2,10 @@ import Branch from '../models/Branch.js';
 import PharmacistRequest from '../models/PharmacistRequest.js';
 import Task from '../models/Task.js';
 import Staff from '../models/Staff.js';
-import jwt from 'jsonwebtoken';
+import { signAuthToken } from '../config/jwtConfig.js';
 
 const generateToken = (id, role = 'branch') => {
-    return jwt.sign({ id, role }, process.env.JWT_SECRET || 'fallback_secret_dev_only', {
-        expiresIn: '30d',
-    });
+    return signAuthToken({ id, role });
 };
 
 // @desc    Get all branches
