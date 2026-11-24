@@ -1,12 +1,10 @@
 import User from '../models/User.js';
 import Branch from '../models/Branch.js';
-import jwt from 'jsonwebtoken';
+import { signAuthToken } from '../config/jwtConfig.js';
 
 // Generate JWT
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret_dev_only', {
-        expiresIn: '30d',
-    });
+    return signAuthToken({ id });
 };
 
 // @desc    Auth user & get token
@@ -26,7 +24,7 @@ export const authUser = async (req, res) => {
             permissions: [],
             location: branch.location,
             contactNumber: branch.contactNumber,
-            token: jwt.sign({ id: branch._id, role: 'branch' }, process.env.JWT_SECRET || 'fallback_secret_dev_only', { expiresIn: '30d' }),
+            token: signAuthToken({ id: branch._id, role: 'branch' }),
         });
     }
 
@@ -39,7 +37,7 @@ export const authUser = async (req, res) => {
             role: user.role,
             isSuperAdmin: user.isSuperAdmin,
             permissions: user.permissions,
-            token: jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'fallback_secret_dev_only', { expiresIn: '30d' }),
+            token: signAuthToken({ id: user._id }),
         });
     }
 

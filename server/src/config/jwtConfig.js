@@ -1,0 +1,90 @@
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+
+export const JWT_EXPIRES_IN = '30d';
+export const MIN_JWT_SECRET_LENGTH = 32;
+
+// SHA-256 digest of the retired dev placeholder so it is rejected without keeping the literal in source
+const KNOWN_INSECURE_SECRET_SHA256 = '55d701477a446f805d60095e7d38be09807d635cffd44eaea3670f9ebd1bda3c';
+
+let ephemeralTestSecret = null;
+
+function sha256Hex(value) {
+    return crypto.createHash('sha256').update(value, 'utf8').digest('hex');
+}
+
+/**
+ * Validates JWT configuration without exposing secret material.
+ * Allows an ephemeral per-process test secret strictly when NODE_ENV === 'test'
+ * and JWT_SECRET is not explicitly provided.
+ */
+export function validateJwtConfig(env = process.env) {
+    const isTestEnv = env.NODE_ENV === 'test';
+
+    if (isTestEnv && env.JWT_SECRET === undefined) {
+        return {
+            valid: true,
+            configured: false,
+            usingTestSecret: true,
+            meetsMinLength: true,
+        };
+    }
+
+    if (typeof env.JWT_SECRET !== 'string') {
+        throw new Error('JWT configuration error: JWT_SECRET environment variable is required.');
+    }
+
+    const trimmed = env.JWT_SECRET.trim();
+    if (trimmed.length === 0) {
+        throw new Error('JWT configuration error: JWT_SECRET environment variable must not be empty.');
+    }
+
+    if (
+        sha256Hex(env.JWT_SECRET) === KNOWN_INSECURE_SECRET_SHA256 ||
+        sha256Hex(trimmed) === KNOWN_INSECURE_SECRET_SHA256
+    ) {
+        throw new Error('JWT configuration error: JWT_SECRET uses a rejected insecure placeholder value.');
+    }
+
+    if (trimmed.length < MIN_JWT_SECRET_LENGTH) {
+        throw new Error(`JWT configuration error: JWT_SECRET must be at least ${MIN_JWT_SECRET_LENGTH} characters long.`);
+    }
+
+    return {
+        valid: true,
+        configured: true,
+        usingTestSecret: false,
+        meetsMinLength: true,
+    };
+}
+
+/**
+ * Returns the validated JWT signing/verification secret.
+ */
+export function getJwtSecret(env = process.env) {
+    const status = validateJwtConfig(env);
+    if (status.usingTestSecret) {
+        if (!ephemeralTestSecret) {
+            ephemeralTestSecret = crypto.randomBytes(32).toString('hex');
+        }
+        return ephemeralTestSecret;
+    }
+    return env.JWT_SECRET;
+}
+
+/**
+ * Signs an authentication JWT using the centralized secret and 30d lifetime.
+ */
+export function signAuthToken(payload, options = {}) {
+    return jwt.sign(payload, getJwtSecret(), {
+        expiresIn: JWT_EXPIRES_IN,
+        ...options,
+    });
+}
+
+/**
+ * Verifies an authentication JWT using the centralized secret.
+ */
+export function verifyAuthToken(token) {
+    return jwt.verify(token, getJwtSecret());
+}

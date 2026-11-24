@@ -3,19 +3,8 @@ import LPOItem from '../models/LPOItem.js';
 import Supplier from '../models/Supplier.js';
 import Medicine from '../models/Medicine.js';
 import RequirementList from '../models/RequirementList.js';
-import PharmacistRequest from '../models/PharmacistRequest.js';
 import SupplierDivision from '../models/SupplierDivision.js';
 import SupplierMedicineStats from '../models/SupplierMedicineStats.js';
-
-// Helper to get today's date (Dubai Midnight)
-const getTodayDate = () => {
-    const now = new Date();
-    const utcTimestamp = now.getTime();
-    const dubaiOffset = 4 * 60 * 60 * 1000;
-    const dubaiTime = new Date(utcTimestamp + dubaiOffset);
-    dubaiTime.setUTCHours(0, 0, 0, 0);
-    return new Date(dubaiTime.getTime() - dubaiOffset);
-};
 
 // @desc    Create a new Purchase Order (LPO)
 // @route   POST /api/purchasing
@@ -91,7 +80,9 @@ export const createPurchaseOrder = async (req, res) => {
         }));
 
         // Populate and return combined structure
-        const populatedPO = await LPO.findById(lpo._id).populate('supplierId', 'name');
+        const populatedPO = await LPO.findById(lpo._id)
+            .populate('supplierId', 'name')
+            .populate('divisionId', 'divisionName');
         
         const populatedItems = await LPOItem.find({ lpoId: lpo._id })
             .populate('productId', 'name barcode costPrice');
@@ -183,16 +174,12 @@ export const getPurchaseOrderById = async (req, res) => {
             costPrice: item.lastPrice
         }));
 
-        const invoices = await PurchaseInvoice.find({ lpoId: lpo._id })
-            .select('invoiceNumber invoiceDate totalAmount invoiceFile');
-
         res.json({
             ...lpo.toObject(),
             poNumber: lpo.lpoNumber,
             orderedAt: lpo.date,
             notes: lpo.remarks,
-            items: formattedItems,
-            invoices
+            items: formattedItems
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -261,7 +248,9 @@ export const updatePurchaseOrder = async (req, res) => {
         }
 
         const updatedLPO = await lpo.save();
-        const populatedPO = await LPO.findById(updatedLPO._id).populate('supplierId', 'name');
+        const populatedPO = await LPO.findById(updatedLPO._id)
+            .populate('supplierId', 'name')
+            .populate('divisionId', 'divisionName');
         
         const populatedItems = await LPOItem.find({ lpoId: updatedLPO._id })
             .populate('productId', 'name barcode costPrice');
@@ -281,161 +270,6 @@ export const updatePurchaseOrder = async (req, res) => {
             notes: populatedPO.remarks,
             items: formattedItems
         });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// @desc    Receive items in a Purchase Order
-// @route   PUT /api/purchasing/:id/receive
-// @access  Private (Admin only)
-export const receivePurchaseOrder = async (req, res) => {
-    try {
-        const { items } = req.body; // Expect array of { _id, quantityReceived }
-        const lpo = await LPO.findById(req.params.id);
-
-        if (!lpo) {
-            return res.status(404).json({ message: 'Purchase Order not found' });
-        }
-
-        if (lpo.status !== 'ordered' && lpo.status !== 'partially_received') {
-            return res.status(400).json({ message: 'Can only receive items on Ordered or Partially Received POs' });
-        }
-
-        if (items && Array.isArray(items)) {
-            await Promise.all(items.map(async (updateItem) => {
-                const item = await LPOItem.findById(updateItem._id);
-                if (item) {
-                    item.receivedQuantity = Number(updateItem.quantityReceived) || 0;
-                    await item.save();
-                }
-            }));
-        }
-
-        // Compute status based on updated LPOItems
-        const allItems = await LPOItem.find({ lpoId: lpo._id });
-        let allReceived = true;
-        let someReceived = false;
-
-        allItems.forEach(item => {
-            if (item.receivedQuantity < item.orderQuantity) {
-                allReceived = false;
-            }
-            if (item.receivedQuantity > 0) {
-                someReceived = true;
-            }
-        });
-
-        if (allReceived) {
-            lpo.status = 'received';
-        } else if (someReceived) {
-            lpo.status = 'partially_received';
-        } else {
-            lpo.status = 'ordered';
-        }
-
-        const updatedLPO = await lpo.save();
-        const populatedPO = await LPO.findById(updatedLPO._id).populate('supplierId', 'name');
-        
-        const populatedItems = await LPOItem.find({ lpoId: updatedLPO._id })
-            .populate('productId', 'name barcode costPrice');
-
-        const formattedItems = populatedItems.map(item => ({
-            _id: item._id,
-            medicineId: item.productId,
-            quantityOrdered: item.orderQuantity,
-            quantityReceived: item.receivedQuantity,
-            costPrice: item.lastPrice
-        }));
-
-        res.json({
-            ...populatedPO.toObject(),
-            poNumber: populatedPO.lpoNumber,
-            orderedAt: populatedPO.date,
-            notes: populatedPO.remarks,
-            items: formattedItems
-        });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// @desc    Get suggested purchase orders based on today's requirements
-// @route   GET /api/purchasing/suggestions
-// @access  Private (Admin only)
-export const suggestPOFromRequirements = async (req, res) => {
-    try {
-        const today = getTodayDate();
-        
-        // Find today's requirement list
-        const reqList = await RequirementList.findOne({ date: today })
-            .populate({
-                path: 'items.medicineId',
-                populate: { path: 'supplierId', select: 'name' }
-            });
-
-        if (!reqList || reqList.items.length === 0) {
-            return res.json([]);
-        }
-
-        // Sum quantities of all pending pharmacist requests for each medicine
-        const pendingRequests = await PharmacistRequest.find({ status: 'pending' });
-        const pendingQtyMap = {};
-        
-        pendingRequests.forEach(reqObj => {
-            reqObj.items.forEach(item => {
-                if (item.status === 'pending') {
-                    const key = item.medicineId ? item.medicineId.toString() : null;
-                    if (key) {
-                        pendingQtyMap[key] = (pendingQtyMap[key] || 0) + item.quantity;
-                    }
-                }
-            });
-        });
-
-        // Group required medicines by Supplier
-        const suggestionsMap = {};
-
-        reqList.items.forEach(item => {
-            const med = item.medicineId;
-            if (!med || !med.supplierId) return;
-
-            const supplier = med.supplierId;
-            const supplierId = supplier._id.toString();
-
-            if (!suggestionsMap[supplierId]) {
-                suggestionsMap[supplierId] = {
-                    supplier: {
-                        _id: supplier._id,
-                        name: supplier.name
-                    },
-                    items: []
-                };
-            }
-
-            // Check if this medicine is already in the list
-            const existingMed = suggestionsMap[supplierId].items.find(i => i.medicineId.toString() === med._id.toString());
-            if (!existingMed) {
-                const pendingQty = pendingQtyMap[med._id.toString()] || 0;
-                let suggestedQty = pendingQty > 0 ? pendingQty : 1;
-                
-                if (med.unitsPerBox && med.unitsPerBox > 1 && pendingQty > 0) {
-                    suggestedQty = Math.ceil(pendingQty / med.unitsPerBox);
-                }
-
-                suggestionsMap[supplierId].items.push({
-                    medicineId: med._id,
-                    name: med.name,
-                    barcode: med.barcode,
-                    costPrice: med.costPrice || 0,
-                    unitsPerBox: med.unitsPerBox || 1,
-                    requiredQty: pendingQty,
-                    suggestedQuantity: suggestedQty
-                });
-            }
-        });
-
-        res.json(Object.values(suggestionsMap));
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

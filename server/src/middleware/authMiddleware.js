@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import { verifyAuthToken } from '../config/jwtConfig.js';
 import User from '../models/User.js';
 import Branch from '../models/Branch.js';
 
@@ -12,7 +12,7 @@ export const protect = async (req, res, next) => {
         try {
             token = req.headers.authorization.split(' ')[1];
 
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_dev_only');
+            const decoded = verifyAuthToken(token);
 
             // Branch token has role: 'branch' in the payload
             if (decoded.role === 'branch') {
