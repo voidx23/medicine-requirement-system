@@ -59,71 +59,122 @@ export const verifyPassword = async (req, res) => {
     }
 };
 
-// @desc    Register a new user
+// @desc    Register a new admin user (Super Admin only)
 // @route   POST /api/auth/register
-// @access  Public (Should be Admin only in future)
+// @access  Private (Super Admin)
 export const registerUser = async (req, res) => {
-    const { username, password, role, location, contactNumber } = req.body;
-
-    const userExists = await User.findOne({ username });
-
-    if (userExists) {
-        return res.status(400).json({ message: 'User already exists' });
-    }
-
-    const user = await User.create({
-        username,
-        password,
-        role: role || 'pharmacist',
-        location,
-        contactNumber
-    });
-
-    if (user) {
-        res.status(201).json({
-            _id: user._id,
-            username: user.username,
-            role: user.role,
-            isSuperAdmin: user.isSuperAdmin,
-            permissions: user.permissions,
-            token: generateToken(user._id),
-        });
-    } else {
-        res.status(400).json({ message: 'Invalid user data' });
-    }
-};
-// @desc    Update user details (Admin)
-// @route   PUT /api/auth/users/:id
-// @access  Private (Admin)
-export const updateUser = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id);
+        if (!req.user || req.user.role !== 'admin' || req.user.isSuperAdmin !== true) {
+            return res.status(403).json({ message: 'Forbidden: Super Admin access required' });
+        }
+
+        const { username, password, location, contactNumber } = req.body || {};
+        const trimmedUsername = typeof username === 'string' ? username.trim() : '';
+        const passwordValue = typeof password === 'string' ? password : '';
+
+        if (!trimmedUsername || !passwordValue.trim()) {
+            return res.status(400).json({ message: 'Username and password are required' });
+        }
+
+        const userExists = await User.findOne({ username: trimmedUsername });
+
+        if (userExists) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        const user = await User.create({
+            username: trimmedUsername,
+            password: passwordValue,
+            role: 'admin',
+            isSuperAdmin: false,
+            permissions: [],
+            location,
+            contactNumber
+        });
 
         if (user) {
-            user.username = req.body.username || user.username;
-            user.location = req.body.location || user.location;
-            user.contactNumber = req.body.contactNumber || user.contactNumber;
-            
-            if (req.body.password) {
-                user.password = req.body.password;
-            }
-
-            const updatedUser = await user.save();
-
-            res.json({
-                _id: updatedUser._id,
-                username: updatedUser.username,
-                role: updatedUser.role,
-                isSuperAdmin: updatedUser.isSuperAdmin,
-                permissions: updatedUser.permissions,
-                location: updatedUser.location,
-                contactNumber: updatedUser.contactNumber
+            res.status(201).json({
+                _id: user._id,
+                username: user.username,
+                role: user.role,
+                isSuperAdmin: user.isSuperAdmin,
+                permissions: user.permissions,
+                token: generateToken(user._id),
             });
         } else {
-            res.status(404).json({ message: 'User not found' });
+            res.status(400).json({ message: 'Invalid user data' });
         }
     } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+        if (error?.code === 11000) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+        if (error?.name === 'ValidationError') {
+            return res.status(400).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+// @desc    Update user details (Super Admin only)
+// @route   PUT /api/auth/users/:id
+// @access  Private (Super Admin)
+export const updateUser = async (req, res) => {
+    try {
+        if (!req.user || req.user.role !== 'admin' || req.user.isSuperAdmin !== true) {
+            return res.status(403).json({ message: 'Forbidden: Super Admin access required' });
+        }
+
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Allow Super Admin self-management, but block modifying another Super Admin account
+        if (user.isSuperAdmin && user._id.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Cannot modify another super admin account' });
+        }
+
+        const { username, location, contactNumber, password } = req.body || {};
+
+        if (password !== undefined && (typeof password !== 'string' || !password.trim())) {
+            return res.status(400).json({ message: 'Password must not be empty or whitespace-only' });
+        }
+
+        if (typeof username === 'string' && username.trim()) {
+            user.username = username.trim();
+        }
+        if (location !== undefined) {
+            user.location = location;
+        }
+        if (contactNumber !== undefined) {
+            user.contactNumber = contactNumber;
+        }
+        if (password !== undefined) {
+            user.password = password;
+        }
+
+        const updatedUser = await user.save();
+
+        res.json({
+            _id: updatedUser._id,
+            username: updatedUser.username,
+            role: updatedUser.role,
+            isSuperAdmin: updatedUser.isSuperAdmin,
+            permissions: updatedUser.permissions,
+            location: updatedUser.location,
+            contactNumber: updatedUser.contactNumber
+        });
+    } catch (error) {
+        if (error?.code === 11000) {
+            return res.status(400).json({ message: 'Username already exists' });
+        }
+        if (error?.name === 'CastError') {
+            return res.status(400).json({ message: 'Invalid user ID' });
+        }
+        if (error?.name === 'ValidationError') {
+            return res.status(400).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
