@@ -4,7 +4,7 @@ import { getStaff, addStaff, updateStaff, verifyStaffPin, deleteStaff, getBranch
 
 const router = express.Router();
 
-router.get('/branches', protect, getBranches);
+router.get('/branches', protect, requirePermission('view_branches'), getBranches);
 
 router.route('/')
     .get(protect, getStaff)
