@@ -9,7 +9,8 @@ const staffSchema = mongoose.Schema({
     },
     pin: {
         type: String,
-        required: true
+        required: true,
+        select: false
     },
     branches: [{
         type: mongoose.Schema.Types.ObjectId,
@@ -126,11 +127,26 @@ const staffSchema = mongoose.Schema({
         }
     }]
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: {
+        transform: (_doc, ret) => {
+            delete ret.pin;
+            return ret;
+        }
+    },
+    toObject: {
+        transform: (_doc, ret) => {
+            delete ret.pin;
+            return ret;
+        }
+    }
 });
 
 // Method to check PIN
 staffSchema.methods.matchPin = async function (enteredPin) {
+    if (typeof enteredPin !== 'string' || !enteredPin || typeof this.pin !== 'string' || !this.pin) {
+        return false;
+    }
     return await bcrypt.compare(enteredPin, this.pin);
 };
 

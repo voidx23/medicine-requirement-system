@@ -1,11 +1,11 @@
 import express from 'express';
 import { getBranches, getBranchById, createBranch, updateBranch, deleteBranch } from '../controllers/branchController.js';
-import { protect, superAdmin, admin, requirePermission } from '../middleware/authMiddleware.js';
+import { protect, requirePermission, requireAnyPermission } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.route('/')
-    .get(protect, getBranches)
+    .get(protect, requireAnyPermission(['view_branches', 'view_pharmacists', 'view_duty_schedules', 'view_requests']), getBranches)
     .post(protect, requirePermission('create_branches'), createBranch);
 
 router.route('/:id')

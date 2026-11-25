@@ -119,21 +119,45 @@ const LEGACY_MAPPING = {
   edit_duty_schedules: ['duty_schedules', 'workforce'],
 };
 
+export const hasPermission = (user, permission) => {
+    if (!user || user.role !== 'admin') {
+        return false;
+    }
+    if (user.isSuperAdmin === true) {
+        return true;
+    }
+    if (!Array.isArray(user.permissions)) {
+        return false;
+    }
+    if (user.permissions.includes(permission)) {
+        return true;
+    }
+    const legacyFallbacks = LEGACY_MAPPING[permission] || [];
+    return legacyFallbacks.some((legacyPerm) => user.permissions.includes(legacyPerm));
+};
+
+export const hasAnyPermission = (user, permissions = []) => {
+    if (!Array.isArray(permissions) || permissions.length === 0) {
+        return false;
+    }
+    return permissions.some((permission) => hasPermission(user, permission));
+};
+
 export const requirePermission = (permission) => {
     return (req, res, next) => {
-        if (req.user && req.user.role === 'admin' && req.user.isSuperAdmin) {
+        if (hasPermission(req.user, permission)) {
             return next();
         }
-        if (req.user && req.user.role === 'admin' && req.user.permissions) {
-            if (req.user.permissions.includes(permission)) {
-                return next();
-            }
-            const legacyFallbacks = LEGACY_MAPPING[permission] || [];
-            const hasLegacyFallback = legacyFallbacks.some(legacyPerm => req.user.permissions.includes(legacyPerm));
-            if (hasLegacyFallback) {
-                return next();
-            }
-        }
         res.status(403).json({ message: `Forbidden: Requires ${permission} permission` });
+    };
+};
+
+export const requireAnyPermission = (permissions = []) => {
+    const list = Array.isArray(permissions) ? permissions : [permissions];
+    return (req, res, next) => {
+        if (hasAnyPermission(req.user, list)) {
+            return next();
+        }
+        res.status(403).json({ message: `Forbidden: Requires one of [${list.join(', ')}] permissions` });
     };
 };

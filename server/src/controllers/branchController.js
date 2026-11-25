@@ -1,8 +1,18 @@
+import mongoose from 'mongoose';
 import Branch from '../models/Branch.js';
 import PharmacistRequest from '../models/PharmacistRequest.js';
 import Task from '../models/Task.js';
 import Staff from '../models/Staff.js';
 import { signAuthToken } from '../config/jwtConfig.js';
+import { hasPermission, hasAnyPermission } from '../middleware/authMiddleware.js';
+
+const BRANCH_DIRECTORY_PERMISSIONS = ['view_branches', 'view_pharmacists', 'view_duty_schedules', 'view_requests'];
+
+const isValidObjectIdString = (value) => (
+    typeof value === 'string'
+    && /^[0-9a-fA-F]{24}$/.test(value)
+    && mongoose.Types.ObjectId.isValid(value)
+);
 
 const generateToken = (id, role = 'branch') => {
     return signAuthToken({ id, role });
@@ -10,10 +20,14 @@ const generateToken = (id, role = 'branch') => {
 
 // @desc    Get all branches
 // @route   GET /api/branches
-// @access  Private (Admin)
+// @access  Private (Admin with directory permission)
 export const getBranches = async (req, res) => {
     try {
-        const branches = await Branch.find({}).select('-password').sort({ name: 1 });
+        if (!hasAnyPermission(req.user, BRANCH_DIRECTORY_PERMISSIONS)) {
+            return res.status(403).json({ message: 'Forbidden: Insufficient permissions to view branches' });
+        }
+        const projection = hasPermission(req.user, 'view_branches') ? '-password' : '_id name';
+        const branches = await Branch.find({}).select(projection).sort({ name: 1 });
         res.json(branches);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
@@ -22,9 +36,27 @@ export const getBranches = async (req, res) => {
 
 // @desc    Get single branch
 // @route   GET /api/branches/:id
-// @access  Private
+// @access  Private (Admin with view_branches or matching Branch)
 export const getBranchById = async (req, res) => {
     try {
+        if (!req.user) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+        if (!isValidObjectIdString(req.params.id)) {
+            return res.status(400).json({ message: 'Invalid branch ID' });
+        }
+        if (req.user.role === 'branch') {
+            if (req.params.id !== String(req.user._id)) {
+                return res.status(403).json({ message: 'Forbidden: Cannot access another branch record' });
+            }
+        } else if (req.user.role === 'admin') {
+            if (!hasPermission(req.user, 'view_branches')) {
+                return res.status(403).json({ message: 'Forbidden: Requires view_branches permission' });
+            }
+        } else {
+            return res.status(403).json({ message: 'Forbidden: Unauthorized role' });
+        }
+
         const branch = await Branch.findById(req.params.id).select('-password');
         if (!branch) return res.status(404).json({ message: 'Branch not found' });
         res.json(branch);
