@@ -372,7 +372,7 @@ export const forwardItems = async (req, res) => {
 
         const atomicFilter = {
             _id: request._id,
-            forwardingProcessed: false,
+            forwardingProcessed: { $ne: true },
             status: { $in: Array.from(FORWARDABLE_REQUEST_STATUSES) },
             items: {
                 $elemMatch: {

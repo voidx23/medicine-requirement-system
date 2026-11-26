@@ -272,7 +272,13 @@ describe('H2 Security Fix — Cross-Branch Request Forwarding & Stats Authorizat
             const doc = requestRecords.find((r) => {
                 if (filter._id !== undefined && String(r._id) !== String(filter._id)) return false;
                 if (filter.pharmacistId !== undefined && String(r.pharmacistId) !== String(filter.pharmacistId)) return false;
-                if (filter.forwardingProcessed !== undefined && Boolean(r.forwardingProcessed) !== Boolean(filter.forwardingProcessed)) return false;
+                if (filter.forwardingProcessed !== undefined) {
+                    if (typeof filter.forwardingProcessed === 'object' && filter.forwardingProcessed !== null && '$ne' in filter.forwardingProcessed) {
+                        if (r.forwardingProcessed === filter.forwardingProcessed.$ne) return false;
+                    } else if (Boolean(r.forwardingProcessed) !== Boolean(filter.forwardingProcessed)) {
+                        return false;
+                    }
+                }
                 if (filter.status?.$in && !filter.status.$in.includes(r.status)) return false;
                 if (filter.items?.$elemMatch) {
                     const elemIdIn = (filter.items.$elemMatch._id?.$in || []).map(String);
@@ -751,5 +757,113 @@ describe('H2 Concurrency Guarantee (Real MongoMemoryServer Database)', () => {
         expect(freshDoc.items.id(packedItem._id).status).toBe('packed');
         expect(freshDoc.items.id(eligibleItem._id).status).toBe('forwarded');
         expect(freshDoc.items.id(unselectedItem._id).status).toBe('pending');
+    });
+
+    it('forwards an eligible legacy MongoDB document missing forwardingProcessed and persists forwardingProcessed: true', async () => {
+        const branch = await Branch.create({ name: 'Legacy Branch Single', password: 'BranchSecretPassword!4' });
+        const rawRequestId = new mongoose.Types.ObjectId();
+        const packedItemId = new mongoose.Types.ObjectId();
+        const pendingItemId = new mongoose.Types.ObjectId();
+        const unselectedItemId = new mongoose.Types.ObjectId();
+
+        await PharmacistRequest.collection.insertOne({
+            _id: rawRequestId,
+            pharmacistId: branch._id,
+            submittedBy: 'Dr. Legacy Forward',
+            status: 'partially_fulfilled',
+            items: [
+                { _id: packedItemId, medicineId: new mongoose.Types.ObjectId(), name: 'Packed Legacy Med', quantity: 2, isCustom: false, isUrgent: false, status: 'packed' },
+                { _id: pendingItemId, medicineId: new mongoose.Types.ObjectId(), name: 'Pending Legacy Med', quantity: 6, isCustom: false, isUrgent: true, status: 'pending' },
+                { _id: unselectedItemId, medicineId: new mongoose.Types.ObjectId(), name: 'Unselected Legacy Med', quantity: 4, isCustom: false, isUrgent: false, status: 'pending' },
+            ],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+
+        const rawBefore = await PharmacistRequest.collection.findOne({ _id: rawRequestId });
+        expect(rawBefore).not.toBeNull();
+        expect('forwardingProcessed' in rawBefore).toBe(false);
+
+        const token = signAuthToken({ id: branch._id, role: 'branch' });
+        const res = await request(app)
+            .post(`/api/requests/${rawRequestId.toString()}/forward`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ itemsToForward: [pendingItemId.toString()] });
+
+        expect(res.status).toBe(200);
+        expect(res.body.forwardedItems).toHaveLength(1);
+        expect(res.body.forwardedItems[0]._id).toBe(pendingItemId.toString());
+
+        const rawAfter = await PharmacistRequest.collection.findOne({ _id: rawRequestId });
+        expect(rawAfter.forwardingProcessed).toBe(true);
+        expect(rawAfter.items.find((i) => i._id.toString() === packedItemId.toString()).status).toBe('packed');
+        expect(rawAfter.items.find((i) => i._id.toString() === pendingItemId.toString()).status).toBe('forwarded');
+        expect(rawAfter.items.find((i) => i._id.toString() === unselectedItemId.toString()).status).toBe('pending');
+
+        // Subsequent forward attempt is now blocked
+        const repeatRes = await request(app)
+            .post(`/api/requests/${rawRequestId.toString()}/forward`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ itemsToForward: [unselectedItemId.toString()] });
+        expect(repeatRes.status).toBe(400);
+    });
+
+    it('prevents concurrent duplicate forwarding on a legacy MongoDB document missing forwardingProcessed', async () => {
+        const branch = await Branch.create({ name: 'Legacy Branch Race', password: 'BranchSecretPassword!5' });
+        const rawRequestId = new mongoose.Types.ObjectId();
+        const packedItemId = new mongoose.Types.ObjectId();
+        const itemAlphaId = new mongoose.Types.ObjectId();
+        const itemBetaId = new mongoose.Types.ObjectId();
+
+        await PharmacistRequest.collection.insertOne({
+            _id: rawRequestId,
+            pharmacistId: branch._id,
+            submittedBy: 'Dr. Legacy Race',
+            status: 'unfulfilled',
+            items: [
+                { _id: packedItemId, medicineId: new mongoose.Types.ObjectId(), name: 'Packed Legacy Race', quantity: 1, isCustom: false, isUrgent: false, status: 'packed' },
+                { _id: itemAlphaId, medicineId: new mongoose.Types.ObjectId(), name: 'Legacy Alpha', quantity: 5, isCustom: false, isUrgent: false, status: 'pending' },
+                { _id: itemBetaId, medicineId: new mongoose.Types.ObjectId(), name: 'Legacy Beta', quantity: 8, isCustom: false, isUrgent: true, status: 'pending' },
+            ],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+
+        const rawBefore = await PharmacistRequest.collection.findOne({ _id: rawRequestId });
+        expect('forwardingProcessed' in rawBefore).toBe(false);
+
+        const token = signAuthToken({ id: branch._id, role: 'branch' });
+        const [res1, res2] = await Promise.all([
+            request(app)
+                .post(`/api/requests/${rawRequestId.toString()}/forward`)
+                .set('Authorization', `Bearer ${token}`)
+                .send({ itemsToForward: [itemAlphaId.toString()] }),
+            request(app)
+                .post(`/api/requests/${rawRequestId.toString()}/forward`)
+                .set('Authorization', `Bearer ${token}`)
+                .send({ itemsToForward: [itemBetaId.toString()] }),
+        ]);
+
+        const responses = [res1, res2];
+        expect(responses.map((r) => r.status).sort((a, b) => a - b)).toEqual([200, 409]);
+
+        const winner = responses.find((r) => r.status === 200);
+        const loser = responses.find((r) => r.status === 409);
+        expect(winner.body.forwardedItems).toHaveLength(1);
+        expect([itemAlphaId.toString(), itemBetaId.toString()]).toContain(winner.body.forwardedItems[0]._id);
+        expect(loser.body.forwardedItems).toBeUndefined();
+
+        const rawAfter = await PharmacistRequest.collection.findOne({ _id: rawRequestId });
+        expect(rawAfter.forwardingProcessed).toBe(true);
+        expect(rawAfter.items.find((i) => i._id.toString() === packedItemId.toString()).status).toBe('packed');
+
+        const forwardedCount = [itemAlphaId, itemBetaId]
+            .map((id) => rawAfter.items.find((i) => i._id.toString() === id.toString()).status)
+            .filter((status) => status === 'forwarded').length;
+        const pendingCount = [itemAlphaId, itemBetaId]
+            .map((id) => rawAfter.items.find((i) => i._id.toString() === id.toString()).status)
+            .filter((status) => status === 'pending').length;
+        expect(forwardedCount).toBe(1);
+        expect(pendingCount).toBe(1);
     });
 });
