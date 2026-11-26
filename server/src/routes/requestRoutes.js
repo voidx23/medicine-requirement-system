@@ -7,9 +7,22 @@ const router = express.Router();
 // All routes here are protected
 router.use(protect);
 
+const allowBranchOrAdminPermission = (permission) => (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Not authorized' });
+    }
+    if (req.user.role === 'branch') {
+        return next();
+    }
+    if (req.user.role === 'admin') {
+        return requirePermission(permission)(req, res, next);
+    }
+    return res.status(403).json({ message: 'Forbidden: Unauthorized role' });
+};
+
 // Put stats route BEFORE parameterized routes to avoid conflict (though none here yet, good practice)
 router.get('/my-pending-medicines', getMyPendingMedicines);
-router.get('/stats', getStats);
+router.get('/stats', allowBranchOrAdminPermission('view_requests'), getStats);
 router.post('/submit', submitRequest);
 router.get('/', (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
@@ -22,6 +35,6 @@ router.put('/:id/items/:itemId/status', requirePermission('fulfill_requests'), u
 router.put('/:id/fulfill', requirePermission('fulfill_requests'), fulfillRequest);
 router.put('/:id/reset', requirePermission('edit_requests'), resetRequest);
 router.delete('/:id', protect, superAdmin, deleteRequest);
-router.post('/:id/forward', forwardItems);
+router.post('/:id/forward', allowBranchOrAdminPermission('forward_requests'), forwardItems);
 
 export default router;

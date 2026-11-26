@@ -1,6 +1,17 @@
+import mongoose from 'mongoose';
 import PharmacistRequest from '../models/PharmacistRequest.js';
 import User from '../models/User.js';
 import RequirementList from '../models/RequirementList.js'; // Kept for reference but not used in forwardItems anymore
+import { hasPermission } from '../middleware/authMiddleware.js';
+
+const FORWARDABLE_REQUEST_STATUSES = new Set(['partially_fulfilled', 'completed', 'unfulfilled']);
+const NON_FORWARDABLE_ITEM_STATUSES = new Set(['packed', 'forwarded']);
+
+const isValidObjectIdString = (value) => (
+    typeof value === 'string'
+    && /^[0-9a-fA-F]{24}$/.test(value)
+    && mongoose.Types.ObjectId.isValid(value)
+);
 
 // @desc    Submit a new requirement list
 // @route   POST /api/requests/submit
@@ -110,24 +121,34 @@ export const updateRequestStatus = async (req, res) => {
 };
 // @desc    Get Stats (Count of today's requests)
 // @route   GET /api/requests/stats
-// @access  Private
+// @access  Private (Branch own stats, or Admin with view_requests)
 export const getStats = async (req, res) => {
     try {
+        if (!req.user) {
+            return res.status(401).json({ message: 'Not authorized' });
+        }
+
         const today = new Date();
-        today.setHours(0,0,0,0);
-        
-        let query = {
+        today.setHours(0, 0, 0, 0);
+
+        const query = {
             createdAt: { $gte: today }
         };
 
-        if (req.user.role !== 'admin') {
+        if (req.user.role === 'branch') {
             query.pharmacistId = req.user._id;
+        } else if (req.user.role === 'admin') {
+            if (!hasPermission(req.user, 'view_requests')) {
+                return res.status(403).json({ message: 'Forbidden: Requires view_requests permission' });
+            }
+        } else {
+            return res.status(403).json({ message: 'Forbidden: Unauthorized role' });
         }
 
         const count = await PharmacistRequest.countDocuments(query);
         res.json({ todayParams: count });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
@@ -283,60 +304,130 @@ export const resetRequest = async (req, res) => {
     }
 };
 
-// @desc    Forward unfulfilled items to new request cart
-// @route   POST /api/requests/:id/forward
-// @access  Private (Pharmacist)
 // @desc    Forward unfulfilled items to new request cart (Client-side)
 // @route   POST /api/requests/:id/forward
-// @access  Private (Pharmacist)
+// @access  Private (Branch own request, or Admin with forward_requests)
 export const forwardItems = async (req, res) => {
     try {
-        const { itemsToForward } = req.body; // Array of item IDs
-        
-        const request = await PharmacistRequest.findById(req.params.id);
-        if (!request) return res.status(404).json({ message: "Request not found" });
-
-        if (request.forwardingProcessed) {
-            return res.status(400).json({ message: "This request has already been acted upon for forwarding." });
+        if (!req.user) {
+            return res.status(401).json({ message: 'Not authorized' });
         }
 
-        let forwardedItems = [];
-        
-        // Loop through request items
-        request.items.forEach(item => {
-            // Check if this item is in the 'to forward' list
-            if (itemsToForward && itemsToForward.includes(item._id.toString())) {
-                
-                // Collect item details to return to client
-                forwardedItems.push({
-                    _id: item._id, // Original ID ref (optional)
-                    medicineId: item.medicineId,
-                    name: item.name,
-                    quantity: item.quantity,
-                    isCustom: item.isCustom,
-                    isUrgent: !!item.isUrgent
-                });
-
-                // Mark as forwarded in OLD list
-                item.status = 'forwarded';
-
-            } else {
-                // Ignore unselected items (leave as skipped/pending)
+        if (req.user.role === 'admin') {
+            if (!hasPermission(req.user, 'forward_requests')) {
+                return res.status(403).json({ message: 'Forbidden: Requires forward_requests permission' });
             }
+        } else if (req.user.role !== 'branch') {
+            return res.status(403).json({ message: 'Forbidden: Unauthorized role' });
+        }
+
+        if (!isValidObjectIdString(req.params.id)) {
+            return res.status(400).json({ message: 'Invalid request ID' });
+        }
+
+        const request = await PharmacistRequest.findById(req.params.id);
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+
+        if (req.user.role === 'branch' && String(request.pharmacistId) !== String(req.user._id)) {
+            return res.status(403).json({ message: 'Forbidden: Cannot forward items from another branch request' });
+        }
+
+        const { itemsToForward } = req.body || {};
+        if (!Array.isArray(itemsToForward) || itemsToForward.length === 0) {
+            return res.status(400).json({ message: 'itemsToForward must be a non-empty array of item IDs' });
+        }
+
+        if (!itemsToForward.every(isValidObjectIdString)) {
+            return res.status(400).json({ message: 'itemsToForward contains an invalid item ID' });
+        }
+
+        if (request.forwardingProcessed) {
+            return res.status(400).json({ message: 'This request has already been acted upon for forwarding.' });
+        }
+
+        if (!FORWARDABLE_REQUEST_STATUSES.has(request.status)) {
+            return res.status(400).json({ message: 'Only processed requests can be forwarded.' });
+        }
+
+        const selectedItemIds = new Set(itemsToForward);
+        const requestItemIds = new Set(request.items.map((item) => item._id.toString()));
+        for (const selectedId of selectedItemIds) {
+            if (!requestItemIds.has(selectedId)) {
+                return res.status(400).json({ message: 'itemsToForward contains an item ID not found in this request' });
+            }
+        }
+
+        const eligibleItems = request.items.filter(
+            (item) => selectedItemIds.has(item._id.toString()) && !NON_FORWARDABLE_ITEM_STATUSES.has(item.status)
+        );
+
+        if (eligibleItems.length === 0) {
+            return res.status(400).json({ message: 'No eligible items selected for forwarding' });
+        }
+
+        const eligibleObjectIds = eligibleItems.map((item) => item._id);
+        const eligibleIdSet = new Set(eligibleItems.map((item) => item._id.toString()));
+
+        const atomicFilter = {
+            _id: request._id,
+            forwardingProcessed: false,
+            status: { $in: Array.from(FORWARDABLE_REQUEST_STATUSES) },
+            items: {
+                $elemMatch: {
+                    _id: { $in: eligibleObjectIds },
+                    status: { $nin: Array.from(NON_FORWARDABLE_ITEM_STATUSES) }
+                }
+            }
+        };
+
+        if (req.user.role === 'branch') {
+            atomicFilter.pharmacistId = req.user._id;
+        }
+
+        const updatedRequest = await PharmacistRequest.findOneAndUpdate(
+            atomicFilter,
+            {
+                $set: {
+                    forwardingProcessed: true,
+                    'items.$[elem].status': 'forwarded'
+                }
+            },
+            {
+                arrayFilters: [
+                    {
+                        'elem._id': { $in: eligibleObjectIds },
+                        'elem.status': { $nin: Array.from(NON_FORWARDABLE_ITEM_STATUSES) }
+                    }
+                ],
+                new: true
+            }
+        );
+
+        if (!updatedRequest) {
+            return res.status(409).json({
+                message: 'This request has already been acted upon for forwarding or is no longer eligible.'
+            });
+        }
+
+        const forwardedItems = updatedRequest.items
+            .filter((item) => eligibleIdSet.has(item._id.toString()) && item.status === 'forwarded')
+            .map((item) => ({
+                _id: item._id,
+                medicineId: item.medicineId,
+                name: item.name,
+                quantity: item.quantity,
+                isCustom: item.isCustom,
+                isUrgent: !!item.isUrgent
+            }));
+
+        res.json({
+            message: `Successfully forwarded ${forwardedItems.length} items.`,
+            forwardedItems
         });
-
-        request.forwardingProcessed = true;
-        
-        await request.save();
-
-        // Return the forwarded items so client can add them to localStorage cart
-        res.json({ 
-            message: `Successfully forwarded ${forwardedItems.length} items.`, 
-            forwardedItems 
-        });
-
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'Server Error' });
     }
 };
 
