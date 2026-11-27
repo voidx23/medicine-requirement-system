@@ -70,7 +70,11 @@ export const getSystemVersion = async (req, res) => {
         if (!config) {
             config = await SystemConfig.create({ clientVersion: 1, versionString: 'v1.0.0' });
         }
-        res.json({ clientVersion: config.clientVersion, versionString: config.versionString });
+        res.json({
+            clientVersion: config.clientVersion,
+            versionString: config.versionString,
+            expectedBuildId: config.expectedBuildId || process.env.EXPECTED_CLIENT_BUILD_ID || null,
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -78,7 +82,7 @@ export const getSystemVersion = async (req, res) => {
 
 export const forceRefreshClients = async (req, res) => {
     try {
-        const { updateType } = req.body;
+        const { updateType, expectedBuildId } = req.body || {};
         let config = await SystemConfig.findOne();
         if (!config) {
             config = await SystemConfig.create({ clientVersion: 1, versionString: 'v1.0.0' });
@@ -101,10 +105,19 @@ export const forceRefreshClients = async (req, res) => {
             }
             config.versionString = `v${parts.join('.')}`;
         }
+
+        if (typeof expectedBuildId === 'string' && expectedBuildId.trim()) {
+            config.expectedBuildId = expectedBuildId.trim();
+        }
         
         config.clientVersion += 1;
         await config.save();
-        res.json({ message: 'Clients forced to refresh', clientVersion: config.clientVersion, versionString: config.versionString });
+        res.json({
+            message: 'Clients forced to refresh',
+            clientVersion: config.clientVersion,
+            versionString: config.versionString,
+            expectedBuildId: config.expectedBuildId || null,
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -114,9 +127,24 @@ import Branch from '../models/Branch.js';
 
 export const updateTelemetry = async (req, res) => {
     try {
-        const { versionString } = req.body;
-        if (req.user && req.user.role === 'branch' && versionString) {
-            await Branch.findByIdAndUpdate(req.user._id, { appVersion: versionString });
+        const { buildId, versionString } = req.body || {};
+        if (req.user && req.user.role === 'branch') {
+            const trimmedBuildId = typeof buildId === 'string' ? buildId.trim() : '';
+            const trimmedVersion = typeof versionString === 'string' ? versionString.trim() : '';
+
+            if (trimmedBuildId) {
+                await Branch.findByIdAndUpdate(req.user._id, {
+                    clientBuildId: trimmedBuildId,
+                    appVersion: trimmedBuildId,
+                    lastTelemetryAt: new Date(),
+                });
+            } else if (trimmedVersion) {
+                // Legacy cached bundle reporting only server versionString: keep clientBuildId distinct/unmodified
+                await Branch.findByIdAndUpdate(req.user._id, {
+                    appVersion: trimmedVersion,
+                    lastTelemetryAt: new Date(),
+                });
+            }
         }
         res.json({ message: 'Telemetry logged' });
     } catch (error) {

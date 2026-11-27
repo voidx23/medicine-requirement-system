@@ -9,6 +9,10 @@ const systemConfigSchema = new mongoose.Schema({
         type: String,
         default: '1.0.0', // SemVer string for display
     },
+    expectedBuildId: {
+        type: String,
+        default: null, // Expected compile-time frontend build identifier
+    },
     // We can add future global configs here if needed
 }, { timestamps: true });
 

@@ -1,5 +1,6 @@
 import express from 'express';
 import { protect, admin, superAdmin, requirePermission } from '../middleware/authMiddleware.js';
+import verifyPinRateLimiter from '../middleware/verifyPinRateLimiter.js';
 import { getStaff, addStaff, updateStaff, verifyStaffPin, deleteStaff, getBranches, assignStaffToBranch, removeStaffFromBranch } from '../controllers/staffController.js';
 
 const router = express.Router();
@@ -10,7 +11,7 @@ router.route('/')
     .get(protect, getStaff)
     .post(protect, requirePermission('create_pharmacist_accounts'), addStaff);
 
-router.post('/verify', protect, verifyStaffPin);
+router.post('/verify', protect, verifyPinRateLimiter, verifyStaffPin);
 
 router.route('/:id')
     .put(protect, requirePermission('edit_pharmacist_accounts'), updateStaff)

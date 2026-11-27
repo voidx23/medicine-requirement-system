@@ -83,10 +83,22 @@ export function signAuthToken(payload, options = {}) {
 }
 
 /**
- * Verifies an authentication JWT using the centralized secret.
+ * Verifies an authentication JWT using the centralized secret and rejects verification-purpose tokens.
  */
 export function verifyAuthToken(token) {
-    return jwt.verify(token, getJwtSecret());
+    const decoded = jwt.verify(token, getJwtSecret());
+    const audValues = Array.isArray(decoded?.aud) ? decoded.aud : [decoded?.aud];
+    if (
+        !decoded ||
+        typeof decoded !== 'object' ||
+        decoded.purpose === STAFF_VERIFICATION_PURPOSE ||
+        audValues.includes(STAFF_VERIFICATION_PURPOSE)
+    ) {
+        const err = new Error('Verification tokens cannot be used for authentication');
+        err.name = 'InvalidAuthTokenError';
+        throw err;
+    }
+    return decoded;
 }
 
 export const STAFF_VERIFICATION_EXPIRES_IN = '5m';
@@ -138,7 +150,10 @@ export function verifyStaffVerificationToken(token) {
         'id' in decoded ||
         'role' in decoded ||
         decoded.purpose !== STAFF_VERIFICATION_PURPOSE ||
-        !decoded.jti ||
+        typeof decoded.jti !== 'string' ||
+        !decoded.jti.trim() ||
+        typeof decoded.exp !== 'number' ||
+        !Number.isFinite(decoded.exp) ||
         !decoded.branchId ||
         !decoded.staffId
     ) {

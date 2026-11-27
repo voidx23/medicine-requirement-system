@@ -90,7 +90,7 @@ describe('PharmacistNewRequest verification token flow', () => {
         });
     });
 
-    it('submits verificationToken without submittedBy and clears draft cart on 201', async () => {
+    it('Stage A: sends verificationToken when returned by /staff/verify and clears draft cart on 201', async () => {
         api.post.mockResolvedValue({ data: { _id: 'req-1', submittedBy: 'Dr. Amina Al Balushi' } });
 
         render(
@@ -112,11 +112,42 @@ describe('PharmacistNewRequest verification token flow', () => {
         expect(payload).toEqual({
             items: draftItems,
             verificationToken: 'tok-submit-123',
+            submittedBy: 'Dr. Amina Al Balushi',
         });
-        expect(payload).not.toHaveProperty('submittedBy');
 
         await waitFor(() => expect(localStorage.getItem(storageKey)).toBe('[]'));
         expect(window.alert).toHaveBeenCalledWith('Request Submitted Successfully! Signed by: Dr. Amina Al Balushi');
+    });
+
+    it('Stage A fallback: submits temporary legacy payload when old backend omits verificationToken', async () => {
+        staffService.verify.mockResolvedValue({
+            verified: true,
+            staffId: 'staff-1',
+            name: 'Dr. Amina Al Balushi',
+        });
+        api.post.mockResolvedValue({ data: { _id: 'req-legacy-1', submittedBy: 'Dr. Amina Al Balushi' } });
+
+        render(
+            <AuthContext.Provider value={{ user: branchUser }}>
+                <PharmacistNewRequest />
+            </AuthContext.Provider>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+        await waitFor(() => expect(screen.getByRole('option', { name: 'Dr. Amina Al Balushi' })).toBeInTheDocument());
+
+        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'staff-1' } });
+        fireEvent.change(screen.getByPlaceholderText('****'), { target: { value: '1234' } });
+        fireEvent.click(screen.getByRole('button', { name: /sign & submit/i }));
+
+        await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
+        const [url, payload] = api.post.mock.calls[0];
+        expect(url).toBe('/requests/submit');
+        expect(payload).toEqual({
+            items: draftItems,
+            submittedBy: 'Dr. Amina Al Balushi',
+        });
+        expect(payload).not.toHaveProperty('verificationToken');
     });
 
     it('preserves draft cart and reopens PIN modal with error message when verification token is rejected (409/401)', async () => {

@@ -9,6 +9,9 @@ import {
     getJwtSecret,
     signAuthToken,
     verifyAuthToken,
+    signStaffVerificationToken,
+    verifyStaffVerificationToken,
+    STAFF_VERIFICATION_PURPOSE,
     JWT_EXPIRES_IN,
     MIN_JWT_SECRET_LENGTH,
 } from '../config/jwtConfig.js';
@@ -134,4 +137,91 @@ describe('JWT Secret Configuration & Validation (Phase 1A)', () => {
         expect(result.stderr).toContain('JWT configuration error');
         expect(result.stdout).not.toContain('Server running');
     }, 15000);
+
+    it('rejects request_submission verification tokens in verifyAuthToken and enforces strict claim/alg validation in verifyStaffVerificationToken', () => {
+        const strongSecret = makeRandomSecret(32);
+        process.env.NODE_ENV = 'production';
+        process.env.JWT_SECRET = strongSecret;
+
+        const verificationToken = signStaffVerificationToken({
+            branchId: '64f0000000000000000000a1',
+            staffId: '64f000000000000000000101',
+            staffName: 'Dr. Amina Al Balushi',
+        });
+        expect(() => verifyAuthToken(verificationToken)).toThrow(/cannot be used for authentication/i);
+
+        const purposePoisonedAuth = jwt.sign(
+            { id: '64f0000000000000000000a1', purpose: STAFF_VERIFICATION_PURPOSE },
+            strongSecret,
+            { algorithm: 'HS256', expiresIn: '5m' }
+        );
+        expect(() => verifyAuthToken(purposePoisonedAuth)).toThrow(/cannot be used for authentication/i);
+
+        // Valid audience + wrong purpose
+        const badPurpose = jwt.sign(
+            {
+                branchId: '64f0000000000000000000a1',
+                staffId: '64f000000000000000000101',
+                staffName: 'Dr. Amina',
+                purpose: 'wrong_purpose',
+            },
+            strongSecret,
+            { algorithm: 'HS256', expiresIn: '5m', audience: STAFF_VERIFICATION_PURPOSE, jwtid: 'jti-1' }
+        );
+        expect(() => verifyStaffVerificationToken(badPurpose)).toThrow();
+
+        // Wrong audience + valid purpose
+        const badAud = jwt.sign(
+            {
+                branchId: '64f0000000000000000000a1',
+                staffId: '64f000000000000000000101',
+                staffName: 'Dr. Amina',
+                purpose: STAFF_VERIFICATION_PURPOSE,
+            },
+            strongSecret,
+            { algorithm: 'HS256', expiresIn: '5m', audience: 'wrong_aud', jwtid: 'jti-2' }
+        );
+        expect(() => verifyStaffVerificationToken(badAud)).toThrow();
+
+        // Blank/whitespace jti
+        const blankJti = jwt.sign(
+            {
+                branchId: '64f0000000000000000000a1',
+                staffId: '64f000000000000000000101',
+                staffName: 'Dr. Amina',
+                purpose: STAFF_VERIFICATION_PURPOSE,
+            },
+            strongSecret,
+            { algorithm: 'HS256', expiresIn: '5m', audience: STAFF_VERIFICATION_PURPOSE, jwtid: '   ' }
+        );
+        expect(() => verifyStaffVerificationToken(blankJti)).toThrow();
+
+        // Missing numeric exp
+        const noExp = jwt.sign(
+            {
+                branchId: '64f0000000000000000000a1',
+                staffId: '64f000000000000000000101',
+                staffName: 'Dr. Amina',
+                purpose: STAFF_VERIFICATION_PURPOSE,
+            },
+            strongSecret,
+            { algorithm: 'HS256', audience: STAFF_VERIFICATION_PURPOSE, jwtid: 'jti-3' }
+        );
+        expect(() => verifyStaffVerificationToken(noExp)).toThrow();
+
+        // Unsupported algorithms (HS384, HS512, none)
+        for (const alg of ['HS384', 'HS512', 'none']) {
+            const badAlg = jwt.sign(
+                {
+                    branchId: '64f0000000000000000000a1',
+                    staffId: '64f000000000000000000101',
+                    staffName: 'Dr. Amina',
+                    purpose: STAFF_VERIFICATION_PURPOSE,
+                },
+                alg === 'none' ? '' : strongSecret,
+                { algorithm: alg, expiresIn: '5m', audience: STAFF_VERIFICATION_PURPOSE, jwtid: `jti-${alg}` }
+            );
+            expect(() => verifyStaffVerificationToken(badAlg)).toThrow();
+        }
+    });
 });
