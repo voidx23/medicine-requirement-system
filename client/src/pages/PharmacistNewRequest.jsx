@@ -30,6 +30,7 @@ const PharmacistNewRequest = () => {
         }
     }, [requestItems, STORAGE_KEY, user]);
     const [verifyModalOpen, setVerifyModalOpen] = useState(false);
+    const [verifyError, setVerifyError] = useState('');
     const [submittedToday, setSubmittedToday] = useState(0);
 
     // Auto-scroll
@@ -267,23 +268,43 @@ const PharmacistNewRequest = () => {
 
     const handleSubmitRequest = () => {
         if (requestItems.length === 0) return;
+        setVerifyError('');
         setVerifyModalOpen(true);
     };
 
-    const handleStaffVerified = async (staffName) => {
+    const handleStaffVerified = async (verification) => {
+        const staffName = verification?.name;
+        const verificationToken = verification?.verificationToken;
+
         try {
-            await api.post('/requests/submit', { items: requestItems, submittedBy: staffName });
+            // TEMPORARY Stage A fallback — removed in Stage C:
+            // Tolerate pre-H2-3 backend responses missing verificationToken during staggered rollout.
+            const payload = verificationToken
+                ? { items: requestItems, verificationToken, submittedBy: staffName }
+                : { items: requestItems, submittedBy: staffName };
+
+            await api.post('/requests/submit', payload);
+            setVerifyError('');
             setRequestItems([]);
             if (user?._id) {
                 localStorage.removeItem(STORAGE_KEY);
             }
             fetchStats(); // Refresh count
             await fetchPendingServerItems(); // Update pending items to prevent immediate duplicates
-            
+
             alert(`Request Submitted Successfully! Signed by: ${staffName}`);
         } catch (error) {
             console.error(error);
-            alert('Failed to submit request: ' + (error.response?.data?.message || error.message));
+            const status = error.response?.status;
+            const message = error.response?.data?.message || error.message;
+
+            if (status === 401 || status === 403 || status === 409) {
+                setVerifyError(message || 'Staff verification expired or invalid. Please re-verify your PIN.');
+                setVerifyModalOpen(true);
+                return;
+            }
+
+            alert('Failed to submit request: ' + message);
         }
     };
 
@@ -666,8 +687,12 @@ const PharmacistNewRequest = () => {
             
             <StaffVerificationModal
                 isOpen={verifyModalOpen}
-                onClose={() => setVerifyModalOpen(false)}
+                onClose={() => {
+                    setVerifyModalOpen(false);
+                    setVerifyError('');
+                }}
                 onVerified={handleStaffVerified}
+                initialError={verifyError}
             />
 
             <CustomItemModal

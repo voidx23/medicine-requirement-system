@@ -41,7 +41,7 @@ const staffService = {
 
     // Verify PIN
     verify: async (staffId, pin) => {
-        // Returns { verified: true, staffId, name } or throws error
+        // Returns { verified: true, staffId, name, verificationToken?, expiresInSeconds? } or throws error
         const { data } = await api.post('/staff/verify', { staffId, pin });
         return data;
     },

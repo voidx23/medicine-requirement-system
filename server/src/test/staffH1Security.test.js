@@ -4,7 +4,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import staffRoutes from '../routes/staffRoutes.js';
 import branchRoutes from '../routes/branchRoutes.js';
 import { getStaff } from '../controllers/staffController.js';
-import { signAuthToken } from '../config/jwtConfig.js';
+import {
+    signAuthToken,
+    signStaffVerificationToken,
+    verifyStaffVerificationToken,
+    STAFF_VERIFICATION_EXPIRES_IN_SECONDS,
+    STAFF_VERIFICATION_PURPOSE,
+} from '../config/jwtConfig.js';
+import { resetVerifyPinRateLimiter } from '../middleware/verifyPinRateLimiter.js';
 import Staff from '../models/Staff.js';
 import Branch from '../models/Branch.js';
 import User from '../models/User.js';
@@ -225,6 +232,7 @@ describe('H1 Security Fix — Cross-Branch Staff PII, PIN Hash Exposure & Direct
 
     beforeEach(() => {
         app = createTestApp();
+        resetVerifyPinRateLimiter();
         lastStaffFindByIdSelect = null;
         lastMatchPinCalled = false;
 
@@ -659,8 +667,39 @@ describe('H1 Security Fix — Cross-Branch Staff PII, PIN Hash Exposure & Direct
                 verified: true,
                 staffId: staffBranchAId,
                 name: 'Dr. Amina Al Balushi',
+                verificationToken: expect.any(String),
+                expiresInSeconds: STAFF_VERIFICATION_EXPIRES_IN_SECONDS,
             });
             expect(res.body).not.toHaveProperty('pin');
+
+            const decoded = verifyStaffVerificationToken(res.body.verificationToken);
+            expect(decoded.branchId).toBe(branchAId);
+            expect(decoded.staffId).toBe(staffBranchAId);
+            expect(decoded.staffName).toBe('Dr. Amina Al Balushi');
+            expect(decoded.purpose).toBe(STAFF_VERIFICATION_PURPOSE);
+            expect(decoded.aud).toBe(STAFF_VERIFICATION_PURPOSE);
+            expect(typeof decoded.jti).toBe('string');
+            expect(decoded.jti.length).toBeGreaterThan(0);
+            expect(decoded).not.toHaveProperty('id');
+            expect(decoded).not.toHaveProperty('role');
+        });
+
+        it('allows authorized admin verification without issuing a branch submission token', async () => {
+            const dutyManagerToken = signAuthToken({ id: dutyManagerId, role: 'admin' });
+
+            const res = await request(app)
+                .post('/api/staff/verify')
+                .set('Authorization', `Bearer ${dutyManagerToken}`)
+                .send({ staffId: staffBranchAId, pin: '1234' });
+
+            expect(res.status).toBe(200);
+            expect(res.body).toEqual({
+                verified: true,
+                staffId: staffBranchAId,
+                name: 'Dr. Amina Al Balushi',
+            });
+            expect(res.body).not.toHaveProperty('verificationToken');
+            expect(res.body).not.toHaveProperty('expiresInSeconds');
         });
 
         it('rejects cross-branch PIN verification before checking the PIN', async () => {
@@ -723,6 +762,45 @@ describe('H1 Security Fix — Cross-Branch Staff PII, PIN Hash Exposure & Direct
                 .set('Authorization', `Bearer ${unprivilegedToken}`)
                 .send({ staffId: staffBranchAId, pin: '1234' });
             expect(unprivilegedRes.status).toBe(403);
+        });
+
+        it('rejects verification-purpose JWTs in protect middleware without querying User or Branch', async () => {
+            const verificationToken = signStaffVerificationToken({
+                branchId: branchAId,
+                staffId: staffBranchAId,
+                staffName: 'Dr. Amina Al Balushi',
+            });
+            const branchFindSpy = vi.spyOn(Branch, 'findById');
+            const userFindSpy = vi.spyOn(User, 'findById');
+
+            const res = await request(app)
+                .get('/api/staff')
+                .set('Authorization', `Bearer ${verificationToken}`);
+
+            expect(res.status).toBe(401);
+            expect(branchFindSpy).not.toHaveBeenCalled();
+            expect(userFindSpy).not.toHaveBeenCalled();
+        });
+
+        it('rate-limits repeated POST /api/staff/verify attempts per caller and staffId with 429', async () => {
+            const branchAToken = signAuthToken({ id: branchAId, role: 'branch' });
+
+            for (let i = 0; i < 15; i += 1) {
+                const attemptRes = await request(app)
+                    .post('/api/staff/verify')
+                    .set('Authorization', `Bearer ${branchAToken}`)
+                    .send({ staffId: staffBranchAId, pin: '0000' });
+                expect(attemptRes.status).toBe(401);
+            }
+
+            const blockedRes = await request(app)
+                .post('/api/staff/verify')
+                .set('Authorization', `Bearer ${branchAToken}`)
+                .send({ staffId: staffBranchAId, pin: '1234' });
+
+            expect(blockedRes.status).toBe(429);
+            expect(blockedRes.headers['retry-after']).toBeDefined();
+            expect(blockedRes.body.message).toMatch(/too many pin verification attempts/i);
         });
     });
 
