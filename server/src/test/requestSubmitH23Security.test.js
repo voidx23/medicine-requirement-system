@@ -465,4 +465,128 @@ describe('H2-3 Security Fix — Authenticated Staff Verification & Single-Use Re
         expect(errRes.status).toBe(500);
         expect(errRes.body).toEqual({ message: 'Server Error' });
     });
+
+    it('rejects isolated wrong-purpose, wrong-audience, and unsupported JWT algorithms (HS384, HS512, none)', async () => {
+        const branchAToken = signAuthToken({ id: branchA._id, role: 'branch' });
+        const medId = new mongoose.Types.ObjectId().toString();
+        const items = [{ _id: medId, name: 'Amoxicillin 500mg', quantity: 2 }];
+
+        const validAudWrongPurpose = jwt.sign(
+            {
+                branchId: branchA._id.toString(),
+                staffId: staffActive._id.toString(),
+                staffName: staffActive.name,
+                purpose: 'tampered_purpose',
+            },
+            getJwtSecret(),
+            { algorithm: 'HS256', expiresIn: '5m', audience: STAFF_VERIFICATION_PURPOSE, jwtid: 'iso-aud-1' }
+        );
+
+        const wrongAudValidPurpose = jwt.sign(
+            {
+                branchId: branchA._id.toString(),
+                staffId: staffActive._id.toString(),
+                staffName: staffActive.name,
+                purpose: STAFF_VERIFICATION_PURPOSE,
+            },
+            getJwtSecret(),
+            { algorithm: 'HS256', expiresIn: '5m', audience: 'wrong_audience', jwtid: 'iso-pur-1' }
+        );
+
+        const algTokens = ['HS384', 'HS512', 'none'].map((alg) =>
+            jwt.sign(
+                {
+                    branchId: branchA._id.toString(),
+                    staffId: staffActive._id.toString(),
+                    staffName: staffActive.name,
+                    purpose: STAFF_VERIFICATION_PURPOSE,
+                },
+                alg === 'none' ? '' : getJwtSecret(),
+                { algorithm: alg, expiresIn: '5m', audience: STAFF_VERIFICATION_PURPOSE, jwtid: `alg-${alg}` }
+            )
+        );
+
+        for (const token of [validAudWrongPurpose, wrongAudValidPurpose, ...algTokens]) {
+            const res = await request(app)
+                .post('/api/requests/submit')
+                .set('Authorization', `Bearer ${branchAToken}`)
+                .send({ items, verificationToken: token });
+            expect(res.status).toBe(401);
+        }
+        expect(await UsedVerificationToken.countDocuments()).toBe(0);
+        expect(await PharmacistRequest.countDocuments()).toBe(0);
+    });
+
+    it('returns sanitized 500 (never 409) when UsedVerificationToken.create fails with a non-11000 database error', async () => {
+        const branchAToken = signAuthToken({ id: branchA._id, role: 'branch' });
+        const verifyRes = await request(app)
+            .post('/api/staff/verify')
+            .set('Authorization', `Bearer ${branchAToken}`)
+            .send({ staffId: staffActive._id.toString(), pin: '1234' });
+
+        const createSpy = vi.spyOn(UsedVerificationToken, 'create').mockRejectedValueOnce(new Error('Primary write timeout'));
+        const res = await request(app)
+            .post('/api/requests/submit')
+            .set('Authorization', `Bearer ${branchAToken}`)
+            .send({
+                items: [{ _id: 'custom-timeout-1', name: 'Urgent Med', quantity: 1, isCustom: true }],
+                verificationToken: verifyRes.body.verificationToken,
+            });
+        createSpy.mockRestore();
+
+        expect(res.status).toBe(500);
+        expect(res.body).toEqual({ message: 'Server Error' });
+        expect(await PharmacistRequest.countDocuments()).toBe(0);
+    });
+
+    it('rejects boolean/negative quantities before token consumption, handles deleted staff (401), and uses live renamed Staff.name', async () => {
+        const branchAToken = signAuthToken({ id: branchA._id, role: 'branch' });
+        const medId = new mongoose.Types.ObjectId().toString();
+
+        const verifyRes = await request(app)
+            .post('/api/staff/verify')
+            .set('Authorization', `Bearer ${branchAToken}`)
+            .send({ staffId: staffActive._id.toString(), pin: '1234' });
+
+        for (const badQty of [true, false, null, '', -1, -5]) {
+            const badQtyRes = await request(app)
+                .post('/api/requests/submit')
+                .set('Authorization', `Bearer ${branchAToken}`)
+                .send({
+                    items: [{ _id: medId, name: 'Valid Name', quantity: badQty }],
+                    verificationToken: verifyRes.body.verificationToken,
+                });
+            expect(badQtyRes.status).toBe(400);
+        }
+        expect(await UsedVerificationToken.countDocuments()).toBe(0);
+
+        // Rename staff in DB after token issuance -> live DB name overrides token claim
+        await Staff.findByIdAndUpdate(staffActive._id, { name: 'Dr. Amina Updated Name' });
+        const validSubmit = await request(app)
+            .post('/api/requests/submit')
+            .set('Authorization', `Bearer ${branchAToken}`)
+            .send({
+                items: [{ _id: medId, name: 'Valid Name', quantity: 3 }],
+                verificationToken: verifyRes.body.verificationToken,
+            });
+        expect(validSubmit.status).toBe(201);
+        expect(validSubmit.body.submittedBy).toBe('Dr. Amina Updated Name');
+
+        // Delete staff after issuing a second token -> rejected 401 before consuming token
+        const secondVerify = await request(app)
+            .post('/api/staff/verify')
+            .set('Authorization', `Bearer ${branchAToken}`)
+            .send({ staffId: staffActive._id.toString(), pin: '1234' });
+        await Staff.findByIdAndDelete(staffActive._id);
+
+        const deletedStaffRes = await request(app)
+            .post('/api/requests/submit')
+            .set('Authorization', `Bearer ${branchAToken}`)
+            .send({
+                items: [{ _id: medId, name: 'Valid Name', quantity: 2 }],
+                verificationToken: secondVerify.body.verificationToken,
+            });
+        expect(deletedStaffRes.status).toBe(401);
+        expect(await UsedVerificationToken.countDocuments()).toBe(1);
+    });
 });

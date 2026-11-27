@@ -276,14 +276,17 @@ const PharmacistNewRequest = () => {
         const staffName = verification?.name;
         const verificationToken = verification?.verificationToken;
 
-        try {
-            // TEMPORARY Stage A fallback — removed in Stage C:
-            // Tolerate pre-H2-3 backend responses missing verificationToken during staggered rollout.
-            const payload = verificationToken
-                ? { items: requestItems, verificationToken, submittedBy: staffName }
-                : { items: requestItems, submittedBy: staffName };
+        if (!verificationToken) {
+            setVerifyError('Staff verification token was missing. Please re-verify your PIN.');
+            setVerifyModalOpen(true);
+            return;
+        }
 
-            await api.post('/requests/submit', payload);
+        try {
+            await api.post('/requests/submit', {
+                items: requestItems,
+                verificationToken,
+            });
             setVerifyError('');
             setRequestItems([]);
             if (user?._id) {

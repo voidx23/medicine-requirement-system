@@ -79,6 +79,14 @@ export const submitRequest = async (req, res) => {
                 return res.status(400).json({ message: 'Each request item must have a non-empty name' });
             }
 
+            if (
+                typeof item.quantity === 'boolean'
+                || item.quantity === null
+                || item.quantity === ''
+            ) {
+                return res.status(400).json({ message: 'Each request item must have a positive integer quantity' });
+            }
+
             const quantity = Number(item.quantity);
             if (!Number.isInteger(quantity) || quantity <= 0) {
                 return res.status(400).json({ message: 'Each request item must have a positive integer quantity' });

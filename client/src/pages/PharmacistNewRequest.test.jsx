@@ -90,7 +90,7 @@ describe('PharmacistNewRequest verification token flow', () => {
         });
     });
 
-    it('Stage A: sends verificationToken when returned by /staff/verify and clears draft cart on 201', async () => {
+    it('Stage C: submits mandatory verificationToken without submittedBy and clears draft cart on 201', async () => {
         api.post.mockResolvedValue({ data: { _id: 'req-1', submittedBy: 'Dr. Amina Al Balushi' } });
 
         render(
@@ -112,20 +112,19 @@ describe('PharmacistNewRequest verification token flow', () => {
         expect(payload).toEqual({
             items: draftItems,
             verificationToken: 'tok-submit-123',
-            submittedBy: 'Dr. Amina Al Balushi',
         });
+        expect(payload).not.toHaveProperty('submittedBy');
 
         await waitFor(() => expect(localStorage.getItem(storageKey)).toBe('[]'));
         expect(window.alert).toHaveBeenCalledWith('Request Submitted Successfully! Signed by: Dr. Amina Al Balushi');
     });
 
-    it('Stage A fallback: submits temporary legacy payload when old backend omits verificationToken', async () => {
+    it('Stage C: blocks submission, reopens PIN modal, and preserves draft cart when verificationToken is absent', async () => {
         staffService.verify.mockResolvedValue({
             verified: true,
             staffId: 'staff-1',
             name: 'Dr. Amina Al Balushi',
         });
-        api.post.mockResolvedValue({ data: { _id: 'req-legacy-1', submittedBy: 'Dr. Amina Al Balushi' } });
 
         render(
             <AuthContext.Provider value={{ user: branchUser }}>
@@ -140,14 +139,73 @@ describe('PharmacistNewRequest verification token flow', () => {
         fireEvent.change(screen.getByPlaceholderText('****'), { target: { value: '1234' } });
         fireEvent.click(screen.getByRole('button', { name: /sign & submit/i }));
 
-        await waitFor(() => expect(api.post).toHaveBeenCalledTimes(1));
-        const [url, payload] = api.post.mock.calls[0];
-        expect(url).toBe('/requests/submit');
-        expect(payload).toEqual({
+        await waitFor(() =>
+            expect(
+                screen.getByText('Staff verification token was missing. Please re-verify your PIN.')
+            ).toBeInTheDocument()
+        );
+        expect(api.post).not.toHaveBeenCalled();
+        expect(JSON.parse(localStorage.getItem(storageKey))).toEqual(draftItems);
+    });
+
+    it('Stage C: preserves draft cart on 401/409 and succeeds when user re-verifies PIN cleanly', async () => {
+        api.post
+            .mockRejectedValueOnce({
+                response: {
+                    status: 401,
+                    data: { message: 'Invalid or expired staff verification token. Please re-verify your PIN.' },
+                },
+            })
+            .mockResolvedValueOnce({ data: { _id: 'req-2', submittedBy: 'Dr. Amina Al Balushi' } });
+
+        staffService.verify
+            .mockResolvedValueOnce({
+                verified: true,
+                staffId: 'staff-1',
+                name: 'Dr. Amina Al Balushi',
+                verificationToken: 'expired-tok',
+                expiresInSeconds: 300,
+            })
+            .mockResolvedValueOnce({
+                verified: true,
+                staffId: 'staff-1',
+                name: 'Dr. Amina Al Balushi',
+                verificationToken: 'fresh-tok',
+                expiresInSeconds: 300,
+            });
+
+        render(
+            <AuthContext.Provider value={{ user: branchUser }}>
+                <PharmacistNewRequest />
+            </AuthContext.Provider>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+        await waitFor(() => expect(screen.getByRole('option', { name: 'Dr. Amina Al Balushi' })).toBeInTheDocument());
+
+        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'staff-1' } });
+        fireEvent.change(screen.getByPlaceholderText('****'), { target: { value: '1234' } });
+        fireEvent.click(screen.getByRole('button', { name: /sign & submit/i }));
+
+        await waitFor(() =>
+            expect(
+                screen.getByText('Invalid or expired staff verification token. Please re-verify your PIN.')
+            ).toBeInTheDocument()
+        );
+        expect(JSON.parse(localStorage.getItem(storageKey))).toEqual(draftItems);
+
+        // Retry with fresh verification inside reopened modal
+        await waitFor(() => expect(screen.getByRole('option', { name: 'Dr. Amina Al Balushi' })).toBeInTheDocument());
+        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'staff-1' } });
+        fireEvent.change(screen.getByPlaceholderText('****'), { target: { value: '1234' } });
+        fireEvent.click(screen.getByRole('button', { name: /sign & submit/i }));
+
+        await waitFor(() => expect(api.post).toHaveBeenCalledTimes(2));
+        expect(api.post.mock.calls[1][1]).toEqual({
             items: draftItems,
-            submittedBy: 'Dr. Amina Al Balushi',
+            verificationToken: 'fresh-tok',
         });
-        expect(payload).not.toHaveProperty('verificationToken');
+        await waitFor(() => expect(localStorage.getItem(storageKey)).toBe('[]'));
     });
 
     it('preserves draft cart and reopens PIN modal with error message when verification token is rejected (409/401)', async () => {

@@ -56,4 +56,33 @@ describe('StaffVerificationModal', () => {
             expiresInSeconds: 300,
         });
     });
+
+    it('displays error message and clears PIN input when PIN verification fails', async () => {
+        staffService.verify.mockRejectedValue({
+            response: { data: { message: 'Invalid PIN' } },
+        });
+
+        const onVerified = vi.fn();
+        const onClose = vi.fn();
+
+        render(
+            <StaffVerificationModal
+                isOpen={true}
+                onClose={onClose}
+                onVerified={onVerified}
+            />
+        );
+
+        await waitFor(() => expect(screen.getByRole('option', { name: 'Dr. Amina Al Balushi' })).toBeInTheDocument());
+
+        const pinInput = screen.getByPlaceholderText('****');
+        fireEvent.change(screen.getByRole('combobox'), { target: { value: 'staff-1' } });
+        fireEvent.change(pinInput, { target: { value: '9999' } });
+        fireEvent.click(screen.getByRole('button', { name: /sign & submit/i }));
+
+        await waitFor(() => expect(screen.getByText('Invalid PIN')).toBeInTheDocument());
+        expect(pinInput.value).toBe('');
+        expect(onVerified).not.toHaveBeenCalled();
+        expect(onClose).not.toHaveBeenCalled();
+    });
 });
