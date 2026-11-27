@@ -14,7 +14,9 @@ const branchSchema = new mongoose.Schema({
     },
     location: { type: String },
     contactNumber: { type: String },
-    appVersion: { type: String, default: null }
+    appVersion: { type: String, default: null },
+    clientBuildId: { type: String, default: null },
+    lastTelemetryAt: { type: Date, default: null }
 }, {
     timestamps: true
 });
