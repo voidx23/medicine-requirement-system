@@ -4,7 +4,7 @@ import Button from './Button';
 import { UserCheck, KeyRound } from 'lucide-react';
 import staffService from '../../services/staffService';
 
-const StaffVerificationModal = ({ isOpen, onClose, onVerified }) => {
+const StaffVerificationModal = ({ isOpen, onClose, onVerified, initialError = '' }) => {
     const [staffList, setStaffList] = useState([]);
     const [selectedStaff, setSelectedStaff] = useState('');
     const [pin, setPin] = useState('');
@@ -16,10 +16,10 @@ const StaffVerificationModal = ({ isOpen, onClose, onVerified }) => {
         if (isOpen) {
             loadStaff();
             setPin('');
-            setError('');
+            setError(initialError || '');
             setSelectedStaff('');
         }
-    }, [isOpen]);
+    }, [isOpen, initialError]);
 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
 
@@ -48,8 +48,14 @@ const StaffVerificationModal = ({ isOpen, onClose, onVerified }) => {
         try {
             const res = await staffService.verify(selectedStaff, pin);
             if (res.verified) {
-                onVerified(res.name); // Pass back the verified name
                 onClose();
+                onVerified({
+                    verified: true,
+                    staffId: res.staffId,
+                    name: res.name,
+                    verificationToken: res.verificationToken,
+                    expiresInSeconds: res.expiresInSeconds,
+                });
             }
         } catch (err) {
             setError(err.response?.data?.message || 'Verification Failed');

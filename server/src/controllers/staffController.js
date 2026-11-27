@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 import Staff from '../models/Staff.js';
 import Branch from '../models/Branch.js';
 import { hasPermission, hasAnyPermission } from '../middleware/authMiddleware.js';
+import {
+    signStaffVerificationToken,
+    STAFF_VERIFICATION_EXPIRES_IN_SECONDS,
+} from '../config/jwtConfig.js';
 
 const STAFF_READ_PERMISSIONS = ['view_pharmacists', 'view_branches', 'view_duty_schedules'];
 const BRANCH_STAFF_PROJECTION = '_id name designation isActive';
@@ -296,11 +300,22 @@ const verifyStaffPin = async (req, res) => {
             return res.status(401).json({ message: 'Invalid PIN' });
         }
 
-        return res.json({
+        const responsePayload = {
             verified: true,
             staffId: staff._id,
             name: staff.name
-        });
+        };
+
+        if (req.user.role === 'branch') {
+            responsePayload.verificationToken = signStaffVerificationToken({
+                branchId: req.user._id,
+                staffId: staff._id,
+                staffName: staff.name
+            });
+            responsePayload.expiresInSeconds = STAFF_VERIFICATION_EXPIRES_IN_SECONDS;
+        }
+
+        return res.json(responsePayload);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }

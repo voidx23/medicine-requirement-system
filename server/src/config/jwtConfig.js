@@ -88,3 +88,64 @@ export function signAuthToken(payload, options = {}) {
 export function verifyAuthToken(token) {
     return jwt.verify(token, getJwtSecret());
 }
+
+export const STAFF_VERIFICATION_EXPIRES_IN = '5m';
+export const STAFF_VERIFICATION_EXPIRES_IN_SECONDS = 300;
+export const STAFF_VERIFICATION_PURPOSE = 'request_submission';
+
+/**
+ * Signs a short-lived single-purpose JWT proving staff PIN verification for request submission.
+ * Intentionally excludes auth claims (`id`, `role`) so it cannot be used as a login token.
+ */
+export function signStaffVerificationToken({ branchId, staffId, staffName }) {
+    if (!branchId || !staffId || typeof staffName !== 'string' || !staffName.trim()) {
+        throw new Error('branchId, staffId, and staffName are required to sign a staff verification token');
+    }
+
+    const payload = {
+        branchId: String(branchId),
+        staffId: String(staffId),
+        staffName: staffName.trim(),
+        purpose: STAFF_VERIFICATION_PURPOSE,
+    };
+
+    return jwt.sign(payload, getJwtSecret(), {
+        algorithm: 'HS256',
+        expiresIn: STAFF_VERIFICATION_EXPIRES_IN,
+        audience: STAFF_VERIFICATION_PURPOSE,
+        jwtid: crypto.randomUUID(),
+    });
+}
+
+/**
+ * Verifies a staff verification token for request submission and rejects auth-shaped tokens.
+ */
+export function verifyStaffVerificationToken(token) {
+    if (typeof token !== 'string' || !token.trim()) {
+        const err = new Error('Missing verification token');
+        err.name = 'InvalidVerificationTokenError';
+        throw err;
+    }
+
+    const decoded = jwt.verify(token, getJwtSecret(), {
+        algorithms: ['HS256'],
+        audience: STAFF_VERIFICATION_PURPOSE,
+    });
+
+    if (
+        !decoded ||
+        typeof decoded !== 'object' ||
+        'id' in decoded ||
+        'role' in decoded ||
+        decoded.purpose !== STAFF_VERIFICATION_PURPOSE ||
+        !decoded.jti ||
+        !decoded.branchId ||
+        !decoded.staffId
+    ) {
+        const err = new Error('Invalid verification token claims');
+        err.name = 'InvalidVerificationTokenError';
+        throw err;
+    }
+
+    return decoded;
+}

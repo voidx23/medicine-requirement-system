@@ -4,7 +4,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import staffRoutes from '../routes/staffRoutes.js';
 import branchRoutes from '../routes/branchRoutes.js';
 import { getStaff } from '../controllers/staffController.js';
-import { signAuthToken } from '../config/jwtConfig.js';
+import {
+    signAuthToken,
+    verifyStaffVerificationToken,
+    STAFF_VERIFICATION_EXPIRES_IN_SECONDS,
+    STAFF_VERIFICATION_PURPOSE,
+} from '../config/jwtConfig.js';
 import Staff from '../models/Staff.js';
 import Branch from '../models/Branch.js';
 import User from '../models/User.js';
@@ -659,8 +664,39 @@ describe('H1 Security Fix — Cross-Branch Staff PII, PIN Hash Exposure & Direct
                 verified: true,
                 staffId: staffBranchAId,
                 name: 'Dr. Amina Al Balushi',
+                verificationToken: expect.any(String),
+                expiresInSeconds: STAFF_VERIFICATION_EXPIRES_IN_SECONDS,
             });
             expect(res.body).not.toHaveProperty('pin');
+
+            const decoded = verifyStaffVerificationToken(res.body.verificationToken);
+            expect(decoded.branchId).toBe(branchAId);
+            expect(decoded.staffId).toBe(staffBranchAId);
+            expect(decoded.staffName).toBe('Dr. Amina Al Balushi');
+            expect(decoded.purpose).toBe(STAFF_VERIFICATION_PURPOSE);
+            expect(decoded.aud).toBe(STAFF_VERIFICATION_PURPOSE);
+            expect(typeof decoded.jti).toBe('string');
+            expect(decoded.jti.length).toBeGreaterThan(0);
+            expect(decoded).not.toHaveProperty('id');
+            expect(decoded).not.toHaveProperty('role');
+        });
+
+        it('allows authorized admin verification without issuing a branch submission token', async () => {
+            const dutyManagerToken = signAuthToken({ id: dutyManagerId, role: 'admin' });
+
+            const res = await request(app)
+                .post('/api/staff/verify')
+                .set('Authorization', `Bearer ${dutyManagerToken}`)
+                .send({ staffId: staffBranchAId, pin: '1234' });
+
+            expect(res.status).toBe(200);
+            expect(res.body).toEqual({
+                verified: true,
+                staffId: staffBranchAId,
+                name: 'Dr. Amina Al Balushi',
+            });
+            expect(res.body).not.toHaveProperty('verificationToken');
+            expect(res.body).not.toHaveProperty('expiresInSeconds');
         });
 
         it('rejects cross-branch PIN verification before checking the PIN', async () => {
