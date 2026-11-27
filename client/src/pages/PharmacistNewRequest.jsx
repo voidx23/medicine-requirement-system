@@ -286,7 +286,6 @@ const PharmacistNewRequest = () => {
             await api.post('/requests/submit', {
                 items: requestItems,
                 verificationToken,
-                submittedBy: staffName,
             });
             setVerifyError('');
             setRequestItems([]);

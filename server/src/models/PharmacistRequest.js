@@ -10,6 +10,11 @@ const requestSchema = mongoose.Schema({
         type: String, // Storing Name directly for historical permanence
         required: true
     },
+    submittedByStaffId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Staff',
+        required: false
+    },
     items: [{
         medicineId: {
             type: mongoose.Schema.Types.ObjectId,

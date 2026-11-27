@@ -20,10 +20,20 @@ const allowBranchOrAdminPermission = (permission) => (req, res, next) => {
     return res.status(403).json({ message: 'Forbidden: Unauthorized role' });
 };
 
+const requireBranch = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ message: 'Not authorized' });
+    }
+    if (req.user.role !== 'branch') {
+        return res.status(403).json({ message: 'Forbidden: Only branch accounts can submit requests' });
+    }
+    return next();
+};
+
 // Put stats route BEFORE parameterized routes to avoid conflict (though none here yet, good practice)
 router.get('/my-pending-medicines', getMyPendingMedicines);
 router.get('/stats', allowBranchOrAdminPermission('view_requests'), getStats);
-router.post('/submit', submitRequest);
+router.post('/submit', requireBranch, submitRequest);
 router.get('/', (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
         return requirePermission('view_requests')(req, res, next);

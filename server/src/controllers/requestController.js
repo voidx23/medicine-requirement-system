@@ -1,8 +1,14 @@
 import mongoose from 'mongoose';
 import PharmacistRequest from '../models/PharmacistRequest.js';
+import Staff from '../models/Staff.js';
+import UsedVerificationToken from '../models/UsedVerificationToken.js';
 import User from '../models/User.js';
 import RequirementList from '../models/RequirementList.js'; // Kept for reference but not used in forwardItems anymore
 import { hasPermission } from '../middleware/authMiddleware.js';
+import {
+    verifyStaffVerificationToken,
+    STAFF_VERIFICATION_PURPOSE,
+} from '../config/jwtConfig.js';
 
 const FORWARDABLE_REQUEST_STATUSES = new Set(['partially_fulfilled', 'completed', 'unfulfilled']);
 const NON_FORWARDABLE_ITEM_STATUSES = new Set(['packed', 'forwarded']);
@@ -17,29 +23,116 @@ const isValidObjectIdString = (value) => (
 // @route   POST /api/requests/submit
 // @access  Private (Pharmacist)
 export const submitRequest = async (req, res) => {
-    try {
-        const { items, submittedBy } = req.body;
+    if (!req.user) {
+        return res.status(401).json({ message: 'Not authorized' });
+    }
 
-        if (!items || items.length === 0) {
+    if (req.user.role !== 'branch') {
+        return res.status(403).json({ message: 'Forbidden: Only branch accounts can submit requests' });
+    }
+
+    try {
+        const { items, verificationToken } = req.body || {};
+
+        if (typeof verificationToken !== 'string' || !verificationToken.trim()) {
+            return res.status(401).json({ message: 'Staff verification token is required. Please verify your PIN.' });
+        }
+
+        let decoded;
+        try {
+            decoded = verifyStaffVerificationToken(verificationToken);
+        } catch {
+            return res.status(401).json({ message: 'Invalid or expired staff verification token. Please re-verify your PIN.' });
+        }
+
+        if (!isValidObjectIdString(decoded.branchId) || !isValidObjectIdString(decoded.staffId)) {
+            return res.status(401).json({ message: 'Invalid verification token claims. Please re-verify your PIN.' });
+        }
+
+        if (String(decoded.branchId) !== String(req.user._id)) {
+            return res.status(403).json({ message: 'Forbidden: Verification token does not belong to this branch' });
+        }
+
+        const staff = await Staff.findById(decoded.staffId).select('_id name isActive branches');
+        if (!staff || staff.isActive !== true) {
+            return res.status(401).json({ message: 'Staff member is inactive or invalid. Please re-verify your PIN.' });
+        }
+
+        const isAssignedToBranch = Array.isArray(staff.branches)
+            && staff.branches.some((b) => String(b) === String(req.user._id));
+        if (!isAssignedToBranch) {
+            return res.status(403).json({ message: 'Forbidden: Staff member is not assigned to this branch' });
+        }
+
+        if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ message: 'No items in request' });
         }
 
-        const request = await PharmacistRequest.create({
+        const normalizedItems = [];
+        for (const item of items) {
+            if (!item || typeof item !== 'object') {
+                return res.status(400).json({ message: 'Invalid item entry in request' });
+            }
+
+            const trimmedName = typeof item.name === 'string' ? item.name.trim() : '';
+            if (!trimmedName) {
+                return res.status(400).json({ message: 'Each request item must have a non-empty name' });
+            }
+
+            const quantity = Number(item.quantity);
+            if (!Number.isInteger(quantity) || quantity <= 0) {
+                return res.status(400).json({ message: 'Each request item must have a positive integer quantity' });
+            }
+
+            const isCustom = Boolean(
+                item.isCustom || (typeof item._id === 'string' && item._id.startsWith('custom-'))
+            );
+
+            if (!isCustom && !isValidObjectIdString(item._id)) {
+                return res.status(400).json({ message: 'Invalid medicine ID in request items' });
+            }
+
+            normalizedItems.push({
+                medicineId: isCustom ? null : item._id,
+                name: trimmedName,
+                quantity,
+                isCustom,
+                isUrgent: Boolean(item.isUrgent),
+            });
+        }
+
+        const expiresAt = typeof decoded.exp === 'number'
+            ? new Date(decoded.exp * 1000)
+            : new Date(Date.now() + 5 * 60 * 1000);
+
+        try {
+            await UsedVerificationToken.create({
+                jti: decoded.jti,
+                purpose: STAFF_VERIFICATION_PURPOSE,
+                branchId: req.user._id,
+                staffId: staff._id,
+                expiresAt,
+            });
+        } catch (consumeError) {
+            if (consumeError?.code === 11000) {
+                return res.status(409).json({
+                    message: 'Verification token has already been used. Please re-verify your PIN.'
+                });
+            }
+            throw consumeError;
+        }
+
+        const createdRequest = await PharmacistRequest.create({
             pharmacistId: req.user._id,
-            submittedBy,
-            items: items.map(item => ({
-                medicineId: (item.isCustom || item._id?.toString().startsWith('custom-')) ? null : item._id,
-                name: item.name,
-                quantity: item.quantity,
-                isCustom: !!(item.isCustom || item._id?.toString().startsWith('custom-')),
-                isUrgent: !!item.isUrgent
-            })),
-            status: 'pending'
+            submittedBy: staff.name,
+            submittedByStaffId: staff._id,
+            items: normalizedItems,
+            status: 'pending',
         });
 
-        res.status(201).json(request);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+        return res.status(201).json(createdRequest);
+    } catch {
+        return res.status(500).json({ message: 'Server Error' });
     }
 };
 
